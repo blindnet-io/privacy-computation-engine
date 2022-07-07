@@ -1,13 +1,13 @@
 <h1 align="center">
   blindnet devkit<br />
-  {project-long-name: short descriptive name as in a correct english sentence}
+  Privacy Computation Engine
 </h1>
 
 <p align=center><img src="https://user-images.githubusercontent.com/7578400/163277439-edd00509-1d1b-4565-a0d3-49057ebeb92a.png#gh-light-mode-only" height="80" /></p>
 <p align=center><img src="https://user-images.githubusercontent.com/7578400/163549893-117bbd70-b81a-47fd-8e1f-844911e48d68.png#gh-dark-mode-only" height="80" /></p>
 
 <p align="center">
-  <strong>{One-Liner: Explain concretely what this project does in one short sentence}</strong>
+  <strong>Component that interprets rights about users' data in a system and handles Privacy Requests.</strong>
 </p>
 
 <p align="center">
@@ -17,7 +17,7 @@
 <p align="center">
   <a href="https://blindnet.dev/docs">Documentation</a>
   &nbsp;•&nbsp;
-  <a href="https://github.com/blindnet-io/{project-short-name}/issues">Submit an Issue</a>
+  <a href="https://github.com/blindnet-io/privacy-computation-engine/issues">Submit an Issue</a>
   &nbsp;•&nbsp;
   <a href="https://join.slack.com/t/blindnet/shared_invite/zt-1arqlhqt3-A8dPYXLbrnqz1ZKsz6ItOg">Online Chat</a>
   <br>
@@ -26,7 +26,7 @@
 
 ## About
 
-{If the One-Liner is REALLY not enough to directly grasp the meaning of this project, explain what it does and why it exists in the most concise way possible.}
+TODO
 
 ## Get Started
 
@@ -34,15 +34,11 @@
 
 ## Installation
 
-Use [{package manager or plateform}][install-tool] to install {project's name}:
-
-```bash
-{install-command}
-```
+TODO
 
 ## Usage
 
-📑 The API reference of {type of project, e.g. this SDK} is available on [blindnet.dev](https://blindnet.dev/docs/api_reference/[path-to-project}/latest).
+TODO
 
 ## Contributing
 
@@ -64,12 +60,11 @@ Stay up to date with new releases and projects, learn more about how to protect 
 
 ## License
 
-The blindnet devkit {short-project-name} is available under [MIT][license] (and [here](https://github.com/blindnet-io/openness-framework/blob/main/docs/decision-records/DR-0001-oss-license.md) is why).
+The blindnet devkit privacy-computation-engine is available under [MIT][license] (and [here](https://github.com/blindnet-io/openness-framework/blob/main/docs/decision-records/DR-0001-oss-license.md) is why).
 
 <!-- project's URLs -->
-[new-issue]: https://github.com/blindnet-io/{project-short-name}/issues/new/choose
-[fork]: https://github.com/blindnet-io/{project-short-name}/fork
-[install-tool]:
+[new-issue]: https://github.com/blindnet-io/privacy-computation-engine/issues/new/choose
+[fork]: https://github.com/blindnet-io/privacy-computation-engine/fork
 
 <!-- common URLs -->
 [devkit]: https://github.com/blindnet-io/blindnet.dev
