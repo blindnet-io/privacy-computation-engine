@@ -3,8 +3,43 @@ create table apps (
   id uuid primary key
 )
 
-create table general_information (
+-- GENERAL INFORMATION
+-- parts of TRANSPARENCY requests and ROPA
 
+create table general_information (
+  id uuid primary key,
+  appid uuid not null,
+  countries varchar[],
+  data_consumer_categories varchar[],
+  access_policies varchar[],
+  privacy_policy_link varchar,
+  data_security_information varchar,
+  constraint app_fk,
+    foreign key (appid)
+    references apps(id)
+    on delete cascade
+
+)
+
+create table general_information_organization (
+  id uuid primary key,
+  gid uuid not null,
+  name varchar,
+  constraint general_information_fk,
+    foreign key (gid)
+    references general_information(id)
+    on delete cascade
+)
+
+create table Dpo (
+  id uuid primary key,
+  gid uuid not null,
+  name varchar,
+  contact varchar,
+  constraint general_information_fk,
+    foreign key (gid)
+    references general_information(id)
+    on delete cascade
 )
 
 -- PRIVACY SCOPE
