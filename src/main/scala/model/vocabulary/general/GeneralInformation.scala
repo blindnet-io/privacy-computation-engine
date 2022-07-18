@@ -1,8 +1,6 @@
 package io.blindnet.privacy
 package model.vocabulary.general
 
-import io.blindnet.model.vocabulary.general.*
-
 case class GeneralInformation(
     countries: List[String],
     organizations: List[Organization],

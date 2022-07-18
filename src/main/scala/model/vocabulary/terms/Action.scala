@@ -1,6 +1,10 @@
 package io.blindnet.privacy
 package model.vocabulary.terms
 
+import io.circe.*
+
+import cats.data.Validated
+
 enum Action(term: String, parent: Option[Action] = None) {
   case Access          extends Action("ACCESS")
   case Delete          extends Action("DELETE")
@@ -38,7 +42,13 @@ enum Action(term: String, parent: Option[Action] = None) {
 }
 
 object Action {
-  def parse(str: String): Option[Action] =
-    Action.values.find(a => a.isTerm(str))
+  def parse(str: String): Validated[String, Action] =
+    Validated.fromOption(
+      Action.values.find(a => a.isTerm(str)),
+      "Unknown action"
+    )
+
+  given Decoder[Action] =
+    Decoder.decodeString.emap(Action.parse(_).toEither)
 
 }
