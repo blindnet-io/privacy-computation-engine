@@ -1,7 +1,7 @@
 
 create table apps (
   id uuid primary key
-)
+);
 
 -- GENERAL INFORMATION
 -- parts of TRANSPARENCY requests and ROPA
@@ -14,33 +14,32 @@ create table general_information (
   access_policies varchar[],
   privacy_policy_link varchar,
   data_security_information varchar,
-  constraint app_fk,
+  constraint app_fk
     foreign key (appid)
     references apps(id)
     on delete cascade
-
-)
+);
 
 create table general_information_organization (
   id uuid primary key,
   gid uuid not null,
   name varchar,
-  constraint general_information_fk,
+  constraint general_information_fk
     foreign key (gid)
     references general_information(id)
     on delete cascade
-)
+);
 
 create table Dpo (
   id uuid primary key,
   gid uuid not null,
   name varchar,
   contact varchar,
-  constraint general_information_fk,
+  constraint general_information_fk
     foreign key (gid)
     references general_information(id)
     on delete cascade
-)
+);
 
 -- PRIVACY SCOPE
 
@@ -48,7 +47,7 @@ create table data_categories (
   id uuid primary key,
   appid uuid not null,
   term varchar unique not null,
-  constraint app_fk,
+  constraint app_fk
     foreign key (appid)
     references apps(id)
     on delete cascade
@@ -64,7 +63,7 @@ create table processing_purposes (
   id uuid primary key,
   appid uuid not null,
   term VARCHAR unique not null,
-  constraint app_fk,
+  constraint app_fk
     foreign key (appid)
     references apps(id)
     on delete cascade
@@ -86,7 +85,7 @@ create table scope (
   constraint processing_purpose_fk
     foreign key (ppid)
     references processing_purposes(id)
-    on delete cascade,
+    on delete cascade
   -- constraint scope_pk
   --     primary key (user_id, app_id, device_id, id),
 );
@@ -106,7 +105,7 @@ create table selector (
   appid uuid not null,
   name varchar,
   target varchar,
-  constraint app_fk,
+  constraint app_fk
     foreign key (appid)
     references apps(id)
     on delete cascade
@@ -129,7 +128,7 @@ create table selector_scope (
   constraint scope_fk
     foreign key (scid)
     references scope(id)
-    on delete cascade,
+    on delete cascade
 );
 
 -----------------
@@ -142,7 +141,7 @@ create table legal_bases (
   appid uuid not null,
   name varchar,
   description varchar,
-  constraint app_fk,
+  constraint app_fk
     foreign key (appid)
     references apps(id)
     on delete cascade
@@ -167,12 +166,12 @@ create table legal_base_scope (
     primary key (lbid, scid),
   constraint legal_base_fk
     foreign key (lbid)
-    references legal_base(id)
+    references legal_bases(id)
     on delete cascade,
   constraint scope_fk
     foreign key (scid)
     references scope(id)
-    on delete cascade,
+    on delete cascade
 );
 
 
@@ -185,11 +184,38 @@ create table data_subjects (
   id uuid primary key,
   appid uuid not null,
   schema varchar unique not null,
-  constraint app_fk,
+  constraint app_fk
     foreign key (appid)
     references apps(id)
     on delete cascade
 );
+
+-----------------
+
+-- EVENT
+
+create table events (
+  id uuid primary key,
+  dsid uuid not null,
+  date timestamp not null,
+  constraint data_subject_fk
+    foreign key (dsid)
+    references data_subjects(id)
+    on delete restrict
+);
+
+create table legal_base_event (
+) inherits(events);
+
+create table consent_event (
+  -- type given or inferred
+) inherits(events);
+
+create table privacy_request_event (
+) inherits(events);
+
+create table privacy_response_event (
+) inherits(events);
 
 -----------------
 
@@ -204,7 +230,7 @@ create table privacy_requests (
     foreign key (dsid)
     references data_subjects(id)
     on delete restrict,
-  constraint app_fk,
+  constraint app_fk
     foreign key (appid)
     references apps(id)
     on delete cascade
@@ -219,7 +245,7 @@ create table demands (
   constraint privacy_request_fk
     foreign key (prid)
     references privacy_requests(id)
-    on delete cascade,
+    on delete cascade
 );
 
 create table restrictions (
@@ -241,25 +267,25 @@ create table privacy_scope_restriction_scope (
     primary key (psrid, scid),
   constraint privacy_scope_restriction_fk
     foreign key (psrid)
-    references privacy_scope_restriction(id)
+    references restrictions(id)
     on delete cascade,
   constraint scope_fk
     foreign key (scid)
     references scope(id)
-    on delete cascade,
+    on delete cascade
 ) inherits(restrictions);
 
 create table consent_restriction (
   cid uuid not null,
   constraint consent_event_fk
     foreign key (cid)
-    references consent_event(id)
+    references events(id)
     on delete cascade
 ) inherits(restrictions);
 
 create table date_range_restriction (
-  from timestamp,
-  to timestamp
+  from_timestamp timestamp,
+  to_timestamp timestamp
 ) inherits(restrictions);
 
 create table provenance_restriction (
@@ -272,28 +298,4 @@ create table data_reference_restriction (
 
 -----------------
 
--- EVENT
-
-create table events (
-  id uuid primary key,
-  dsid uuid not null,
-  date timestamp not null,
-  constraint data_subject_fk
-    foreign key (dsid)
-    references data_subjects(id)
-    on delete restrict,
-);
-
-create table legal_base_event (
-) inherits(event);
-
-create table consent_event (
-  -- type given or inferred
-) inherits(event);
-
-create table privacy_request_event (
-) inherits(event);
-
-create table privacy_response_event (
-) inherits(event);
 
