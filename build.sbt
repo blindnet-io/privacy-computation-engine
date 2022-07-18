@@ -20,7 +20,15 @@ lazy val root = (project in file("."))
       dependencies.main.flyway,
       dependencies.main.doobie,
       dependencies.main.doobieHikari,
-      dependencies.main.doobiePostres
+      dependencies.main.doobiePostres,
+      dependencies.main.tapir,
+      dependencies.main.tapirHttp4s,
+      dependencies.main.tapirJsonCirce,
+      dependencies.main.tapirSwagger,
+      dependencies.main.http4sCirce,
+      dependencies.main.http4sDsl,
+      dependencies.main.http4sEmberServer,
+      dependencies.main.http4sEmberClient
     ),
     assembly / mainClass       := Some("io.blindnet.privacy.Main"),
     assembly / assemblyJarName := "privacy_computation_engine.jar"
