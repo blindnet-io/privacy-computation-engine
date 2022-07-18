@@ -1,26 +1,45 @@
 
+create table apps (
+  id uuid primary key
+)
+
+create table general_information (
+
+)
+
 -- PRIVACY SCOPE
 
 create table data_categories (
   id uuid primary key,
-  term varchar unique not null
+  appid uuid not null,
+  term varchar unique not null,
+  constraint app_fk,
+    foreign key (appid)
+    references apps(id)
+    on delete cascade
 );
 
 create table processing_categories (
   id uuid primary key,
+  appid uuid not null,
   term VARCHAR unique not null
 );
 
 create table processing_purposes (
   id uuid primary key,
-  term VARCHAR unique not null
+  appid uuid not null,
+  term VARCHAR unique not null,
+  constraint app_fk,
+    foreign key (appid)
+    references apps(id)
+    on delete cascade
 );
 
 create table scope (
   id uuid primary key,
-  dcid uuid,
-  pcid uuid,
-  ppid uuid,
+  dcid uuid not null,
+  pcid uuid not null,
+  ppid uuid not null,
   constraint data_category_fk
     foreign key (dcid)
     references data_categories(id)
@@ -49,8 +68,13 @@ create table scope (
 
 create table selector (
   id uuid primary key,
+  appid uuid not null,
   name varchar,
-  target varchar
+  target varchar,
+  constraint app_fk,
+    foreign key (appid)
+    references apps(id)
+    on delete cascade
   -- targetid uuid,
   -- constraint data_categories_fk
   --   foreign key (targetid)
@@ -80,8 +104,13 @@ create table selector_scope (
 -- very likely, particular legal bases will have additional properties
 create table legal_bases (
   id uuid primary key,
+  appid uuid not null,
   name varchar,
-  description varchar
+  description varchar,
+  constraint app_fk,
+    foreign key (appid)
+    references apps(id)
+    on delete cascade
 );
 
 create table legitimate_interests (
@@ -119,7 +148,12 @@ create table legal_base_scope (
 
 create table data_subjects (
   id uuid primary key,
-  schema varchar unique not null
+  appid uuid not null,
+  schema varchar unique not null,
+  constraint app_fk,
+    foreign key (appid)
+    references apps(id)
+    on delete cascade
 );
 
 -----------------
@@ -128,12 +162,17 @@ create table data_subjects (
 
 create table privacy_requests (
   id uuid primary key,
+  appid uuid not null,
   dsid uuid not null,
   date timestamp not null,
   constraint data_subject_fk
     foreign key (dsid)
     references data_subjects(id)
     on delete restrict,
+  constraint app_fk,
+    foreign key (appid)
+    references apps(id)
+    on delete cascade
 );
 
 create table demands (
