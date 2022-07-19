@@ -12,8 +12,8 @@ object Provenance {
     "*",
     "DERIVED",
     "TRANSFERRED",
-    "USER"
-    // "USER.DATA-SUBJECT"
+    "USER",
+    "USER.DATA-SUBJECT"
   )
 
 }

@@ -37,9 +37,9 @@ class TransparencyDemands(
     giRepo.getGeneralInfo(appId).map(_.privacyPolicyLink)
 
   def getUserKnown(appId: String, userIds: List[DataSubject]): IO[Boolean] =
-    userIds match {
-      case Nil => IO(false)
-      case _   => giRepo.known(appId, userIds)
+    NonEmptyList.fromList(userIds) match {
+      case None          => IO(false)
+      case Some(userIds) => giRepo.known(appId, userIds)
     }
 
   def getLebalBases(appId: String, userIds: List[DataSubject]): IO[List[LegalBase]] =
@@ -63,7 +63,10 @@ class TransparencyDemands(
   ): IO[Map[String, List[RetentionPolicy]]] =
     for {
       selectors         <- psRepo.getSelectors(appId, userIds)
-      retentionPolicies <- psRepo.getRetentionPoliciesForSelector(appId, selectors.map(_.name))
+      retentionPolicies <- NonEmptyList.fromList(selectors) match {
+        case None            => IO.pure(Map.empty)
+        case Some(selectors) => psRepo.getRetentionPoliciesForSelector(appId, selectors.map(_.name))
+      }
     } yield retentionPolicies
 
   def getWhere(appId: String): IO[List[String]] =

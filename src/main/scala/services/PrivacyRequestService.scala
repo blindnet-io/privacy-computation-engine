@@ -25,7 +25,7 @@ class PrivacyRequestService(
 
   val transparency = new TransparencyDemands(giRepo, psRepo, lbRepo)
 
-  def getPrivacyRequest(req: PrivacyRequestPayload, appId: String) = {
+  def createPrivacyRequest(req: PrivacyRequestPayload, appId: String) = {
     for {
       // TODO: reject if number of demands is large
 
@@ -60,6 +60,7 @@ class PrivacyRequestService(
         .validate(pr)
         .fold(e => IO.raiseError(ValidationException(e)), IO.pure)
 
+      // TODO: store request
     } yield pr
   }
 
@@ -75,17 +76,19 @@ class PrivacyRequestService(
       case Action.TDataCategories => transparency.getDataCategories(appId).map(_.asJson)
       case Action.TDPO            => transparency.getDpo(appId).map(_.asJson)
       case Action.TKnown          => transparency.getUserKnown(appId, userIds).map(_.asJson)
-      case Action.TLegalBases     => transparency.getLebalBases(appId, userIds).map(_.asJson)
-      case Action.TOrganization   => transparency.getOrganization(appId).map(_.asJson)
-      case Action.TPolicy         => transparency.getPrivacyPolicy(appId).map(_.asJson)
+      case Action.TLegalBases   => transparency.getLebalBases(appId, userIds).map(_.asJson) // TODO
+      case Action.TOrganization => transparency.getOrganization(appId).map(_.asJson)
+      case Action.TPolicy       => transparency.getPrivacyPolicy(appId).map(_.asJson)
       case Action.TProcessingCategories =>
-        transparency.getProcessingCategories(appId, userIds).map(_.asJson)
-      case Action.TProvenance           => transparency.getProvenances(appId, userIds).map(_.asJson)
-      case Action.TPurpose              => transparency.getPurposes(appId, userIds).map(_.asJson)
-      case Action.TRetention            => transparency.getRetentions(appId, userIds).map(_.asJson)
-      case Action.TWhere                => transparency.getWhere(appId).map(_.asJson)
-      case Action.TWho                  => transparency.getWho(appId).map(_.asJson)
-      case _                            => IO.raiseError(new NotImplementedError)
+        transparency.getProcessingCategories(appId, userIds).map(_.asJson) // TODO user
+      case Action.TProvenance           =>
+        transparency.getProvenances(appId, userIds).map(_.asJson) // TODO user
+      case Action.TPurpose   => transparency.getPurposes(appId, userIds).map(_.asJson) // TODO user
+      case Action.TRetention =>
+        transparency.getRetentions(appId, userIds).map(_.asJson) // TODO user
+      case Action.TWhere     => transparency.getWhere(appId).map(_.asJson)
+      case Action.TWho       => transparency.getWho(appId).map(_.asJson)
+      case _                 => IO.raiseError(new NotImplementedError)
     }
   }
 
