@@ -29,8 +29,8 @@ create table general_information_organization (
     references general_information(id)
     on delete cascade
 );
-
-create table Dpo (
+ 
+create table dpo (
   id uuid primary key,
   gid uuid not null,
   name varchar,
@@ -94,26 +94,20 @@ create table scope (
 
 -- SELECTOR
 
--- ORGANIZATION, PARTNERS, SYSTEM
--- create table targets (
---   id uuid primary key,
---   term varchar unique not null
--- );
+create type target_terms as enum ('ORGANIZATION', 'PARTNERS', 'SYSTEM', 'PARTNERS.DOWNWARD', 'PARTNERS.UPWARD');
+create type policy_terms as enum ('NO-LONGER-THAN, NO-LESS-THAN');
+create type event_terms as enum ('CAPTURE-DATE', 'RELATIONSHIP-END', 'RELATIONSHIP-START', 'SERVICE-END', 'SERVICE-START');
 
-create table selector (
+create table selectors (
   id uuid primary key,
   appid uuid not null,
   name varchar,
-  target varchar,
+  target target_terms,
+  provenance varchar,
   constraint app_fk
     foreign key (appid)
     references apps(id)
     on delete cascade
-  -- targetid uuid,
-  -- constraint data_categories_fk
-  --   foreign key (targetid)
-  --   references targets(id)
-  --   on delete restrict,
 );
 
 create table selector_scope (
@@ -123,13 +117,25 @@ create table selector_scope (
     primary key (slid, scid),
   constraint selector_fk
     foreign key (slid)
-    references selector(id)
+    references selectors(id)
     on delete cascade,
   constraint scope_fk
     foreign key (scid)
     references scope(id)
     on delete cascade
 );
+
+create table retention_policies (
+  id uuid primary key,
+  sid uuid unique,
+  policy policy_terms not null,
+  duration integer not null, -- for now days, should be https://www.rfc-editor.org/rfc/pdfrfc/rfc3339.txt.pdf duration in appendix a
+  after event_terms not null,
+  constraint selector_fk
+    foreign key (slid)
+    references selectors(id)
+    on delete cascade
+)
 
 -----------------
 
@@ -205,6 +211,7 @@ create table events (
 );
 
 create table legal_base_event (
+  event event_terms not null,
 ) inherits(events);
 
 create table consent_event (
@@ -239,7 +246,7 @@ create table privacy_requests (
 create table demands (
   id uuid primary key,
   prid uuid not null,
-  action varchar not null,
+  action varchar not null, -- TODO: enum
   message varchar,
   lang varchar,
   constraint privacy_request_fk
@@ -290,7 +297,7 @@ create table date_range_restriction (
 
 create table provenance_restriction (
   provenance_term varchar not null,
-  target_term varchar
+  target_term target_terms
 ) inherits(restrictions);
 
 create table data_reference_restriction (
