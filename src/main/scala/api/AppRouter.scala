@@ -8,11 +8,11 @@ import org.http4s.server.Router
 import org.http4s.server.middleware.*
 import endpoints.*
 
-object App {
-  def make() = new App()
+object AppRouter {
+  def make() = new AppRouter()
 }
 
-class App() {
+class AppRouter() {
 
   val healthCheckEndpoints = new HealthCheckEndpoints().routes
   // data subject endpoints

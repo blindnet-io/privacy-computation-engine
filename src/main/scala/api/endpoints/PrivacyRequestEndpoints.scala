@@ -11,7 +11,7 @@ import org.http4s.circe.*
 import org.http4s.dsl.Http4sDsl
 import org.http4s.dsl.io.*
 import org.http4s.server.Router
-import services.requests.*
+import services.*
 import api.endpoints.payload.{ given, * }
 
 class PrivacyRequestEndpoints(

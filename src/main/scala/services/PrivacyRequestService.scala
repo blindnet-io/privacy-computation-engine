@@ -1,35 +1,36 @@
 package io.blindnet.privacy
-package services.requests
+package services
 
-import cats.data.{NonEmptyList, _}
+import cats.data.{ NonEmptyList, * }
 import cats.effect.*
 import cats.effect.kernel.Clock
 import cats.effect.std.UUIDGen
 import cats.implicits.*
-import io.blindnet.privacy.model.vocabulary.request.*
+import api.endpoints.payload.PrivacyRequestPayload
+import db.repositories.*
 import io.circe.Json
 import io.circe.generic.auto.*
 import io.circe.syntax.*
-import db.repositories.*
-import model.vocabulary.request.PrivacyRequest
-import model.vocabulary.request.Demand
 import model.error.*
-import model.vocabulary.terms.*
 import model.vocabulary.DataSubject
-import api.endpoints.payload.PrivacyRequestPayload
+import model.vocabulary.request.{ Demand, PrivacyRequest, * }
+import model.vocabulary.terms.*
+import services.requests.TransparencyDemands
 
 class PrivacyRequestService(
-    repo: Repository[IO]
+    giRepo: GeneralInfoRepository,
+    psRepo: PrivacyScopeRepository,
+    lbRepo: LegalBaseRepository
 ) {
 
-  val transparency = new TransparencyDemands(repo)
+  val transparency = new TransparencyDemands(giRepo, psRepo, lbRepo)
 
   def getPrivacyRequest(req: PrivacyRequestPayload, appId: String) = {
     for {
       // TODO: reject if number of demands is large
 
       reqId     <- UUIDGen.randomUUID[IO]
-      demandIds <- (1 to req.demands.length).toList.traverse(_ => UUIDGen.randomUUID[IO])
+      demandIds <- UUIDGen.randomUUID[IO].replicateA(req.demands.length)
       time      <- Clock[IO].realTimeInstant
 
       demands = req.demands.zip(demandIds).map {
