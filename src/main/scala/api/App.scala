@@ -1,12 +1,11 @@
 package io.blindnet.privacy
 package api
 
+import cats.effect.*
 import org.http4s.*
 import org.http4s.implicits.*
 import org.http4s.server.Router
 import org.http4s.server.middleware.*
-import cats.effect.*
-
 import endpoints.*
 
 object App {
@@ -16,6 +15,9 @@ object App {
 class App() {
 
   val healthCheckEndpoints = new HealthCheckEndpoints().routes
+  // data subject endpoints
+  // data consumer endpoints
+  // customization endpoints
 
   val routes: HttpRoutes[IO] = Router(
     "v0" -> healthCheckEndpoints

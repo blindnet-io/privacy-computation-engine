@@ -1,9 +1,8 @@
 package io.blindnet.privacy
 package model.vocabulary.terms
 
-import io.circe.*
-
 import cats.data.Validated
+import io.circe.*
 
 enum Action(term: String, parent: Option[Action] = None) {
   case Access          extends Action("ACCESS")

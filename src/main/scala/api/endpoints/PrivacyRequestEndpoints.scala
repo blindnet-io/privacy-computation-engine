@@ -2,18 +2,17 @@ package io.blindnet.privacy
 package api.endpoints
 
 import cats.effect.IO
-import org.http4s.*
-import org.http4s.circe.CirceEntityEncoder.*
-import org.http4s.dsl.Http4sDsl
-import org.http4s.server.Router
 import io.circe.*
 import io.circe.generic.auto.*
 import io.circe.syntax.*
 import org.http4s.*
+import org.http4s.circe.CirceEntityEncoder.*
 import org.http4s.circe.*
+import org.http4s.dsl.Http4sDsl
 import org.http4s.dsl.io.*
+import org.http4s.server.Router
 import services.requests.*
-import api.endpoints.payloads.{ given, * }
+import api.endpoints.payload.{ given, * }
 
 class PrivacyRequestEndpoints(
     reqService: PrivacyRequestService

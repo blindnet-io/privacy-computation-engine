@@ -4,7 +4,6 @@ package db
 import cats.effect.*
 import doobie.hikari.HikariTransactor
 import doobie.util.ExecutionContexts
-
 import db.DbConfig
 
 object DbTransactor {

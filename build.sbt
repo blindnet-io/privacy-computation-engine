@@ -1,17 +1,20 @@
 import dependencies.*
 
-ThisBuild / scalaVersion         := "3.1.3"
-ThisBuild / version              := "0.1.0-SNAPSHOT"
-ThisBuild / organization         := "io.blindnet"
-ThisBuild / organizationName     := "blindnet"
-ThisBuild / organizationHomepage := Some(url("https://blindnet.io"))
+ThisBuild / scalaVersion                                   := "3.1.3"
+ThisBuild / version                                        := "0.1.0-SNAPSHOT"
+ThisBuild / organization                                   := "io.blindnet"
+ThisBuild / organizationName                               := "blindnet"
+ThisBuild / organizationHomepage                           := Some(url("https://blindnet.io"))
+ThisBuild / scalafixDependencies += "com.github.liancheng" %% "organize-imports" % "0.6.0"
+ThisBuild / scalacOptions                                  := List("-Ymacro-annotations")
+ThisBuild / semanticdbEnabled                              := true
+// ThisBuild / semanticdbVersion := scalafixSemanticdb.revision
 
 resolvers += Resolver.sonatypeRepo("snapshots")
 
 lazy val root = (project in file("."))
   .settings(
     name                       := "privacy-computation-engine",
-    scalacOptions              := List("-Ymacro-annotations"),
     libraryDependencies ++= Seq(
       dependencies.main.catsEffect,
       dependencies.main.circe,

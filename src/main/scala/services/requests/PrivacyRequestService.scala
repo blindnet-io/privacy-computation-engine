@@ -1,24 +1,22 @@
 package io.blindnet.privacy
 package services.requests
 
+import cats.data.{NonEmptyList, _}
+import cats.effect.*
+import cats.effect.kernel.Clock
+import cats.effect.std.UUIDGen
+import cats.implicits.*
+import io.blindnet.privacy.model.vocabulary.request.*
+import io.circe.Json
+import io.circe.generic.auto.*
+import io.circe.syntax.*
 import db.repositories.*
 import model.vocabulary.request.PrivacyRequest
 import model.vocabulary.request.Demand
-import cats.data.*
-import cats.data.NonEmptyList
-import cats.effect.*
-import cats.implicits.*
-
 import model.error.*
 import model.vocabulary.terms.*
-
-import cats.effect.std.UUIDGen
-import cats.effect.kernel.Clock
-import io.circe.Json
-import io.circe.generic.auto.*, io.circe.syntax.*
 import model.vocabulary.DataSubject
-import api.endpoints.payloads.PrivacyRequestPayload
-import io.blindnet.privacy.model.vocabulary.request.*
+import api.endpoints.payload.PrivacyRequestPayload
 
 class PrivacyRequestService(
     repo: Repository[IO]
@@ -59,7 +57,7 @@ class PrivacyRequestService(
 
       _ <- PrivacyRequest
         .validate(pr)
-        .fold(e => IO.raiseError(ValidationError(e)), IO.pure)
+        .fold(e => IO.raiseError(ValidationException(e)), IO.pure)
 
     } yield pr
   }

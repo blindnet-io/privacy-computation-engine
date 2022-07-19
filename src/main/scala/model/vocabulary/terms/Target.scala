@@ -1,9 +1,8 @@
 package io.blindnet.privacy
 package model.vocabulary.terms
 
-import io.circe.*
-
 import cats.data.Validated
+import io.circe.*
 
 enum Target(term: String, parent: Option[Target] = None) {
   case Organization extends Target("ORGANIZATION")

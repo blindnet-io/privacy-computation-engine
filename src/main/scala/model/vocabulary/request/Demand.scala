@@ -1,10 +1,10 @@
 package io.blindnet.privacy
 package model.vocabulary.request
 
-import model.vocabulary.terms.Action
-import model.vocabulary.DataSubject
 import cats.data.*
 import cats.implicits.*
+import model.vocabulary.terms.Action
+import model.vocabulary.DataSubject
 import model.vocabulary.terms.Target
 
 case class Demand(

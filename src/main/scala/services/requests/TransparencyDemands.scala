@@ -1,21 +1,19 @@
 package io.blindnet.privacy
 package services.requests
 
+import cats.data.{NonEmptyList, _}
+import cats.effect.*
+import cats.implicits.*
+import io.circe.Json
+import io.circe.generic.auto.*
+import io.circe.syntax.*
 import db.repositories.*
 import model.vocabulary.request.PrivacyRequest
 import model.vocabulary.request.Demand
-import cats.data.*
-import cats.data.NonEmptyList
-import cats.effect.*
-import cats.implicits.*
-
 import model.error.*
 import model.vocabulary.*
 import model.vocabulary.terms.*
 import model.vocabulary.general.*
-
-import io.circe.Json
-import io.circe.generic.auto.*, io.circe.syntax.*
 
 class TransparencyDemands(
     repo: Repository[IO]

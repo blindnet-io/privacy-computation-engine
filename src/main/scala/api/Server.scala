@@ -1,14 +1,15 @@
 package io.blindnet.privacy
 package api
 
-import org.http4s.HttpApp
-import org.http4s.server.Server
+import scala.concurrent.duration.*
+import scala.language.postfixOps
+
 import cats.effect.*
 import cats.syntax.all.*
 import com.comcast.ip4s.*
+import org.http4s.HttpApp
 import org.http4s.ember.server.*
-import scala.concurrent.duration.*
-import scala.language.postfixOps
+import org.http4s.server.Server
 
 object Server {
 

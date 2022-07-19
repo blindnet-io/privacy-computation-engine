@@ -2,11 +2,10 @@ package io.blindnet.privacy
 package db
 
 import cats.effect.*
+import io.blindnet.privacy.model.error.MigrationError
 import org.flywaydb.core.Flyway
 import org.flywaydb.core.api.output.MigrateResult
-
 import db.DbConfig
-import io.blindnet.privacy.model.error.MigrationError
 
 object Migrator {
 

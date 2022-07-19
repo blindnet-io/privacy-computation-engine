@@ -1,13 +1,13 @@
 package io.blindnet.privacy
 package model.vocabulary.request
 
-import model.vocabulary.*
-import cats.data.*
-import cats.implicits.*
 import java.time.Instant
 
-import model.vocabulary.terms.Action
+import cats.data.*
+import cats.implicits.*
 import cats.kernel.Semigroup
+import model.vocabulary.*
+import model.vocabulary.terms.Action
 
 case class PrivacyRequest(
     id: String,
