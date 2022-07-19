@@ -132,10 +132,10 @@ create table retention_policies (
   duration integer not null, -- for now days, should be https://www.rfc-editor.org/rfc/pdfrfc/rfc3339.txt.pdf duration in appendix a
   after event_terms not null,
   constraint selector_fk
-    foreign key (slid)
+    foreign key (sid)
     references selectors(id)
     on delete cascade
-)
+);
 
 -----------------
 
@@ -211,7 +211,7 @@ create table events (
 );
 
 create table legal_base_event (
-  event event_terms not null,
+  event event_terms not null
 ) inherits(events);
 
 create table consent_event (
