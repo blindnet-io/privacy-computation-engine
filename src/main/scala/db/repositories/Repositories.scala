@@ -3,7 +3,6 @@ package db.repositories
 
 import cats.effect.*
 import doobie.util.transactor.Transactor
-import io.blindnet.privacy.model.vocabulary.PrivacyScope.apply
 
 trait Repositories {
   val generalInfo: GeneralInfoRepository
