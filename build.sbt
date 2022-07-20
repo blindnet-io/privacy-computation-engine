@@ -6,7 +6,6 @@ ThisBuild / organization                                   := "io.blindnet"
 ThisBuild / organizationName                               := "blindnet"
 ThisBuild / organizationHomepage                           := Some(url("https://blindnet.io"))
 ThisBuild / scalafixDependencies += "com.github.liancheng" %% "organize-imports" % "0.6.0"
-ThisBuild / scalacOptions                                  := List("-Ymacro-annotations")
 ThisBuild / semanticdbEnabled                              := true
 // ThisBuild / semanticdbVersion := scalafixSemanticdb.revision
 
@@ -31,7 +30,10 @@ lazy val root = (project in file("."))
       dependencies.main.http4sCirce,
       dependencies.main.http4sDsl,
       dependencies.main.http4sEmberServer,
-      dependencies.main.http4sEmberClient
+      dependencies.main.http4sEmberClient,
+      dependencies.main.logback,
+      dependencies.main.janino,
+      dependencies.main.log4catsSlf4j
     ),
     assembly / mainClass       := Some("io.blindnet.privacy.Main"),
     assembly / assemblyJarName := "privacy_computation_engine.jar"

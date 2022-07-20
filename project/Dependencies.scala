@@ -32,8 +32,9 @@ object dependencies {
 
     val flyway = "org.flywaydb" % "flyway-core" % "8.5.12"
 
-    val slf4j         = "org.slf4j"      % "slf4j-simple"   % "1.7.36"
-    val log4catsSlf4j = "org.typelevel" %% "log4cats-slf4j" % "2.3.1"
+    val logback       = "ch.qos.logback"      % "logback-classic" % "1.2.11"
+    val janino        = "org.codehaus.janino" % "janino"          % "3.1.7"
+    val log4catsSlf4j = "org.typelevel"      %% "log4cats-slf4j"  % "2.3.1"
 
     val bouncyCastle = "org.bouncycastle" % "bcprov-jdk15on" % "1.70"
   }
