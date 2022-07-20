@@ -6,11 +6,11 @@ import cats.effect.*
 import cats.effect.kernel.Clock
 import cats.effect.std.UUIDGen
 import cats.implicits.*
-import api.endpoints.payload.PrivacyRequestPayload
-import db.repositories.*
 import io.circe.Json
 import io.circe.generic.auto.*
 import io.circe.syntax.*
+import api.endpoints.payload.*
+import db.repositories.*
 import model.error.*
 import model.vocabulary.DataSubject
 import model.vocabulary.request.{ Demand, PrivacyRequest, * }
@@ -25,7 +25,7 @@ class PrivacyRequestService(
 
   val transparency = new TransparencyDemands(giRepo, psRepo, lbRepo)
 
-  def createPrivacyRequest(req: PrivacyRequestPayload, appId: String) = {
+  private def createPrivacyRequest(req: PrivacyRequestPayload, appId: String) = {
     for {
       // TODO: reject if number of demands is large
 
@@ -41,7 +41,7 @@ class PrivacyRequestService(
             d.action,
             d.message,
             d.language,
-            d.data,
+            d.data.getOrElse(List.empty),
             // TODO: restrictions
             List.empty,
             d.target.getOrElse(Target.System)
@@ -58,16 +58,19 @@ class PrivacyRequestService(
 
       _ <- PrivacyRequest
         .validate(pr)
-        .fold(e => IO.raiseError(ValidationException(e)), IO.pure)
+        .fold(e => IO.raiseError(BadRequestException(e.toList.mkString("\n"))), IO.pure)
 
-      // TODO: store request
     } yield pr
   }
 
-  def processRequest(pr: PrivacyRequest): IO[Map[String, Json]] = {
-    pr.demands
-      .parTraverse(d => processDemand(d, pr.appId, pr.dataSubjectIds).map(r => d.refId -> r))
-      .map(_.toMap)
+  def processRequest(req: PrivacyRequestPayload, appId: String): IO[PrivacyRequestResponse] = {
+    for {
+      pr      <- createPrivacyRequest(req, appId)
+      // TODO: store request
+      results <- pr.demands
+        .parTraverse(d => processDemand(d, pr.appId, pr.dataSubjectIds).map(r => d.refId -> r))
+
+    } yield PrivacyRequestResponse(pr.id, results.toMap)
   }
 
   private def processDemand(demand: Demand, appId: String, userIds: List[DataSubject]): IO[Json] = {
@@ -76,9 +79,10 @@ class PrivacyRequestService(
       case Action.TDataCategories => transparency.getDataCategories(appId).map(_.asJson)
       case Action.TDPO            => transparency.getDpo(appId).map(_.asJson)
       case Action.TKnown          => transparency.getUserKnown(appId, userIds).map(_.asJson)
-      case Action.TLegalBases   => transparency.getLebalBases(appId, userIds).map(_.asJson) // TODO
-      case Action.TOrganization => transparency.getOrganization(appId).map(_.asJson)
-      case Action.TPolicy       => transparency.getPrivacyPolicy(appId).map(_.asJson)
+      // TODO user
+      case Action.TLegalBases     => transparency.getLegalBases(appId, userIds).map(_.asJson)
+      case Action.TOrganization   => transparency.getOrganization(appId).map(_.asJson)
+      case Action.TPolicy         => transparency.getPrivacyPolicy(appId).map(_.asJson)
       case Action.TProcessingCategories =>
         transparency.getProcessingCategories(appId, userIds).map(_.asJson) // TODO user
       case Action.TProvenance           =>

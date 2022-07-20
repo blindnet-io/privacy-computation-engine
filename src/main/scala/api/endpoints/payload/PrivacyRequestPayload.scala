@@ -17,8 +17,8 @@ case class Demand(
     action: Action,
     message: Option[String],
     language: Option[String],
-    data: List[String],
-    restrictions: List[Restriction],
+    data: Option[List[String]],
+    restrictions: Option[List[Restriction]],
     target: Option[Target]
 )
 

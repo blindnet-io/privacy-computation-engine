@@ -18,14 +18,15 @@ class PrivacyRequestEndpoints(
     reqService: PrivacyRequestService
 ) extends Http4sDsl[IO] {
 
+  val appId = "6f083c15-4ada-4671-a6d1-c671bc9105dc"
+
   val routes: HttpRoutes[IO] = HttpRoutes.of[IO] {
 
     case r @ POST -> Root / "privacy-request" =>
       for {
         // TODO: validate token and get appId
         req  <- r.as[PrivacyRequestPayload]
-        pr   <- reqService.createPrivacyRequest(req, "")
-        res  <- reqService.processRequest(pr)
+        res  <- reqService.processRequest(req, appId)
         resp <- Ok(res)
       } yield resp
   }
