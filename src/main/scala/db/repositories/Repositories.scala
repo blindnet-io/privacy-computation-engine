@@ -12,14 +12,14 @@ trait Repositories {
 
 object Repositories {
   def live(xa: Transactor[IO]): Repositories = {
-    val generalInfo  = GeneralInfoRepository.live(xa)
-    val legalBase    = LegalBaseRepository.live(xa)
-    val privacyScope = PrivacyScopeRepository.live(xa)
+    val generalInfoRepo  = GeneralInfoRepository.live(xa)
+    val legalBaseRepo    = LegalBaseRepository.live(xa)
+    val privacyScopeRepo = PrivacyScopeRepository.live(xa)
 
     new Repositories {
-      val generalInfo  = generalInfo
-      val legalBase    = legalBase
-      val privacyScope = privacyScope
+      val generalInfo  = generalInfoRepo
+      val legalBase    = legalBaseRepo
+      val privacyScope = privacyScopeRepo
     }
   }
 
