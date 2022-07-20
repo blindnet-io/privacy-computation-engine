@@ -1,6 +1,7 @@
 
 create table apps (
-  id uuid primary key
+  id uuid primary key,
+  active boolean default true
 );
 
 -- GENERAL INFORMATION
@@ -45,32 +46,17 @@ create table dpo (
 
 create table data_categories (
   id uuid primary key,
-  appid uuid not null,
-  term varchar unique not null,
-  constraint app_fk
-    foreign key (appid)
-    references apps(id)
-    on delete cascade
+  term varchar unique not null
 );
 
 create table processing_categories (
   id uuid primary key,
-  appid uuid not null,
-  term VARCHAR unique not null,
-  constraint app_fk
-    foreign key (appid)
-    references apps(id)
-    on delete cascade
+  term VARCHAR unique not null
 );
 
 create table processing_purposes (
   id uuid primary key,
-  appid uuid not null,
-  term VARCHAR unique not null,
-  constraint app_fk
-    foreign key (appid)
-    references apps(id)
-    on delete cascade
+  term VARCHAR unique not null
 );
 
 create table scope (
@@ -90,8 +76,6 @@ create table scope (
     foreign key (ppid)
     references processing_purposes(id)
     on delete cascade
-  -- constraint scope_pk
-  --     primary key (user_id, app_id, device_id, id),
 );
 
 -----------------
@@ -108,11 +92,14 @@ create table selectors (
   name varchar,
   target target_terms,
   provenance varchar,
+  active boolean default true,
   constraint app_fk
     foreign key (appid)
     references apps(id)
     on delete cascade
 );
+
+create unique index uniq_selector_name on selectors (appid, name, active);
 
 create table selector_scope (
   slid uuid not null,
@@ -148,8 +135,10 @@ create table retention_policies (
 create table legitimate_interests (
   id uuid primary key,
   appid uuid not null,
+  subcat varchar not null default 'LEGITIMATE-INTEREST',
   name varchar,
   description varchar,
+  active boolean default true,
   constraint app_fk
     foreign key (appid)
     references apps(id)
@@ -174,8 +163,10 @@ create table legitimate_interests_scope (
 create table necessary_legal_bases (
   id uuid primary key,
   appid uuid not null,
+  subcat varchar not null default 'NECESSARY',
   name varchar,
   description varchar,
+  active boolean default true,
   constraint app_fk
     foreign key (appid)
     references apps(id)
@@ -200,8 +191,10 @@ create table necessary_legal_bases_scope (
 create table contracts (
   id uuid primary key,
   appid uuid not null,
+  subcat varchar not null default 'CONTRACT',
   name varchar,
   description varchar,
+  active boolean default true,
   constraint app_fk
     foreign key (appid)
     references apps(id)
@@ -226,8 +219,10 @@ create table contracts_scope (
 create table consents (
   id uuid primary key,
   appid uuid not null,
+  subcat varchar not null default 'CONSENT',
   name varchar,
   description varchar,
+  active boolean default true,
   constraint app_fk
     foreign key (appid)
     references apps(id)
@@ -409,13 +404,48 @@ create table data_reference_restriction (
     on delete cascade
 );
 
-
-create view legal_bases as
-	select id, appid, 'contract' from contracts
-	union select id, appid, 'necessary' from necessary_legal_bases
-	union select id, appid, 'legitimate' from legitimate_interests
-	union select id, appid, 'consent' from consents;
-
 -----------------
 
+-- VIEWS
 
+-- materialized view is a better performant alternative
+-- in Postgresql, MV is not updated on each db change but has to be recreated with REFRESH MATERIALIZED VIEW
+-- create index legal_bases_type ON legal_bases ("type");
+-- create index legal_bases_id ON legal_bases (id);
+-- create index legal_bases_appid ON legal_bases (appid);
+create view legal_bases as
+select 'CONTRACT' as type, c.subcat as subcat, c.id as id, c.appid as appid, c.name as name, array_agg(dc.term) as dc, array_agg(pc.term) as pc, array_agg(pp.term) as pp
+from contracts c
+	join contracts_scope cs on cs.cid = c.id
+	join "scope" s on s.id = cs.scid
+	join data_categories dc on dc.id = s.dcid
+	join processing_categories pc on pc.id = s.pcid
+	join processing_purposes pp on pp.id = s.ppid
+group by c.id
+union
+select 'NECESSARY' as type, nlb.subcat as subcat, nlb.id as id, nlb.appid as appid, nlb.name as name, array_agg(dc.term) as dc, array_agg(pc.term) as pc, array_agg(pp.term) as pp
+from necessary_legal_bases nlb
+	join necessary_legal_bases_scope nlbs on nlbs.nlbid = nlb.id
+	join "scope" s on s.id = nlbs.scid
+	join data_categories dc on dc.id = s.dcid
+	join processing_categories pc on pc.id = s.pcid
+	join processing_purposes pp on pp.id = s.ppid
+group by nlb.id
+union
+select 'LEGITIMATE-INTEREST' as type, li.subcat as subcat, li.id as id, li.appid as appid, li.name as name, array_agg(dc.term) as dc, array_agg(pc.term) as pc, array_agg(pp.term) as pp
+from legitimate_interests li
+	join legitimate_interests_scope lis on lis.liid = li.id
+	join "scope" s on s.id = lis.scid
+	join data_categories dc on dc.id = s.dcid
+	join processing_categories pc on pc.id = s.pcid
+	join processing_purposes pp on pp.id = s.ppid
+group by li.id
+union
+select 'CONSENT' as type, c2.subcat as subcat, c2.id as id, c2.appid as appid, c2.name as name, array_agg(dc.term) as dc, array_agg(pc.term) as pc, array_agg(pp.term) as pp
+from consents c2
+	join consents_scope cs2 on cs2.cid = c2.id
+	join "scope" s on s.id = cs2.scid
+	join data_categories dc on dc.id = s.dcid
+	join processing_categories pc on pc.id = s.pcid
+	join processing_purposes pp on pp.id = s.ppid
+group by c2.id;
