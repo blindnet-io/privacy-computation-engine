@@ -42,7 +42,7 @@ class TransparencyDemands(
       case Some(userIds) => giRepo.known(appId, userIds)
     }
 
-  def getLebalBases(appId: String, userIds: List[DataSubject]): IO[List[LegalBase]] =
+  def getLegalBases(appId: String, userIds: List[DataSubject]): IO[List[LegalBase]] =
     lbRepo.getLegalBases(appId, userIds)
 
   def getProcessingCategories(
