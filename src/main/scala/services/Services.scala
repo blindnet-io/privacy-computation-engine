@@ -11,7 +11,7 @@ trait Services {
 object Services {
   def make(repos: Repositories) = {
     val privacyRequestService =
-      PrivacyRequestService(repos.generalInfo, repos.privacyScope, repos.legalBase)
+      PrivacyRequestService(repos)
 
     new Services {
       val privacyRequest = privacyRequestService

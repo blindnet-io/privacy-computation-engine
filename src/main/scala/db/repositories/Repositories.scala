@@ -8,6 +8,7 @@ trait Repositories {
   val generalInfo: GeneralInfoRepository
   val legalBase: LegalBaseRepository
   val privacyScope: PrivacyScopeRepository
+  val selector: SelectorRepository
 }
 
 object Repositories {
@@ -15,11 +16,13 @@ object Repositories {
     val generalInfoRepo  = GeneralInfoRepository.live(xa)
     val legalBaseRepo    = LegalBaseRepository.live(xa)
     val privacyScopeRepo = PrivacyScopeRepository.live(xa)
+    val selectorRepo     = SelectorRepository.live(xa)
 
     new Repositories {
       val generalInfo  = generalInfoRepo
       val legalBase    = legalBaseRepo
       val privacyScope = privacyScopeRepo
+      val selector     = selectorRepo
     }
   }
 

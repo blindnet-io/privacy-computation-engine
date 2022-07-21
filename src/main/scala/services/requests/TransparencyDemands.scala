@@ -16,16 +16,19 @@ import model.vocabulary.terms.*
 import model.vocabulary.general.*
 
 class TransparencyDemands(
-    giRepo: GeneralInfoRepository,
-    psRepo: PrivacyScopeRepository,
-    lbRepo: LegalBaseRepository
+    repositories: Repositories
 ) {
+
+  val giRepo = repositories.generalInfo
+  val psRepo = repositories.privacyScope
+  val lbRepo = repositories.legalBase
+  val sRepo  = repositories.selector
 
   def processTransparency(appId: String, userIds: List[DataSubject]): IO[Unit] =
     IO.unit
 
-  def getDataCategories(appId: String): IO[List[String]] =
-    psRepo.getDataCategories(appId).map(_.map(_.term))
+  def getDataCategories(appId: String): IO[List[DataCategory]] =
+    psRepo.getDataCategories(appId)
 
   def getDpo(appId: String): IO[List[Dpo]] =
     giRepo.getGeneralInfo(appId).map(_.dpo)
@@ -33,7 +36,7 @@ class TransparencyDemands(
   def getOrganization(appId: String): IO[List[Organization]] =
     giRepo.getGeneralInfo(appId).map(_.organizations)
 
-  def getPrivacyPolicy(appId: String): IO[String] =
+  def getPrivacyPolicy(appId: String): IO[Option[String]] =
     giRepo.getGeneralInfo(appId).map(_.privacyPolicyLink)
 
   def getUserKnown(appId: String, userIds: List[DataSubject]): IO[Boolean] =
@@ -51,8 +54,8 @@ class TransparencyDemands(
   ): IO[List[ProcessingCategory]] =
     psRepo.getProcessingCategories(appId, userIds)
 
-  def getProvenances(appId: String, userIds: List[DataSubject]): IO[List[Provenance]] =
-    psRepo.getProvenances(appId, userIds)
+  def getProvenances(appId: String, userIds: List[DataSubject]): IO[List[Selector]] =
+    sRepo.getSelectors(appId, userIds)
 
   def getPurposes(appId: String, userIds: List[DataSubject]): IO[List[Purpose]] =
     psRepo.getPurposes(appId, userIds)
@@ -60,14 +63,17 @@ class TransparencyDemands(
   def getRetentions(
       appId: String,
       userIds: List[DataSubject]
-  ): IO[Map[String, List[RetentionPolicy]]] =
+  ): IO[List[(Selector, List[RetentionPolicy])]] =
     for {
-      selectors         <- psRepo.getSelectors(appId, userIds)
+      selectors         <- sRepo.getSelectors(appId, userIds)
       retentionPolicies <- NonEmptyList.fromList(selectors) match {
         case None            => IO.pure(Map.empty)
-        case Some(selectors) => psRepo.getRetentionPoliciesForSelector(appId, selectors.map(_.name))
+        case Some(selectors) => sRepo.getRetentionPoliciesForSelector(appId, selectors.map(_.id))
       }
-    } yield retentionPolicies
+    } yield retentionPolicies.toList.flatMap {
+      case (sId, rp) =>
+        selectors.find(_.id == sId).map(s => (s, rp))
+    }
 
   def getWhere(appId: String): IO[List[String]] =
     giRepo.getGeneralInfo(appId).map(_.countries)
