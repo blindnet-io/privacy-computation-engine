@@ -1,6 +1,9 @@
 package io.blindnet.privacy
 package model.vocabulary.terms
 
+import cats.data.Validated
+import io.circe.*
+
 enum LegalBaseTerms(term: String, parent: Option[LegalBaseTerms] = None) {
   case Contract           extends LegalBaseTerms("CONTRACT")
   case Consent            extends LegalBaseTerms("CONSENT")
@@ -16,14 +19,25 @@ enum LegalBaseTerms(term: String, parent: Option[LegalBaseTerms] = None) {
     this +: children.flatMap(_.allSubCategories())
   }
 
-  def isChildOf(a: LegalBaseTerms) =
+  private def isChildOf(a: LegalBaseTerms) =
     parent.exists(_ == a)
 
   def isTerm(str: String) = term == str
+
+  val encode = term
 }
 
 object LegalBaseTerms {
-  def parse(str: String): Option[LegalBaseTerms] =
-    LegalBaseTerms.values.find(a => a.isTerm(str))
+  def parse(str: String): Validated[String, LegalBaseTerms] =
+    Validated.fromOption(
+      LegalBaseTerms.values.find(a => a.isTerm(str)),
+      "Unknown legal base"
+    )
+
+  given Decoder[LegalBaseTerms] =
+    Decoder.decodeString.emap(LegalBaseTerms.parse(_).toEither)
+
+  given Encoder[LegalBaseTerms] =
+    Encoder[String].contramap(_.encode)
 
 }

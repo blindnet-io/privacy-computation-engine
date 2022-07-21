@@ -20,6 +20,8 @@ enum Target(term: String, parent: Option[Target] = None) {
     parent.exists(_ == a)
 
   def isTerm(str: String) = term == str
+
+  val encode = term
 }
 
 object Target {
@@ -31,5 +33,8 @@ object Target {
 
   given Decoder[Target] =
     Decoder.decodeString.emap(Target.parse(_).toEither)
+
+  given Encoder[Target] =
+    Encoder[String].contramap(_.encode)
 
 }

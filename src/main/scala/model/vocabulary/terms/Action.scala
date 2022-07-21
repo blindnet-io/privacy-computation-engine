@@ -38,6 +38,8 @@ enum Action(term: String, parent: Option[Action] = None) {
     parent.exists(_ == a)
 
   def isTerm(str: String) = term == str
+
+  val encode = term
 }
 
 object Action {
@@ -49,5 +51,8 @@ object Action {
 
   given Decoder[Action] =
     Decoder.decodeString.emap(Action.parse(_).toEither)
+
+  given Encoder[Action] =
+    Encoder[String].contramap(_.encode)
 
 }

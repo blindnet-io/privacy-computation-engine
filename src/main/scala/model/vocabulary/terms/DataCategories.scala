@@ -1,12 +1,18 @@
 package io.blindnet.privacy
 package model.vocabulary.terms
 
+import cats.data.Validated
+import io.circe.*
+
 case class DataCategory(term: String)
 
 object DataCategory {
 
-  def parse(s: String): Option[DataCategory] =
-    s.split(".").headOption.filter(terms.contains).map(_ => DataCategory(s))
+  def parse(s: String): Validated[String, DataCategory] =
+    Validated.fromOption(
+      s.split('.').headOption.filter(terms.contains).map(_ => DataCategory(s)),
+      "Unknown data category"
+    )
 
   val terms = List(
     "*",
@@ -49,5 +55,11 @@ object DataCategory {
     "UID.SOCIAL-MEDIA ",
     "OTHER-DATA"
   )
+
+  given Decoder[DataCategory] =
+    Decoder.decodeString.emap(DataCategory.parse(_).toEither)
+
+  given Encoder[DataCategory] =
+    Encoder[String].contramap(_.term)
 
 }
