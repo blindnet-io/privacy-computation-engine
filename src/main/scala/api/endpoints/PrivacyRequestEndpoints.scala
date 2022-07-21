@@ -27,7 +27,7 @@ class PrivacyRequestEndpoints(
         // TODO: validate token and get appId
         req  <- r.as[PrivacyRequestPayload]
         res  <- reqService.processRequest(req, appId)
-        resp <- Ok(res)
+        resp <- Ok(res.asJson)
       } yield resp
   }
 
