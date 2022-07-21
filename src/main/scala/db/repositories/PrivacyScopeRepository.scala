@@ -1,7 +1,9 @@
 package io.blindnet.privacy
 package db.repositories
 
-import cats.effect.IO
+import cats.data.NonEmptyList
+import cats.effect.*
+import cats.implicits.*
 import doobie.*
 import doobie.implicits.*
 import doobie.postgres.*
@@ -10,29 +12,9 @@ import model.vocabulary.*
 import model.vocabulary.general.*
 import model.vocabulary.general.*
 import model.vocabulary.terms.*
+import db.DbUtil
 
-trait PrivacyScopeRepository {
-  def getSelectors(appId: String, userIds: List[DataSubject]): IO[List[Selector]]
-
-  def addSelectors(appId: String, selectors: List[Selector]): IO[Unit]
-
-  def deleteSelectors(appId: String, selectorIds: List[String]): IO[Unit]
-
-  def getSelectorPrivacyScope(
-      appId: String,
-      selectors: List[String]
-  ): IO[Map[String, List[PrivacyScope]]]
-
-  def getLegalBasesForSelector(
-      appId: String,
-      selectors: List[String]
-  ): IO[Map[String, List[LegalBase]]]
-
-  def getRetentionPoliciesForSelector(
-      appId: String,
-      selectors: List[String]
-  ): IO[Map[String, List[RetentionPolicy]]]
-
+trait PrivacyScopeRepository  {
   def getDataCategories(appId: String): IO[List[DataCategory]]
 
   def getProcessingCategories(
@@ -40,37 +22,21 @@ trait PrivacyScopeRepository {
       userIds: List[DataSubject]
   ): IO[List[ProcessingCategory]]
 
-  def getProvenances(appId: String, userIds: List[DataSubject]): IO[List[Provenance]]
-
   def getPurposes(appId: String, userIds: List[DataSubject]): IO[List[Purpose]]
 }
 
+// TODO: select for users
 object PrivacyScopeRepository {
   def live(xa: Transactor[IO]): PrivacyScopeRepository =
     new PrivacyScopeRepository {
-      def getSelectors(appId: String, userIds: List[DataSubject]): IO[List[Selector]] = ???
-
-      def addSelectors(appId: String, selectors: List[Selector]): IO[Unit] = ???
-
-      def deleteSelectors(appId: String, selectorIds: List[String]): IO[Unit] = ???
-
-      def getSelectorPrivacyScope(
-          appId: String,
-          selectors: List[String]
-      ): IO[Map[String, List[PrivacyScope]]] = ???
-
-      def getLegalBasesForSelector(
-          appId: String,
-          selectors: List[String]
-      ): IO[Map[String, List[LegalBase]]] = ???
-
-      def getRetentionPoliciesForSelector(
-          appId: String,
-          selectors: List[String]
-      ): IO[Map[String, List[RetentionPolicy]]] = ???
-
       def getDataCategories(appId: String): IO[List[DataCategory]] =
-        sql"select term from data_categories where appid = $appId"
+        sql"""
+          select distinct dc.term from selectors s
+          join selector_scope ss on ss.slid = s.id
+          join "scope" s2 on s2.id = ss.scid
+          join data_categories dc on dc.id = s2.dcid
+          where s.active and s.appid = $appId::uuid
+        """
           .query[DataCategory]
           .to[List]
           .transact(xa)
@@ -78,11 +44,30 @@ object PrivacyScopeRepository {
       def getProcessingCategories(
           appId: String,
           userIds: List[DataSubject]
-      ): IO[List[ProcessingCategory]] = ???
+      ): IO[List[ProcessingCategory]] =
+        sql"""
+          select distinct pc.term from selectors s
+          join selector_scope ss on ss.slid = s.id
+          join "scope" s2 on s2.id = ss.scid
+          join processing_categories pc on pc.id = s2.pcid
+          where s.active and s.appid = $appId::uuid
+        """
+          .query[ProcessingCategory]
+          .to[List]
+          .transact(xa)
 
-      def getProvenances(appId: String, userIds: List[DataSubject]): IO[List[Provenance]] = ???
+      def getPurposes(appId: String, userIds: List[DataSubject]): IO[List[Purpose]] =
+        sql"""
+          select distinct pp.term from selectors s
+          join selector_scope ss on ss.slid = s.id
+          join "scope" s2 on s2.id = ss.scid
+          join processing_purposes pp on pp.id = s2.ppid
+          where s.active and s.appid = $appId::uuid
+        """
+          .query[Purpose]
+          .to[List]
+          .transact(xa)
 
-      def getPurposes(appId: String, userIds: List[DataSubject]): IO[List[Purpose]] = ???
     }
 
 }

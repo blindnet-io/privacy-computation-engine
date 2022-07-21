@@ -7,6 +7,6 @@ case class GeneralInformation(
     dpo: List[Dpo],
     dataConsumerCategories: List[String],
     accessPolicies: List[String],
-    privacyPolicyLink: String,
-    dataSecurityInfo: String
+    privacyPolicyLink: Option[String],
+    dataSecurityInfo: Option[String]
 )
