@@ -83,7 +83,7 @@ create table scope (
 -- SELECTOR
 
 create type target_terms as enum ('ORGANIZATION', 'PARTNERS', 'SYSTEM', 'PARTNERS.DOWNWARD', 'PARTNERS.UPWARD');
-create type policy_terms as enum ('NO-LONGER-THAN, NO-LESS-THAN');
+create type policy_terms as enum ('NO-LONGER-THAN', 'NO-LESS-THAN');
 create type event_terms as enum ('CAPTURE-DATE', 'RELATIONSHIP-END', 'RELATIONSHIP-START', 'SERVICE-END', 'SERVICE-START');
 
 create table selectors (
@@ -118,7 +118,7 @@ create table selector_scope (
 
 create table retention_policies (
   id uuid primary key,
-  sid uuid unique,
+  sid uuid not null,
   policy policy_terms not null,
   duration integer not null, -- for now days, should be https://www.rfc-editor.org/rfc/pdfrfc/rfc3339.txt.pdf duration in appendix a
   after event_terms not null,
@@ -414,7 +414,7 @@ create table data_reference_restriction (
 -- create index legal_bases_id ON legal_bases (id);
 -- create index legal_bases_appid ON legal_bases (appid);
 create view legal_bases as
-select 'CONTRACT' as type, c.subcat as subcat, c.id as id, c.appid as appid, c.name as name, array_agg(dc.term) as dc, array_agg(pc.term) as pc, array_agg(pp.term) as pp
+select 'CONTRACT' as type, c.subcat as subcat, c.id as id, c.appid as appid, c.name as name, c.description as description, array_agg(dc.term) as dc, array_agg(pc.term) as pc, array_agg(pp.term) as pp
 from contracts c
 	join contracts_scope cs on cs.cid = c.id
 	join "scope" s on s.id = cs.scid
@@ -423,7 +423,7 @@ from contracts c
 	join processing_purposes pp on pp.id = s.ppid
 group by c.id
 union
-select 'NECESSARY' as type, nlb.subcat as subcat, nlb.id as id, nlb.appid as appid, nlb.name as name, array_agg(dc.term) as dc, array_agg(pc.term) as pc, array_agg(pp.term) as pp
+select 'NECESSARY' as type, nlb.subcat as subcat, nlb.id as id, nlb.appid as appid, nlb.name as name, nlb.description as description, array_agg(dc.term) as dc, array_agg(pc.term) as pc, array_agg(pp.term) as pp
 from necessary_legal_bases nlb
 	join necessary_legal_bases_scope nlbs on nlbs.nlbid = nlb.id
 	join "scope" s on s.id = nlbs.scid
@@ -432,7 +432,7 @@ from necessary_legal_bases nlb
 	join processing_purposes pp on pp.id = s.ppid
 group by nlb.id
 union
-select 'LEGITIMATE-INTEREST' as type, li.subcat as subcat, li.id as id, li.appid as appid, li.name as name, array_agg(dc.term) as dc, array_agg(pc.term) as pc, array_agg(pp.term) as pp
+select 'LEGITIMATE-INTEREST' as type, li.subcat as subcat, li.id as id, li.appid as appid, li.name as name, li.description as description, array_agg(dc.term) as dc, array_agg(pc.term) as pc, array_agg(pp.term) as pp
 from legitimate_interests li
 	join legitimate_interests_scope lis on lis.liid = li.id
 	join "scope" s on s.id = lis.scid
@@ -441,7 +441,7 @@ from legitimate_interests li
 	join processing_purposes pp on pp.id = s.ppid
 group by li.id
 union
-select 'CONSENT' as type, c2.subcat as subcat, c2.id as id, c2.appid as appid, c2.name as name, array_agg(dc.term) as dc, array_agg(pc.term) as pc, array_agg(pp.term) as pp
+select 'CONSENT' as type, c2.subcat as subcat, c2.id as id, c2.appid as appid, c2.name as name, c2.description as description, array_agg(dc.term) as dc, array_agg(pc.term) as pc, array_agg(pp.term) as pp
 from consents c2
 	join consents_scope cs2 on cs2.cid = c2.id
 	join "scope" s on s.id = cs2.scid
@@ -449,3 +449,10 @@ from consents c2
 	join processing_categories pc on pc.id = s.pcid
 	join processing_purposes pp on pp.id = s.ppid
 group by c2.id;
+
+create view general_information_view as
+select gi.id, gi.appid, gi.countries, array_agg(distinct gio."name") as organizations, array_agg(distinct array[dpo."name", dpo.contact]) as dpo, gi.data_consumer_categories, gi.access_policies, gi.privacy_policy_link, gi.data_security_information
+from general_information gi
+join general_information_organization gio on gio.gid = gi.id
+join dpo on dpo.gid = gi.id
+group by gi.id;
