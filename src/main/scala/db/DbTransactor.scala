@@ -4,7 +4,7 @@ package db
 import cats.effect.*
 import doobie.hikari.HikariTransactor
 import doobie.util.ExecutionContexts
-import db.DbConfig
+import config.DbConfig
 
 object DbTransactor {
 
@@ -16,7 +16,7 @@ object DbTransactor {
           "org.postgresql.Driver",
           conf.uri,
           conf.username,
-          conf.password,
+          conf.password.value,
           ec
         )
     } yield xa

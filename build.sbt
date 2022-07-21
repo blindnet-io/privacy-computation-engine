@@ -16,6 +16,7 @@ lazy val root = (project in file("."))
     name                       := "privacy-computation-engine",
     libraryDependencies ++= Seq(
       dependencies.main.catsEffect,
+      dependencies.main.ciris,
       dependencies.main.circe,
       dependencies.main.circeGeneric,
       dependencies.main.circeLiteral,

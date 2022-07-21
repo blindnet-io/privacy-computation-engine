@@ -5,7 +5,7 @@ import cats.effect.*
 import io.blindnet.privacy.model.error.MigrationError
 import org.flywaydb.core.Flyway
 import org.flywaydb.core.api.output.MigrateResult
-import db.DbConfig
+import config.DbConfig
 
 object Migrator {
 
@@ -13,7 +13,7 @@ object Migrator {
 
     val flywayConf = Flyway
       .configure()
-      .dataSource(conf.uri, conf.username, conf.password)
+      .dataSource(conf.uri, conf.username, conf.password.value)
       // .group(true)
       .table("Flyway")
       .locations(org.flywaydb.core.api.Location("classpath:migrations"))

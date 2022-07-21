@@ -4,12 +4,15 @@ object dependencies {
 
   object main {
 
+    val cirisV  = "2.3.3"
     val circeV  = "0.14.2"
     val doobieV = "1.0.0-RC2"
     val http4sV = "0.23.13"
     val tapirV  = "1.0.1"
 
     val catsEffect = "org.typelevel" %% "cats-effect" % "3.3.12"
+
+    val ciris = "is.cir" %% "ciris" % cirisV
 
     val circe        = "io.circe"             %% "circe-core"    % circeV
     val circeGeneric = "io.circe"             %% "circe-generic" % circeV
