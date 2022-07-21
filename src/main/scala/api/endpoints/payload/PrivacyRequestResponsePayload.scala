@@ -10,7 +10,7 @@ import org.http4s.*
 import org.http4s.circe.*
 import model.vocabulary.terms.*
 
-case class PrivacyRequestResponse(
+case class PrivacyRequestResponsePayload(
     requestId: String,
-    responses: Map[String, Json]
+    responses: List[Json]
 )
