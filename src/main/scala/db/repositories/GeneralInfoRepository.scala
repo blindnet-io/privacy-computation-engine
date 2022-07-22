@@ -13,9 +13,10 @@ import model.vocabulary.*
 import model.vocabulary.general.*
 import model.vocabulary.general.*
 import model.vocabulary.terms.*
+import io.blindnet.privacy.util.extension.*
 
 trait GeneralInfoRepository {
-  def getGeneralInfo(appId: String): IO[GeneralInformation]
+  def getGeneralInfo(appId: String): IO[Option[GeneralInformation]]
 
   def known(appId: String, userIds: NonEmptyList[DataSubject]): IO[Boolean]
 }
@@ -23,7 +24,7 @@ trait GeneralInfoRepository {
 object GeneralInfoRepository {
   def live(xa: Transactor[IO]): GeneralInfoRepository =
     new GeneralInfoRepository {
-      def getGeneralInfo(appId: String): IO[GeneralInformation] =
+      def getGeneralInfo(appId: String): IO[Option[GeneralInformation]] =
         // sql"""
         //   select countries, organizations, dpo, data_consumer_categories, access_policies, privacy_policy_link, data_security_information
         //   from general_information_view
@@ -52,22 +53,32 @@ object GeneralInfoRepository {
               ]
               .map(
                 r =>
-                  (r._1, r._2.getOrElse(Nil), r._3.getOrElse(Nil), r._4.getOrElse(Nil), r._5, r._6)
+                  (
+                    r._1,
+                    r._2.getOrElse(Nil),
+                    r._3.getOrElse(Nil),
+                    r._4.getOrElse(Nil),
+                    r._5,
+                    r._6
+                  )
               )
-              .unique
+              .option
+              .toOptionT
 
           orgs <-
             sql"select name from general_information_organization gio where gio.gid = ${gi._1}::uuid"
               .query[Organization]
               .to[List]
+              .toOptionT
 
           dpos <- sql"select name, contact from dpo where dpo.gid = ${gi._1}::uuid"
             .query[Dpo]
             .to[List]
+            .toOptionT
 
         } yield GeneralInformation(gi._2, orgs, dpos, gi._3, gi._4, gi._5, gi._6)
 
-        res.transact(xa)
+        res.transact(xa).value
 
       def known(appId: String, userIds: NonEmptyList[DataSubject]): IO[Boolean] =
         (fr"select count(*) from data_subjects where appid = $appId::uuid and"

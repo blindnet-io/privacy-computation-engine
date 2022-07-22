@@ -24,6 +24,8 @@ class TransparencyDemands(
   val lbRepo = repositories.legalBase
   val sRepo  = repositories.selector
 
+  val notFoundErr = NotFoundException("Requested app could not be found")
+
   def processTransparency(appId: String, userIds: List[DataSubject]): IO[Unit] =
     IO.unit
 
@@ -31,13 +33,19 @@ class TransparencyDemands(
     psRepo.getDataCategories(appId)
 
   def getDpo(appId: String): IO[List[Dpo]] =
-    giRepo.getGeneralInfo(appId).map(_.dpo)
+    giRepo
+      .getGeneralInfo(appId)
+      .flatMap(_.fold(IO.raiseError(notFoundErr))(x => IO(x.dpo)))
 
   def getOrganization(appId: String): IO[List[Organization]] =
-    giRepo.getGeneralInfo(appId).map(_.organizations)
+    giRepo
+      .getGeneralInfo(appId)
+      .flatMap(_.fold(IO.raiseError(notFoundErr))(x => IO(x.organizations)))
 
   def getPrivacyPolicy(appId: String): IO[Option[String]] =
-    giRepo.getGeneralInfo(appId).map(_.privacyPolicyLink)
+    giRepo
+      .getGeneralInfo(appId)
+      .flatMap(_.fold(IO.raiseError(notFoundErr))(x => IO(x.privacyPolicyLink)))
 
   def getUserKnown(appId: String, userIds: List[DataSubject]): IO[Boolean] =
     NonEmptyList.fromList(userIds) match {
@@ -76,9 +84,11 @@ class TransparencyDemands(
     }
 
   def getWhere(appId: String): IO[List[String]] =
-    giRepo.getGeneralInfo(appId).map(_.countries)
+    giRepo.getGeneralInfo(appId).flatMap(_.fold(IO.raiseError(notFoundErr))(x => IO(x.countries)))
 
   def getWho(appId: String): IO[List[String]] =
-    giRepo.getGeneralInfo(appId).map(_.accessPolicies)
+    giRepo
+      .getGeneralInfo(appId)
+      .flatMap(_.fold(IO.raiseError(notFoundErr))(x => IO(x.accessPolicies)))
 
 }
