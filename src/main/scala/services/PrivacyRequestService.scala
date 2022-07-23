@@ -16,6 +16,7 @@ import model.vocabulary.DataSubject
 import model.vocabulary.request.{ Demand, PrivacyRequest, * }
 import model.vocabulary.terms.*
 import services.requests.TransparencyDemands
+import java.time.Instant
 
 class PrivacyRequestService(
     repositories: Repositories
@@ -29,7 +30,7 @@ class PrivacyRequestService(
 
       reqId     <- UUIDGen.randomUUID[IO]
       demandIds <- UUIDGen.randomUUID[IO].replicateA(req.demands.length)
-      time      <- Clock[IO].realTimeInstant
+      date      <- Clock[IO].realTimeInstant
 
       _ <-
         if req.demands.map(_.id).toSet.size == req.demands.size then IO.unit
@@ -53,8 +54,8 @@ class PrivacyRequestService(
       pr = PrivacyRequest(
         reqId.toString(),
         appId,
-        time,
-        req.dataSubject.map(ds => DataSubject(ds.id)),
+        date,
+        req.dataSubject,
         demands
       )
 
@@ -71,59 +72,32 @@ class PrivacyRequestService(
   ): IO[PrivacyRequestResponsePayload] = {
     for {
       pr      <- createPrivacyRequest(req, appId)
+      id      <- UUIDGen[IO].randomUUID
+      date    <- Clock[IO].realTimeInstant
       // TODO: store request
       results <- pr.demands
-        .parTraverse(
-          d =>
-            processDemand(d, pr.appId, pr.dataSubjectIds).map(
-              r =>
-                (
-                  Json.obj(
-                    "demand_id" -> d.refId.asJson,
-                    "action"    -> d.action.asJson,
-                    "result"    -> r
-                  )
-                )
-            )
-        )
+        .parTraverse(d => processDemand(d, pr.appId, pr.dataSubjectIds))
 
-    } yield PrivacyRequestResponsePayload(pr.id, results)
+    } yield PrivacyRequestResponsePayload(id.toString, pr.id, date, results)
   }
 
-  private def processDemand(demand: Demand, appId: String, userIds: List[DataSubject]): IO[Json] = {
-    demand.action match {
-      case Action.Transparency    => transparency.processTransparency(appId, userIds).map(_.asJson)
-      case Action.TDataCategories => transparency.getDataCategories(appId).map(_.map(_.term).asJson)
-      case Action.TDPO            => transparency.getDpo(appId).map(_.asJson)
-      case Action.TKnown          => transparency.getUserKnown(appId, userIds).map(_.asJson)
-      // TODO user
-      case Action.TLegalBases     => transparency.getLegalBases(appId, userIds).map(_.asJson)
-      case Action.TOrganization   => transparency.getOrganization(appId).map(_.asJson)
-      case Action.TPolicy         => transparency.getPrivacyPolicy(appId).map(_.asJson)
-      case Action.TProcessingCategories =>
-        transparency.getProcessingCategories(appId, userIds).map(_.map(_.term).asJson) // TODO user
-      case Action.TProvenance           =>
-        transparency.getProvenances(appId, userIds).map(_.asJson) // TODO user
-      case Action.TPurpose              =>
-        transparency.getPurposes(appId, userIds).map(_.map(_.term).asJson) // TODO user
-      case Action.TRetention            =>
-        transparency
-          .getRetentions(appId, userIds)
-          .map(
-            _.map {
-              case (s, rp) =>
-                Json
-                  .obj(
-                    "selector_id"        -> s.id.asJson,
-                    "selector_name"      -> s.name.asJson,
-                    "retention_policies" -> rp.asJson
-                  )
-            }.asJson // TODO user
-          )
-      case Action.TWhere                => transparency.getWhere(appId).map(_.asJson)
-      case Action.TWho                  => transparency.getWho(appId).map(_.asJson)
-      case _                            => IO.raiseError(new NotImplementedError)
-    }
+  private def processDemand(
+      demand: Demand,
+      appId: String,
+      userIds: List[DataSubject]
+  ): IO[DemandResponse] = {
+
+    for {
+      id   <- UUIDGen[IO].randomUUID
+      date <- Clock[IO].realTimeInstant
+      res  <- demand.action match {
+        case t if t.isChildOf(Action.Transparency) =>
+          transparency.processTransparencyDemand(demand, appId, userIds, id.toString, date)
+        case _                                     => IO.raiseError(new NotImplementedError)
+      }
+
+    } yield res
+
   }
 
 }

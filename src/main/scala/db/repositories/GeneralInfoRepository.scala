@@ -82,7 +82,7 @@ object GeneralInfoRepository {
 
       def known(appId: String, userIds: NonEmptyList[DataSubject]): IO[Boolean] =
         (fr"select count(*) from data_subjects where appid = $appId::uuid and"
-          ++ DbUtil.Fragments.inUuid(fr"id", userIds))
+          ++ DbUtil.Fragments.inUuid(fr"id", userIds.map(_.id)))
           .query[Int]
           .unique
           .map(_ > 0)

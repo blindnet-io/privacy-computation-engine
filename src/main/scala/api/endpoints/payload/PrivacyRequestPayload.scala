@@ -8,11 +8,12 @@ import io.circe.generic.auto.*
 import io.circe.syntax.*
 import org.http4s.*
 import org.http4s.circe.*
+import model.vocabulary.*
 import model.vocabulary.terms.*
 
 case class Restriction()
 
-case class Demand(
+case class PrivacyRequestDemand(
     id: String,
     action: Action,
     message: Option[String],
@@ -22,13 +23,8 @@ case class Demand(
     target: Option[Target]
 )
 
-case class DataSubject(
-    id: String,
-    schema: String
-)
-
 case class PrivacyRequestPayload(
-    demands: List[Demand],
+    demands: List[PrivacyRequestDemand],
     dataSubject: List[DataSubject]
 )
 

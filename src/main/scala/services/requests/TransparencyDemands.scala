@@ -14,6 +14,8 @@ import model.error.*
 import model.vocabulary.*
 import model.vocabulary.terms.*
 import model.vocabulary.general.*
+import api.endpoints.payload.*
+import java.time.Instant
 
 class TransparencyDemands(
     repositories: Repositories
@@ -25,6 +27,59 @@ class TransparencyDemands(
   val sRepo  = repositories.selector
 
   val notFoundErr = NotFoundException("Requested app could not be found")
+
+  def processTransparencyDemand(
+      demand: Demand,
+      appId: String,
+      userIds: List[DataSubject],
+      id: String,
+      date: Instant
+  ) = {
+    for {
+      answer <- demand.action match {
+        case Action.Transparency          => processTransparency(appId, userIds).map(_.asJson)
+        case Action.TDataCategories       => getDataCategories(appId).map(_.map(_.term).asJson)
+        case Action.TDPO                  => getDpo(appId).map(_.asJson)
+        case Action.TKnown                => getUserKnown(appId, userIds).map(_.asJson)
+        // TODO user
+        case Action.TLegalBases           => getLegalBases(appId, userIds).map(_.asJson)
+        case Action.TOrganization         => getOrganization(appId).map(_.asJson)
+        case Action.TPolicy               => getPrivacyPolicy(appId).map(_.asJson)
+        case Action.TProcessingCategories =>
+          getProcessingCategories(appId, userIds).map(_.map(_.term).asJson) // TODO user
+        case Action.TProvenance           =>
+          getProvenances(appId, userIds).map(_.asJson) // TODO user
+        case Action.TPurpose              =>
+          getPurposes(appId, userIds).map(_.map(_.term).asJson) // TODO user
+        case Action.TRetention            =>
+          getRetentions(appId, userIds)
+            .map(_.map {
+              case (s, rp) =>
+                Json.obj(
+                  "selector_id"        -> s.id.asJson,
+                  "selector_name"      -> s.name.asJson,
+                  "retention_policies" -> rp.asJson
+                )
+            }.asJson) // TODO user
+        case Action.TWhere                => getWhere(appId).map(_.asJson)
+        case Action.TWho                  => getWho(appId).map(_.asJson)
+        case _                            => IO.raiseError(new NotImplementedError)
+      }
+    } yield {
+      DemandResponse(
+        id,
+        demand.id,
+        date,
+        demand.action,
+        "GRANTED",
+        answer,
+        None,
+        lang = "en",
+        None,
+        None
+      )
+    }
+  }
 
   def processTransparency(appId: String, userIds: List[DataSubject]): IO[Unit] =
     IO.unit
