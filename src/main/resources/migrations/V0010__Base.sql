@@ -404,6 +404,30 @@ create table data_reference_restriction (
     on delete cascade
 );
 
+-- PRIVACY RESPONSE
+
+-- per demand
+create table privacy_response (
+  id uuid primary key,
+  did uuid not null,
+  constraint demand_fk
+    foreign key (did)
+    references demands(id)
+    on delete cascade
+)
+
+create table privacy_response_event (
+  id uuid primary key,
+  prid uuid not null,
+  date timestamp not null,
+  status varchar not null, -- status terms
+  message varchar,
+  lang varchar not null,
+  constraint privacy_response_fk
+    foreign key (prid)
+    references privacy_response(id)
+    on delete cascade
+)
 -----------------
 
 -- VIEWS
