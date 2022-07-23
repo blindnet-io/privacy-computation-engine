@@ -262,21 +262,62 @@ create table data_subjects (
 
 -- EVENT
 
-create table legal_base_event (
+create table necessary_legal_base_events (
   id uuid primary key,
+  nlbid uuid not null,
   dsid uuid not null,
   event event_terms not null,
   date timestamp not null,
+  constraint necessary_legal_base_fk
+    foreign key (nlbid)
+    references necessary_legal_bases(id)
+    on delete cascade,
   constraint data_subject_fk
     foreign key (dsid)
     references data_subjects(id)
     on delete restrict
 );
 
-create table consent_event (
-  -- type given or inferred
+create table legitimate_interest_events (
   id uuid primary key,
+  liid uuid not null,
   dsid uuid not null,
+  event event_terms not null,
+  date timestamp not null,
+  constraint legitimate_interest_fk
+    foreign key (liid)
+    references legitimate_interests(id)
+    on delete cascade,
+  constraint data_subject_fk
+    foreign key (dsid)
+    references data_subjects(id)
+    on delete restrict
+);
+
+create table contract_events (
+  id uuid primary key,
+  cbid uuid not null,
+  dsid uuid not null,
+  event event_terms not null,
+  date timestamp not null,
+  constraint contract_fk
+    foreign key (cbid)
+    references contracts(id)
+    on delete cascade,
+  constraint data_subject_fk
+    foreign key (dsid)
+    references data_subjects(id)
+    on delete restrict
+);
+
+create table consent_given_events (
+  id uuid primary key,
+  cbid uuid not null,
+  dsid uuid not null,
+  constraint cosent_fk
+    foreign key (cbid)
+    references consents(id)
+    on delete cascade,
   date timestamp not null,
   constraint data_subject_fk
     foreign key (dsid)
@@ -284,20 +325,45 @@ create table consent_event (
     on delete restrict
 );
 
-create table privacy_request_event (
+create table consent_revoked_events (
   id uuid primary key,
+  cbid uuid not null,
   dsid uuid not null,
   date timestamp not null,
+  constraint cosent_fk
+    foreign key (cbid)
+    references consents(id)
+    on delete cascade,
   constraint data_subject_fk
     foreign key (dsid)
     references data_subjects(id)
     on delete restrict
 );
 
-create table privacy_response_event (
+create table object_events (
   id uuid primary key,
+  did uuid not null,
   dsid uuid not null,
   date timestamp not null,
+  constraint demand_fk
+    foreign key (did)
+    references demands(id)
+    on delete cascade,
+  constraint data_subject_fk
+    foreign key (dsid)
+    references data_subjects(id)
+    on delete restrict
+);
+
+create table restrict_events (
+  id uuid primary key,
+  did uuid not null,
+  dsid uuid not null,
+  date timestamp not null,
+  constraint demand_fk
+    foreign key (did)
+    references demands(id)
+    on delete cascade,
   constraint data_subject_fk
     foreign key (dsid)
     references data_subjects(id)
@@ -414,7 +480,7 @@ create table privacy_response (
     foreign key (did)
     references demands(id)
     on delete cascade
-)
+);
 
 create table privacy_response_event (
   id uuid primary key,
@@ -427,7 +493,7 @@ create table privacy_response_event (
     foreign key (prid)
     references privacy_response(id)
     on delete cascade
-)
+);
 -----------------
 
 -- VIEWS
