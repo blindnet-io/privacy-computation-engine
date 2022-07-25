@@ -1,0 +1,67 @@
+trigger:
+  - develop
+  - main
+
+pr:
+  branches:
+    exclude:
+    - '*'
+
+resources:
+  - repo: self
+
+variables:
+  dockerRegistryServiceConnection: 'blindnet-acr'
+  subscriptionServiceConnection: 'devkit-pce-arm'
+  imageRepository: 'devkitpce'
+  containerRegistry: 'blindnet.azurecr.io'
+  dockerfilePath: 'Dockerfile'
+  branch: ${{ variables['Build.SourceBranchName'] }}
+  tag: '$(Build.BuildId)'
+  ${{ if eq(variables['Build.SourceBranchName'], 'main') }}:
+    slot: 'production'
+  ${{ elseif eq(variables['Build.SourceBranchName'], 'develop') }}:
+    slot: 'staging'
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+steps:
+  - script: |
+      echo "deb https://repo.scala-sbt.org/scalasbt/debian all main" | sudo tee /etc/apt/sources.list.d/sbt.list
+      echo "deb https://repo.scala-sbt.org/scalasbt/debian /" | sudo tee /etc/apt/sources.list.d/sbt_old.list
+      curl -sL "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x2EE0EA64E40A89B84B2DF73499E82A75642AC823" | sudo apt-key add
+      sudo dpkg -i repo-deb-build-0002.deb
+      sudo apt-get update
+      sudo apt-get install -y sbt
+    displayName: Install SBT
+  - script: sbt assembly
+    displayName: Assembly
+  - task: Docker@2
+    displayName: Build Docker image
+    inputs:
+      command: build
+      repository: $(imageRepository)
+      dockerfile: $(dockerfilePath)
+      containerRegistry: $(dockerRegistryServiceConnection)
+      tags: |
+        $(tag)
+        $(branch)
+  - task: Docker@2
+    displayName: Push Docker Image
+    inputs:
+      command: push
+      repository: $(imageRepository)
+      containerRegistry: $(dockerRegistryServiceConnection)
+      tags: |
+        $(tag)
+        $(branch)
+  - task: AzureWebAppContainer@1
+    displayName: Deploy
+    inputs:
+      azureSubscription: $(subscriptionServiceConnection)
+      appName: 'devkit-pce'
+      imageName: $(containerRegistry)/$(imageRepository):$(tag)
+      resourceGroupName: 'privacy-computation-engine'
+      deployToSlotOrASE: true
+      slotName: $(slot)
