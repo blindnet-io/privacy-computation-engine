@@ -5,7 +5,6 @@ import cats.effect.*
 import cats.implicits.*
 import io.circe.*
 import io.circe.syntax.*
-import org.http4s.*
 import org.http4s.circe.*
 import model.vocabulary.terms.*
 import java.time.Instant
@@ -15,7 +14,7 @@ case class DemandResponse(
     demandId: String,
     date: Instant,
     requestedAction: Action,
-    status: String, // TODO: status terms
+    status: Status,
     answer: Json,
     message: Option[String],
     lang: String,

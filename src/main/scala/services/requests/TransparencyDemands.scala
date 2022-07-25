@@ -71,7 +71,7 @@ class TransparencyDemands(
         demand.id,
         date,
         demand.action,
-        "GRANTED",
+        Status.Granted,
         answer,
         None,
         lang = "en",

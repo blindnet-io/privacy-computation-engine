@@ -262,6 +262,9 @@ create table data_subjects (
 
 -- EVENT
 
+-- this needs a better model
+-- a single table with many columns?
+
 create table necessary_legal_base_events (
   id uuid primary key,
   nlbid uuid not null,
@@ -472,6 +475,8 @@ create table data_reference_restriction (
 
 -- PRIVACY RESPONSE
 
+create type status_terms as enum ('GRANTED', 'DENIED', 'PARTIALLY-GRANTED', 'UNDER-REVIEW');
+
 -- per demand
 create table privacy_response (
   id uuid primary key,
@@ -486,7 +491,7 @@ create table privacy_response_event (
   id uuid primary key,
   prid uuid not null,
   date timestamp not null,
-  status varchar not null, -- status terms
+  status status_terms not null,
   message varchar,
   lang varchar not null,
   constraint privacy_response_fk

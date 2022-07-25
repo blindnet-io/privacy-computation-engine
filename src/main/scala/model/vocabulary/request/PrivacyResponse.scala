@@ -7,7 +7,7 @@ import cats.data.*
 import cats.implicits.*
 import cats.kernel.Semigroup
 import model.vocabulary.*
-import model.vocabulary.terms.Action
+import model.vocabulary.terms.*
 import io.circe.Json
 
 case class PrivacyResponse(
@@ -15,7 +15,7 @@ case class PrivacyResponse(
     demandId: String,
     date: Instant,
     requestedAction: Action,
-    status: String, // TODO: status terms
+    status: Status,
     answer: Json,
     message: Option[String],
     lang: String,
