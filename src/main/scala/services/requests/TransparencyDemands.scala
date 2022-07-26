@@ -15,6 +15,7 @@ import model.vocabulary.*
 import model.vocabulary.terms.*
 import api.endpoints.payload.*
 import java.time.Instant
+import io.circe.Encoder
 
 class TransparencyDemands(
     repositories: Repositories
@@ -26,7 +27,16 @@ class TransparencyDemands(
   val rpRepo = repositories.retentionPolicy
   val prRepo = repositories.provenance
 
-  val notFoundErr = NotFoundException("Requested app could not be found")
+  extension [T](io: IO[Option[T]])
+    def failIfNotFound =
+      io.flatMap {
+        case None    => IO.raiseError(NotFoundException("Requested app could not be found"))
+        case Some(t) => IO(t)
+      }
+
+  extension [T: Encoder](io: IO[T])
+    def json =
+      io.map(_.asJson)
 
   def processTransparencyDemand(
       demand: Demand,
@@ -36,24 +46,20 @@ class TransparencyDemands(
   ): IO[DemandResponse] = {
     for {
       answer <- demand.action match {
-        case Action.Transparency    => processTransparency(appId, userIds).map(_.asJson)
-        case Action.TDataCategories => psRepo.getDataCategories(appId).map(_.map(_.term).asJson)
-        case Action.TDPO            => getDpo(appId).map(_.asJson)
-        case Action.TKnown          => getUserKnown(appId, userIds).map(_.asJson)
-        // TODO user
-        case Action.TLegalBases     => lbRepo.getLegalBases(appId, userIds).map(_.asJson)
-        case Action.TOrganization   => getOrganization(appId).map(_.asJson)
-        case Action.TPolicy         => getPrivacyPolicy(appId).map(_.asJson)
-        case Action.TProcessingCategories =>
-          psRepo.getProcessingCategories(appId, userIds).map(_.map(_.term).asJson) // TODO user
-        case Action.TProvenance => prRepo.getProvenances(appId, userIds).map(_.asJson) // TODO user
-        case Action.TPurpose    =>
-          psRepo.getPurposes(appId, userIds).map(_.map(_.term).asJson) // TODO user
-        case Action.TRetention  =>
-          rpRepo.getRetentionPolicies(appId, userIds).map(_.asJson) // TODO user
-        case Action.TWhere      => getWhere(appId).map(_.asJson)
-        case Action.TWho        => getWho(appId).map(_.asJson)
-        case _                  => IO.raiseError(new NotImplementedError)
+        case Action.Transparency          => processTransparency(appId, userIds).json
+        case Action.TDataCategories       => psRepo.getDataCategories(appId).json
+        case Action.TDPO                  => getDpo(appId).json
+        case Action.TKnown                => getUserKnown(appId, userIds).json
+        case Action.TLegalBases           => lbRepo.getLegalBases(appId, userIds).json
+        case Action.TOrganization         => getOrganization(appId).json
+        case Action.TPolicy               => getPrivacyPolicy(appId).json
+        case Action.TProcessingCategories => psRepo.getProcessingCategories(appId, userIds).json
+        case Action.TProvenance           => prRepo.getProvenances(appId, userIds).json
+        case Action.TPurpose              => psRepo.getPurposes(appId, userIds).json
+        case Action.TRetention            => rpRepo.getRetentionPolicies(appId, userIds).json
+        case Action.TWhere                => getWhere(appId).json
+        case Action.TWho                  => getWho(appId).json
+        case _                            => IO.raiseError(new NotImplementedError)
       }
     } yield {
       DemandResponse(
@@ -77,17 +83,20 @@ class TransparencyDemands(
   def getDpo(appId: String): IO[String] =
     giRepo
       .getGeneralInfo(appId)
-      .flatMap(_.fold(IO.raiseError(notFoundErr))(x => IO(x.dpo)))
+      .failIfNotFound
+      .map(_.dpo)
 
   def getOrganization(appId: String): IO[String] =
     giRepo
       .getGeneralInfo(appId)
-      .flatMap(_.fold(IO.raiseError(notFoundErr))(x => IO(x.organization)))
+      .failIfNotFound
+      .map(_.organization)
 
   def getPrivacyPolicy(appId: String): IO[Option[String]] =
     giRepo
       .getGeneralInfo(appId)
-      .flatMap(_.fold(IO.raiseError(notFoundErr))(x => IO(x.privacyPolicyLink)))
+      .failIfNotFound
+      .map(_.privacyPolicyLink)
 
   def getUserKnown(appId: String, userIds: List[DataSubject]): IO[Boolean] =
     NonEmptyList.fromList(userIds) match {
@@ -96,11 +105,15 @@ class TransparencyDemands(
     }
 
   def getWhere(appId: String): IO[List[String]] =
-    giRepo.getGeneralInfo(appId).flatMap(_.fold(IO.raiseError(notFoundErr))(x => IO(x.countries)))
+    giRepo
+      .getGeneralInfo(appId)
+      .failIfNotFound
+      .map(_.countries)
 
   def getWho(appId: String): IO[List[String]] =
     giRepo
       .getGeneralInfo(appId)
-      .flatMap(_.fold(IO.raiseError(notFoundErr))(x => IO(x.dataConsumerCategories)))
+      .failIfNotFound
+      .map(_.dataConsumerCategories)
 
 }
