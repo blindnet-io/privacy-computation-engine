@@ -85,8 +85,8 @@ create table provenances (
   id uuid primary key,
   appid uuid not null,
   dcid uuid not null,
-  -- target target_terms not null,
   provenance provenance_terms not null,
+  system varchar not null,
   constraint app_fk
     foreign key (appid)
     references apps(id)

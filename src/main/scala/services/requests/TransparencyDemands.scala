@@ -46,19 +46,14 @@ class TransparencyDemands(
         case Action.TPolicy         => getPrivacyPolicy(appId).map(_.asJson)
         case Action.TProcessingCategories =>
           psRepo.getProcessingCategories(appId, userIds).map(_.map(_.term).asJson) // TODO user
-        case Action.TProvenance           =>
-          prRepo
-            .getProvenances(appId, userIds)
-            .map(_.map {
-              case (k, v) => (k -> v.map(_.provenance))
-            }.asJson) // TODO user
-        case Action.TPurpose              =>
+        case Action.TProvenance => prRepo.getProvenances(appId, userIds).map(_.asJson) // TODO user
+        case Action.TPurpose    =>
           psRepo.getPurposes(appId, userIds).map(_.map(_.term).asJson) // TODO user
-        case Action.TRetention            =>
+        case Action.TRetention  =>
           rpRepo.getRetentionPolicies(appId, userIds).map(_.asJson) // TODO user
-        case Action.TWhere                => getWhere(appId).map(_.asJson)
-        case Action.TWho                  => getWho(appId).map(_.asJson)
-        case _                            => IO.raiseError(new NotImplementedError)
+        case Action.TWhere      => getWhere(appId).map(_.asJson)
+        case Action.TWho        => getWho(appId).map(_.asJson)
+        case _                  => IO.raiseError(new NotImplementedError)
       }
     } yield {
       DemandResponse(

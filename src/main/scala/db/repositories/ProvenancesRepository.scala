@@ -37,19 +37,19 @@ object ProvenancesRepository {
           userIds: List[DataSubject]
       ): IO[Map[DataCategory, List[Provenance]]] =
         sql"""
-          select p.provenance, dc.term
+          select p.provenance, p.system, dc.term
           from provenances p
           join data_categories dc ON p.dcid = dc.id
           where p.appid = $appId::uuid
         """
-          .query[(String, String)]
+          .query[(String, String, String)]
           .to[List]
           .map(_.flatMap {
-            case (prov, dc) =>
+            case (prov, system, dc) =>
               for {
                 p <- ProvenanceTerms.parse(prov).toOption
                 d <- DataCategory.parse(dc).toOption
-              } yield d -> Provenance(p)
+              } yield d -> Provenance(p, system)
           }.groupBy(_._1).view.mapValues(_.map(_._2)).toMap)
           .transact(xa)
 
@@ -58,18 +58,18 @@ object ProvenancesRepository {
           dc: DataCategory
       ): IO[List[Provenance]] =
         sql"""
-          select p.provenance
+          select p.provenance, p.system
           from provenances p
           join data_categories dc ON p.dcid = dc.id
           where p.appid = $appId::uuid and dc.term = $dc
         """
-          .query[(String)]
+          .query[(String, String)]
           .to[List]
           .map(_.flatMap {
-            case (prov) =>
+            case (prov, system) =>
               for {
                 p <- ProvenanceTerms.parse(prov).toOption
-              } yield Provenance(p)
+              } yield Provenance(p, system)
           })
           .transact(xa)
 
