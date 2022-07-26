@@ -77,8 +77,24 @@ class TransparencyDemands(
     }
   }
 
-  def processTransparency(appId: String, userIds: List[DataSubject]): IO[Unit] =
-    IO.unit
+  def processTransparency(appId: String, userIds: List[DataSubject]): IO[Map[Action, Json]] = {
+    val all = List(
+      psRepo.getDataCategories(appId).json.map((Action.TDataCategories, _)),
+      getDpo(appId).json.map((Action.TDPO, _)),
+      getUserKnown(appId, userIds).json.map((Action.TKnown, _)),
+      lbRepo.getLegalBases(appId, userIds).json.map((Action.TLegalBases, _)),
+      getOrganization(appId).json.map((Action.TOrganization, _)),
+      getPrivacyPolicy(appId).json.map((Action.TPolicy, _)),
+      psRepo.getProcessingCategories(appId, userIds).json.map((Action.TProcessingCategories, _)),
+      prRepo.getProvenances(appId, userIds).json.map((Action.TProvenance, _)),
+      psRepo.getPurposes(appId, userIds).json.map((Action.TPurpose, _)),
+      rpRepo.getRetentionPolicies(appId, userIds).json.map((Action.TRetention, _)),
+      getWhere(appId).json.map((Action.TWhere, _)),
+      getWho(appId).json.map((Action.TWho, _))
+    ).parSequence
+
+    all.map(_.toMap)
+  }
 
   def getDpo(appId: String): IO[String] =
     giRepo

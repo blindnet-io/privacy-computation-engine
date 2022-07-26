@@ -55,4 +55,7 @@ object Action {
   given Encoder[Action] =
     Encoder[String].contramap(_.encode)
 
+  given KeyEncoder[Action] =
+    KeyEncoder[String].contramap(_.encode)
+
 }

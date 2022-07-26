@@ -90,9 +90,9 @@ class PrivacyRequestService(
     for {
       date <- Clock[IO].realTimeInstant
       res  <- demand.action match {
-        case t if t.isChildOf(Action.Transparency) =>
+        case t if t == Action.Transparency || t.isChildOf(Action.Transparency) =>
           transparency.processTransparencyDemand(demand, appId, userIds, date)
-        case _                                     => IO.raiseError(new NotImplementedError)
+        case _ => IO.raiseError(new NotImplementedError)
       }
 
     } yield res
