@@ -9,6 +9,7 @@ enum Status(term: String) {
   case Denied           extends Status("DENIED")
   case PartiallyGranted extends Status("PARTIALLY-GRANTED")
   case UnderReview      extends Status("UNDER-REVIEW")
+  case Canceled         extends Status("CANCELED")
 
   def isTerm(str: String) = term == str
 

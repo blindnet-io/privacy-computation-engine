@@ -264,7 +264,7 @@ create table data_reference_restriction (
 
 -- PRIVACY RESPONSE
 
-create type status_terms as enum ('GRANTED', 'DENIED', 'PARTIALLY-GRANTED', 'UNDER-REVIEW');
+create type status_terms as enum ('GRANTED', 'DENIED', 'PARTIALLY-GRANTED', 'UNDER-REVIEW', 'CANCELED');
 
 -- per demand
 create table privacy_response (
