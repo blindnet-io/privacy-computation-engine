@@ -1,7 +1,7 @@
 import dependencies.*
 
 ThisBuild / scalaVersion                                   := "3.1.3"
-ThisBuild / version                                        := "0.1.0-SNAPSHOT"
+ThisBuild / version                                        := "0.2.0-SNAPSHOT"
 ThisBuild / organization                                   := "io.blindnet"
 ThisBuild / organizationName                               := "blindnet"
 ThisBuild / organizationHomepage                           := Some(url("https://blindnet.io"))
