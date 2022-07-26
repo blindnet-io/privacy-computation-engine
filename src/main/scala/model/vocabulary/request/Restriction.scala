@@ -18,7 +18,7 @@ case class DateRangeRestriction(
 ) extends Restriction
 
 case class ProvenanceRestriction(
-    provenanceCategory: Provenance,
+    provenanceCategory: ProvenanceTerms,
     target: Target
 ) extends Restriction
 

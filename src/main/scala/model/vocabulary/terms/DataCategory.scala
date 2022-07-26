@@ -62,4 +62,7 @@ object DataCategory {
   given Encoder[DataCategory] =
     Encoder[String].contramap(_.term)
 
+  given KeyEncoder[DataCategory] =
+    KeyEncoder[String].contramap(_.term)
+
 }

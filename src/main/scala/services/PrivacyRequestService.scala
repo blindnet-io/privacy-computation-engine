@@ -51,19 +51,13 @@ class PrivacyRequestService(
           )
       }
 
-      pr = PrivacyRequest(
-        reqId.toString(),
-        appId,
-        date,
-        req.dataSubject,
-        demands
-      )
-
-      _ <- PrivacyRequest
-        .validate(pr)
-        .fold(e => IO.raiseError(BadRequestException(e.toList.mkString("\n"))), IO.pure)
-
-    } yield pr
+    } yield PrivacyRequest(
+      reqId.toString(),
+      appId,
+      date,
+      req.dataSubject,
+      demands
+    )
   }
 
   def processRequest(
@@ -71,14 +65,20 @@ class PrivacyRequestService(
       appId: String
   ): IO[PrivacyRequestResponsePayload] = {
     for {
-      pr      <- createPrivacyRequest(req, appId)
-      id      <- UUIDGen[IO].randomUUID
-      date    <- Clock[IO].realTimeInstant
-      // TODO: store request
-      results <- pr.demands
-        .parTraverse(d => processDemand(d, pr.appId, pr.dataSubjectIds))
+      pr   <- createPrivacyRequest(req, appId)
+      id   <- UUIDGen[IO].randomUUID
+      date <- Clock[IO].realTimeInstant
 
-    } yield PrivacyRequestResponsePayload(id.toString, pr.id, date, results)
+      (invalid, valid) = PrivacyRequest.validateDemands(pr)
+
+      // TODO: store request
+      results <- valid.parTraverse(d => processDemand(d, pr.appId, pr.dataSubjectIds))
+
+      invalidResults <- invalid.traverse(
+        d => createInvalidDemandResponse(d._2, d._1.mkString_("\n"))
+      )
+
+    } yield PrivacyRequestResponsePayload(id.toString, pr.id, date, results ++ invalidResults)
   }
 
   private def processDemand(
@@ -88,16 +88,35 @@ class PrivacyRequestService(
   ): IO[DemandResponse] = {
 
     for {
-      id   <- UUIDGen[IO].randomUUID
       date <- Clock[IO].realTimeInstant
       res  <- demand.action match {
         case t if t.isChildOf(Action.Transparency) =>
-          transparency.processTransparencyDemand(demand, appId, userIds, id.toString, date)
+          transparency.processTransparencyDemand(demand, appId, userIds, date)
         case _                                     => IO.raiseError(new NotImplementedError)
       }
 
     } yield res
 
+  }
+
+  private def createInvalidDemandResponse(
+      demand: Demand,
+      message: String
+  ): IO[DemandResponse] = {
+    for {
+      date <- Clock[IO].realTimeInstant
+    } yield DemandResponse(
+      demand.refId,
+      demand.id,
+      date,
+      demand.action,
+      Status.Denied,
+      Json.Null,
+      Some(message),
+      lang = "en",
+      None,
+      None
+    )
   }
 
 }

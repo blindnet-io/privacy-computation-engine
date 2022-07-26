@@ -31,11 +31,11 @@ object PrivacyScopeRepository {
     new PrivacyScopeRepository {
       def getDataCategories(appId: String): IO[List[DataCategory]] =
         sql"""
-          select distinct dc.term from selectors s
-          join selector_scope ss on ss.slid = s.id
-          join "scope" s2 on s2.id = ss.scid
-          join data_categories dc on dc.id = s2.dcid
-          where s.active and s.appid = $appId::uuid
+          select distinct(dc.term) from legal_bases lb
+          join legal_bases_scope lbsc on lbsc.lbid = lb.id
+          join "scope" s on s.id = lbsc.scid
+          join data_categories dc on dc.id = s.dcid
+          where lb.active and dc.active and lb.appid = $appId::uuid
         """
           .query[DataCategory]
           .to[List]
@@ -46,11 +46,11 @@ object PrivacyScopeRepository {
           userIds: List[DataSubject]
       ): IO[List[ProcessingCategory]] =
         sql"""
-          select distinct pc.term from selectors s
-          join selector_scope ss on ss.slid = s.id
-          join "scope" s2 on s2.id = ss.scid
-          join processing_categories pc on pc.id = s2.pcid
-          where s.active and s.appid = $appId::uuid
+          select distinct(pc.term) from legal_bases lb
+          join legal_bases_scope lbsc on lbsc.lbid = lb.id
+          join "scope" s on s.id = lbsc.scid
+          join processing_categories pc on pc.id = s.pcid
+          where lb.active and lb.appid = $appId::uuid
         """
           .query[ProcessingCategory]
           .to[List]
@@ -58,11 +58,11 @@ object PrivacyScopeRepository {
 
       def getPurposes(appId: String, userIds: List[DataSubject]): IO[List[Purpose]] =
         sql"""
-          select distinct pp.term from selectors s
-          join selector_scope ss on ss.slid = s.id
-          join "scope" s2 on s2.id = ss.scid
-          join processing_purposes pp on pp.id = s2.ppid
-          where s.active and s.appid = $appId::uuid
+          select distinct(pp.term) from legal_bases lb
+          join legal_bases_scope lbsc on lbsc.lbid = lb.id
+          join "scope" s on s.id = lbsc.scid
+          join processing_purposes pp on pp.id = s.ppid
+          where lb.active and lb.appid = $appId::uuid
         """
           .query[Purpose]
           .to[List]

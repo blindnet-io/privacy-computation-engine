@@ -7,5 +7,6 @@ case class LegalBase(
     term: LegalBaseTerms,
     scope: List[PrivacyScopeTriple],
     name: Option[String] = None,
-    description: Option[String] = None
+    description: Option[String] = None,
+    active: Boolean
 )

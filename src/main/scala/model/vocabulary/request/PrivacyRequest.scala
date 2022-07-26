@@ -21,6 +21,22 @@ object PrivacyRequest {
   val anonymousActions          = Action.Transparency.allSubCategories()
   val actionsRequiringSubjectId = Action.values.toList.filter(a => !anonymousActions.contains(a))
 
+  def validateDemands(pr: PrivacyRequest): (List[(NonEmptyList[String], Demand)], List[Demand]) = {
+    pr.demands.foldLeft((List.empty[(NonEmptyList[String], Demand)], List.empty[Demand]))(
+      (acc, cur) => {
+        val needsDs =
+          if actionsRequiringSubjectId.contains(cur.action)
+          then "Data subject not specified".invalid
+          else cur.valid
+
+        (Demand.validate(cur) product needsDs.toValidatedNel).fold(
+          errs => ((errs, cur) :: acc._1, acc._2),
+          d => (acc._1, cur :: acc._2)
+        )
+      }
+    )
+  }
+
   def validate(pr: PrivacyRequest): ValidatedNel[String, Unit] = {
 
     def validateDataSubjects =

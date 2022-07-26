@@ -5,9 +5,10 @@ import cats.data.Validated
 import io.circe.*
 
 enum Target(term: String, parent: Option[Target] = None) {
-  case Organization extends Target("ORGANIZATION")
-  case System       extends Target("SYSTEM")
-  case Partners     extends Target("PARTNERS")
+  case All          extends Target("*")
+  case Organization extends Target("ORGANIZATION", Some(All))
+  case System       extends Target("SYSTEM", Some(All))
+  case Partners     extends Target("PARTNERS", Some(All))
   case PDownward    extends Target("PARTNERS.DOWNWARD", Some(Partners))
   case PUpward      extends Target("PARTNERS.UPWARD", Some(Partners))
 
