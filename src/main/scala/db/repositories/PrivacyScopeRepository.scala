@@ -9,8 +9,6 @@ import doobie.implicits.*
 import doobie.postgres.*
 import doobie.postgres.implicits.*
 import model.vocabulary.*
-import model.vocabulary.general.*
-import model.vocabulary.general.*
 import model.vocabulary.terms.*
 import db.DbUtil
 

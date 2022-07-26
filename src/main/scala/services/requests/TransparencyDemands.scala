@@ -13,7 +13,6 @@ import model.vocabulary.request.Demand
 import model.error.*
 import model.vocabulary.*
 import model.vocabulary.terms.*
-import model.vocabulary.general.*
 import api.endpoints.payload.*
 import java.time.Instant
 
@@ -80,15 +79,15 @@ class TransparencyDemands(
   def processTransparency(appId: String, userIds: List[DataSubject]): IO[Unit] =
     IO.unit
 
-  def getDpo(appId: String): IO[List[Dpo]] =
+  def getDpo(appId: String): IO[String] =
     giRepo
       .getGeneralInfo(appId)
       .flatMap(_.fold(IO.raiseError(notFoundErr))(x => IO(x.dpo)))
 
-  def getOrganization(appId: String): IO[List[Organization]] =
+  def getOrganization(appId: String): IO[String] =
     giRepo
       .getGeneralInfo(appId)
-      .flatMap(_.fold(IO.raiseError(notFoundErr))(x => IO(x.organizations)))
+      .flatMap(_.fold(IO.raiseError(notFoundErr))(x => IO(x.organization)))
 
   def getPrivacyPolicy(appId: String): IO[Option[String]] =
     giRepo
@@ -107,6 +106,6 @@ class TransparencyDemands(
   def getWho(appId: String): IO[List[String]] =
     giRepo
       .getGeneralInfo(appId)
-      .flatMap(_.fold(IO.raiseError(notFoundErr))(x => IO(x.accessPolicies)))
+      .flatMap(_.fold(IO.raiseError(notFoundErr))(x => IO(x.dataConsumerCategories)))
 
 }

@@ -7,54 +7,19 @@ create table apps (
 -- GENERAL INFORMATION
 -- parts of TRANSPARENCY requests and ROPA
 
--- create table general_information (
---   id uuid primary key,
---   appid uuid not null,
---   organization varchar not null,
---   dpo varchar not null,
---   countries varchar[],
---   data_consumer_categories varchar[],
---   access_policies varchar[],
---   privacy_policy_link varchar,
---   data_security_information varchar,
---   constraint app_fk
---     foreign key (appid)
---     references apps(id)
---     on delete cascade
--- );
-
 create table general_information (
   id uuid primary key,
   appid uuid not null,
-  countries varchar[],
-  data_consumer_categories varchar[],
-  access_policies varchar[],
+  organization varchar not null,
+  dpo varchar not null,
+  countries varchar[] not null,
+  data_consumer_categories varchar[] not null,
+  access_policies varchar[] not null,
   privacy_policy_link varchar,
   data_security_information varchar,
   constraint app_fk
     foreign key (appid)
     references apps(id)
-    on delete cascade
-);
-
-create table general_information_organization (
-  id uuid primary key,
-  gid uuid not null,
-  name varchar,
-  constraint general_information_fk
-    foreign key (gid)
-    references general_information(id)
-    on delete cascade
-);
- 
-create table dpo (
-  id uuid primary key,
-  gid uuid not null,
-  name varchar,
-  contact varchar,
-  constraint general_information_fk
-    foreign key (gid)
-    references general_information(id)
     on delete cascade
 );
 

@@ -1,10 +1,10 @@
 package io.blindnet.privacy
-package model.vocabulary.general
+package model.vocabulary
 
 case class GeneralInformation(
     countries: List[String],
-    organizations: List[Organization],
-    dpo: List[Dpo],
+    organization: String,
+    dpo: String,
     dataConsumerCategories: List[String],
     accessPolicies: List[String],
     privacyPolicyLink: Option[String],

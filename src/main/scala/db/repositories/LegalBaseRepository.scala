@@ -9,12 +9,6 @@ import doobie.postgres.*
 import doobie.postgres.implicits.*
 import doobie.util.transactor.Transactor
 import model.vocabulary.*
-import model.vocabulary.general.*
-import model.vocabulary.general.*
-import model.vocabulary.terms.*
-import model.vocabulary.*
-import model.vocabulary.general.*
-import model.vocabulary.general.*
 import model.vocabulary.terms.*
 
 trait LegalBaseRepository {
