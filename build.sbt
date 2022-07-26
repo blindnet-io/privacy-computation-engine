@@ -37,5 +37,5 @@ lazy val root = (project in file("."))
       dependencies.main.log4catsSlf4j
     ),
     assembly / mainClass       := Some("io.blindnet.privacy.Main"),
-    assembly / assemblyJarName := "privacy_computation_engine.jar"
+    assembly / assemblyJarName := "devkit_pce.jar"
   )
