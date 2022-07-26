@@ -4,12 +4,15 @@ object dependencies {
 
   object main {
 
+    val cirisV  = "2.3.3"
     val circeV  = "0.14.2"
     val doobieV = "1.0.0-RC2"
     val http4sV = "0.23.13"
     val tapirV  = "1.0.1"
 
     val catsEffect = "org.typelevel" %% "cats-effect" % "3.3.12"
+
+    val ciris = "is.cir" %% "ciris" % cirisV
 
     val circe        = "io.circe"             %% "circe-core"    % circeV
     val circeGeneric = "io.circe"             %% "circe-generic" % circeV
@@ -32,8 +35,9 @@ object dependencies {
 
     val flyway = "org.flywaydb" % "flyway-core" % "8.5.12"
 
-    val slf4j         = "org.slf4j"      % "slf4j-simple"   % "1.7.36"
-    val log4catsSlf4j = "org.typelevel" %% "log4cats-slf4j" % "2.3.1"
+    val logback       = "ch.qos.logback"      % "logback-classic" % "1.2.11"
+    val janino        = "org.codehaus.janino" % "janino"          % "3.1.7"
+    val log4catsSlf4j = "org.typelevel"      %% "log4cats-slf4j"  % "2.3.1"
 
     val bouncyCastle = "org.bouncycastle" % "bcprov-jdk15on" % "1.70"
   }

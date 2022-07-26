@@ -6,9 +6,7 @@ import model.vocabulary.terms.*
 trait Restriction
 
 case class PrivacyScopeRestriction(
-    dataCategories: List[DataCategory],
-    processingCategories: List[ProcessingCategory],
-    purpose: List[Purpose]
+    triples: List[(DataCategory, ProcessingCategory, Purpose)]
 ) extends Restriction
 
 case class ConsentRestriction(consentId: String) extends Restriction
@@ -20,7 +18,7 @@ case class DateRangeRestriction(
 ) extends Restriction
 
 case class ProvenanceRestriction(
-    provenanceCategory: Provenance,
+    provenanceCategory: ProvenanceTerms,
     target: Target
 ) extends Restriction
 

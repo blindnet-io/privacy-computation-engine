@@ -1,10 +1,14 @@
 package io.blindnet.privacy
 package model.vocabulary.terms
 
+import cats.data.Validated
+import io.circe.*
+
 enum Target(term: String, parent: Option[Target] = None) {
-  case Organization extends Target("ORGANIZATION")
-  case System       extends Target("SYSTEM")
-  case Partners     extends Target("PARTNERS")
+  case All          extends Target("*")
+  case Organization extends Target("ORGANIZATION", Some(All))
+  case System       extends Target("SYSTEM", Some(All))
+  case Partners     extends Target("PARTNERS", Some(All))
   case PDownward    extends Target("PARTNERS.DOWNWARD", Some(Partners))
   case PUpward      extends Target("PARTNERS.UPWARD", Some(Partners))
 
@@ -17,10 +21,21 @@ enum Target(term: String, parent: Option[Target] = None) {
     parent.exists(_ == a)
 
   def isTerm(str: String) = term == str
+
+  val encode = term
 }
 
 object Target {
-  def parse(str: String): Option[Target] =
-    Target.values.find(a => a.isTerm(str))
+  def parse(str: String): Validated[String, Target] =
+    Validated.fromOption(
+      Target.values.find(a => a.isTerm(str)),
+      "Unknown target"
+    )
+
+  given Decoder[Target] =
+    Decoder.decodeString.emap(Target.parse(_).toEither)
+
+  given Encoder[Target] =
+    Encoder[String].contramap(_.encode)
 
 }

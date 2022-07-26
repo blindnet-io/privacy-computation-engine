@@ -2,28 +2,38 @@ package io.blindnet.privacy
 package db
 
 import cats.effect.*
+import io.blindnet.privacy.model.error.MigrationError
 import org.flywaydb.core.Flyway
 import org.flywaydb.core.api.output.MigrateResult
-
-import db.DbConfig
+import config.DbConfig
 
 object Migrator {
 
-  def migrateDatabase(conf: DbConfig): IO[MigrateResult] = {
+  def migrateDatabase(conf: DbConfig): IO[Unit] = {
 
     val flywayConf = Flyway
       .configure()
-      .dataSource(conf.uri, conf.username, conf.password)
+      .dataSource(conf.uri, conf.username, conf.password.value)
       // .group(true)
       .table("Flyway")
       .locations(org.flywaydb.core.api.Location("classpath:migrations"))
       .baselineOnMigrate(true)
+      .ignorePendingMigrations(true)
 
     for {
-      // TODO: logger
-      _   <- IO(println(flywayConf.load().validateWithResult().getAllErrorMessages()))
+      validation <- IO(flywayConf.load().validateWithResult())
+
+      _ <-
+        if validation.validationSuccessful then IO.unit
+        else IO.raiseError(MigrationError(validation.getAllErrorMessages()))
+
       res <- IO(flywayConf.load().migrate())
-    } yield res
+
+      _ <-
+        if res.success then IO.unit
+        else IO.raiseError(MigrationError("Migration failed"))
+
+    } yield ()
 
   }
 
