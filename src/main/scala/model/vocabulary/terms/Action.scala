@@ -3,6 +3,7 @@ package model.vocabulary.terms
 
 import cats.data.Validated
 import io.circe.*
+import sttp.tapir.*
 
 enum Action(term: String, parent: Option[Action] = None) {
   case Access          extends Action("ACCESS")
@@ -57,5 +58,8 @@ object Action {
 
   given KeyEncoder[Action] =
     KeyEncoder[String].contramap(_.encode)
+
+  given Schema[Action] =
+    Schema.string.validate(Validator.enumeration(Action.values.toList, x => Option(x.encode)))
 
 }
