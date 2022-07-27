@@ -14,6 +14,7 @@ resolvers += Resolver.sonatypeRepo("snapshots")
 lazy val root = (project in file("."))
   .settings(
     name                       := "privacy-computation-engine",
+    scalacOptions ++= Seq("-Xmax-inlines", "100"),
     libraryDependencies ++= Seq(
       dependencies.main.catsEffect,
       dependencies.main.ciris,
@@ -32,6 +33,10 @@ lazy val root = (project in file("."))
       dependencies.main.http4sDsl,
       dependencies.main.http4sEmberServer,
       dependencies.main.http4sEmberClient,
+      dependencies.main.tapir,
+      dependencies.main.tapirHttp4s,
+      dependencies.main.tapirJsonCirce,
+      dependencies.main.tapirSwagger,
       dependencies.main.logback,
       dependencies.main.janino,
       dependencies.main.log4catsSlf4j
