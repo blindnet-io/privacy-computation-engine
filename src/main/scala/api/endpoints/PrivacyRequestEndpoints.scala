@@ -11,7 +11,8 @@ import org.http4s.dsl.Http4sDsl
 import org.http4s.dsl.io.*
 import org.http4s.server.Router
 import services.*
-import api.endpoints.payload.{ given, * }
+import api.endpoints.payload.request.{ given, * }
+import api.endpoints.payload.response.{ given, * }
 
 class PrivacyRequestEndpoints(
     reqService: PrivacyRequestService

@@ -1,5 +1,5 @@
 package io.blindnet.privacy
-package api.endpoints.payload
+package api.endpoints.payload.response
 
 import cats.effect.*
 import cats.implicits.*
