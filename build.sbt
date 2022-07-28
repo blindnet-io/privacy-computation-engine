@@ -12,9 +12,12 @@ ThisBuild / semanticdbEnabled                              := true
 resolvers += Resolver.sonatypeRepo("snapshots")
 
 lazy val root = (project in file("."))
+  .enablePlugins(BuildInfoPlugin)
   .settings(
     name                       := "privacy-computation-engine",
     scalacOptions ++= Seq("-Xmax-inlines", "100"),
+    buildInfoKeys              := Seq[BuildInfoKey](name, version, scalaVersion, sbtVersion),
+    buildInfoPackage           := "build",
     libraryDependencies ++= Seq(
       dependencies.main.catsEffect,
       dependencies.main.ciris,

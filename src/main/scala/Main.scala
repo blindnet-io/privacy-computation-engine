@@ -19,7 +19,7 @@ object Main extends IOApp {
   override def run(args: List[String]): IO[ExitCode] = {
 
     val app = for {
-      _    <- Resource.eval(logger.info("Starting app"))
+      _    <- Resource.eval(logger.info(s"Starting app. \n ${build.BuildInfo.toString}"))
       conf <- Resource.eval(Config.load)
       _    <- Resource.eval(logger.info(show"$conf"))
       _    <- Resource.eval(Migrator.migrateDatabase(conf.db))
