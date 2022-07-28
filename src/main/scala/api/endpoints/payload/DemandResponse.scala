@@ -17,7 +17,7 @@ case class DemandResponse(
     status: Status,
     answer: Json,
     message: Option[String],
-    lang: String,
+    lang: Option[String],
     includes: Option[String],
     data: Option[String]
 )

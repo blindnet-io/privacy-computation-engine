@@ -113,7 +113,7 @@ class PrivacyRequestService(
       Status.Denied,
       Json.Null,
       Some(message),
-      lang = "en",
+      Some("en"),
       None,
       None
     )
