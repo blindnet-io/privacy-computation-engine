@@ -70,7 +70,7 @@ class TransparencyDemands(
         Status.Granted,
         answer,
         None,
-        lang = "en",
+        None,
         None,
         None
       )
@@ -114,10 +114,11 @@ class TransparencyDemands(
       .failIfNotFound
       .map(_.privacyPolicyLink)
 
-  def getUserKnown(appId: String, userIds: List[DataSubject]): IO[Boolean] =
+  def getUserKnown(appId: String, userIds: List[DataSubject]): IO[BooleanTerms] =
     NonEmptyList.fromList(userIds) match {
-      case None          => IO(false)
-      case Some(userIds) => giRepo.known(appId, userIds)
+      case None          => IO(BooleanTerms.No)
+      case Some(userIds) =>
+        giRepo.known(appId, userIds).map(r => if r then BooleanTerms.Yes else BooleanTerms.No)
     }
 
   def getWhere(appId: String): IO[List[String]] =
