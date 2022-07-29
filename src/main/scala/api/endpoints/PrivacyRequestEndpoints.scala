@@ -2,33 +2,37 @@ package io.blindnet.privacy
 package api.endpoints
 
 import cats.effect.IO
-import io.circe.*
-import io.circe.syntax.*
-import org.http4s.*
-import org.http4s.circe.CirceEntityEncoder.*
-import org.http4s.circe.*
-import org.http4s.dsl.Http4sDsl
-import org.http4s.dsl.io.*
+import io.circe.generic.auto.*
 import org.http4s.server.Router
+import sttp.tapir.*
+import sttp.tapir.generic.Configuration
+import sttp.tapir.generic.auto.*
+import sttp.tapir.json.circe.*
+import sttp.tapir.server.*
+import sttp.tapir.server.http4s.*
 import services.*
-import api.endpoints.payload.request.{ given, * }
-import api.endpoints.payload.response.{ given, * }
+import api.endpoints.payload.request.*
+import api.endpoints.payload.response.*
+import api.endpoints.BaseEndpoint.*
+
+given Configuration = Configuration.default.withSnakeCaseMemberNames
 
 class PrivacyRequestEndpoints(
     reqService: PrivacyRequestService
-) extends Http4sDsl[IO] {
+) {
+  val base = baseEndpoint.tag("Privacy requests")
 
   val appId = "6f083c15-4ada-4671-a6d1-c671bc9105dc"
 
-  val routes: HttpRoutes[IO] = HttpRoutes.of[IO] {
+  val privacyRequest =
+    base
+      .description("privacy request")
+      .post
+      .in("privacy-request")
+      .in(jsonBody[PrivacyRequestPayload])
+      .out(jsonBody[PrivacyRequestResponsePayload])
+      .serverLogicSuccess(req => reqService.processRequest(req, appId))
 
-    case r @ POST -> Root / "privacy-request" =>
-      for {
-        // TODO: validate token and get appId
-        req  <- r.as[PrivacyRequestPayload]
-        res  <- reqService.processRequest(req, appId)
-        resp <- Ok(res.asJson)
-      } yield resp
-  }
+  val endpoints = List(privacyRequest)
 
 }
