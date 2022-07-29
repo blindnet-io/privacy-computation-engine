@@ -2,13 +2,20 @@ package io.blindnet.privacy
 package api.endpoints
 
 import cats.effect.*
-import org.http4s.*
-import org.http4s.dsl.Http4sDsl
+import sttp.tapir.*
+import sttp.tapir.server.http4s.*
+import api.endpoints.BaseEndpoint.*
 
-class HealthCheckEndpoints() extends Http4sDsl[IO] {
+class HealthCheckEndpoints() {
+  val base = baseEndpoint.tag("Health")
 
-  val routes: HttpRoutes[IO] = HttpRoutes.of[IO] {
-    case GET -> Root / "health" => Ok()
-  }
+  val health =
+    base
+      .description("Is the app running?")
+      .get
+      .in("health")
+      .serverLogicSuccess(_ => IO.unit)
+
+  val endpoints = List(health)
 
 }

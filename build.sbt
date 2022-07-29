@@ -12,8 +12,12 @@ ThisBuild / semanticdbEnabled                              := true
 resolvers += Resolver.sonatypeRepo("snapshots")
 
 lazy val root = (project in file("."))
+  .enablePlugins(BuildInfoPlugin)
   .settings(
-    name                       := "privacy-computation-engine",
+    name                              := "privacy-computation-engine",
+    scalacOptions ++= Seq("-Xmax-inlines", "100"),
+    buildInfoKeys                     := Seq[BuildInfoKey](name, version, scalaVersion, sbtVersion),
+    buildInfoPackage                  := "build",
     libraryDependencies ++= Seq(
       dependencies.main.catsEffect,
       dependencies.main.ciris,
@@ -32,10 +36,21 @@ lazy val root = (project in file("."))
       dependencies.main.http4sDsl,
       dependencies.main.http4sEmberServer,
       dependencies.main.http4sEmberClient,
+      dependencies.main.tapir,
+      dependencies.main.tapirHttp4s,
+      dependencies.main.tapirJsonCirce,
+      dependencies.main.tapirSwagger,
       dependencies.main.logback,
       dependencies.main.janino,
       dependencies.main.log4catsSlf4j
     ),
-    assembly / mainClass       := Some("io.blindnet.privacy.Main"),
-    assembly / assemblyJarName := "devkit_pce.jar"
+    assembly / mainClass              := Some("io.blindnet.privacy.Main"),
+    assembly / assemblyJarName        := "devkit_pce.jar",
+    assemblyMergeStrategy in assembly := {
+      case PathList("META-INF", "maven", "org.webjars", "swagger-ui", "pom.properties") =>
+        MergeStrategy.singleOrError
+      case x                                                                            =>
+        val oldStrategy = (assemblyMergeStrategy in assembly).value
+        oldStrategy(x)
+    }
   )

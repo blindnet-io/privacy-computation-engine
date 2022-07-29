@@ -3,6 +3,7 @@ package model.vocabulary.terms
 
 import cats.data.Validated
 import io.circe.*
+import sttp.tapir.*
 
 enum Target(term: String, parent: Option[Target] = None) {
   case All          extends Target("*")
@@ -37,5 +38,8 @@ object Target {
 
   given Encoder[Target] =
     Encoder[String].contramap(_.encode)
+
+  given Schema[Target] =
+    Schema.string.validate(Validator.enumeration(Target.values.toList, x => Option(x.encode)))
 
 }

@@ -13,7 +13,7 @@ import model.vocabulary.request.Demand
 import model.error.*
 import model.vocabulary.*
 import model.vocabulary.terms.*
-import api.endpoints.payload.*
+import api.endpoints.payload.response.*
 import java.time.Instant
 import io.circe.Encoder
 

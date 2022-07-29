@@ -7,6 +7,17 @@ import org.http4s.*
 import org.http4s.implicits.*
 import org.http4s.server.Router
 import org.http4s.server.middleware.*
+import sttp.apispec.openapi.OpenAPI
+import sttp.apispec.openapi.circe.yaml.*
+import sttp.capabilities.fs2.Fs2Streams
+import sttp.tapir.*
+import sttp.tapir.docs.openapi.*
+import sttp.tapir.generic.auto.*
+import sttp.tapir.json.circe.*
+import sttp.tapir.server.*
+import sttp.tapir.server.http4s.*
+import sttp.tapir.swagger.*
+import sttp.tapir.swagger.bundle.*
 import endpoints.*
 import services.Services
 
@@ -16,20 +27,39 @@ object AppRouter {
 
 class AppRouter(services: Services) {
 
-  val healthCheckEndpoints    = new HealthCheckEndpoints().routes
-  val privacyRequestEndpoints = new PrivacyRequestEndpoints(services.privacyRequest).routes
+  val healthCheckEndpoints = new HealthCheckEndpoints().endpoints
+
+  val privacyRequestEndpoints = new PrivacyRequestEndpoints(services.privacyRequest).endpoints
   // data subject endpoints
   // data consumer endpoints
   // customization endpoints
 
-  // TODO: token
-  val protectedRoutes = privacyRequestEndpoints
+  val documentedEndpoints = healthCheckEndpoints ++ privacyRequestEndpoints
 
-  val allRoutes = healthCheckEndpoints <+> protectedRoutes
+  // val docs: OpenAPI =
+  //   OpenAPIDocsInterpreter()
+  //     .serverEndpointsToOpenAPI(
+  //       documentedEndpoints,
+  //       "Privacy computation engine",
+  //       build.BuildInfo.version
+  //     )
 
-  val routes: HttpRoutes[IO] = Router(
-    "v0" -> allRoutes
-  )
+  // println(docs.toYaml)
+
+  val swagger =
+    SwaggerInterpreter(swaggerUIOptions = SwaggerUIOptions.default.pathPrefix(List("swagger")))
+      .fromServerEndpoints[IO](
+        documentedEndpoints,
+        "Privacy computation engine",
+        build.BuildInfo.version
+      )
+
+  val allRoutes =
+    Http4sServerInterpreter[IO]().toRoutes(healthCheckEndpoints) <+>
+      Http4sServerInterpreter[IO]().toRoutes(privacyRequestEndpoints) <+>
+      Http4sServerInterpreter[IO]().toRoutes(swagger)
+
+  val routes: HttpRoutes[IO] = allRoutes
 
   private val middleware: HttpRoutes[IO] => HttpRoutes[IO] = {
     { (routes: HttpRoutes[IO]) => AutoSlash(routes) }
@@ -38,4 +68,5 @@ class AppRouter(services: Services) {
   }
 
   val httpApp = middleware(routes).orNotFound
+
 }

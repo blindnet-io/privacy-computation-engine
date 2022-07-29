@@ -9,7 +9,8 @@ import cats.implicits.*
 import io.circe.Json
 import io.circe.generic.auto.*
 import io.circe.syntax.*
-import api.endpoints.payload.*
+import api.endpoints.payload.response.*
+import api.endpoints.payload.request.*
 import db.repositories.*
 import model.error.*
 import model.vocabulary.DataSubject
