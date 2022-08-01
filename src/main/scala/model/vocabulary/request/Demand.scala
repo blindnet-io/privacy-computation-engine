@@ -8,7 +8,6 @@ import model.vocabulary.DataSubject
 import model.vocabulary.terms.Target
 
 case class Demand(
-    refId: String,
     id: String,
     action: Action,
     message: Option[String],
@@ -16,8 +15,7 @@ case class Demand(
     language: Option[String],
     // TODO: what format?
     data: List[String],
-    restrictions: List[Restriction],
-    target: Target
+    restrictions: List[Restriction]
 )
 
 object Demand {
