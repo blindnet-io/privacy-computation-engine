@@ -15,8 +15,6 @@ import io.blindnet.privacy.util.extension.*
 
 trait GeneralInfoRepository {
   def getGeneralInfo(appId: String): IO[Option[GeneralInformation]]
-
-  def known(appId: String, userIds: NonEmptyList[DataSubject]): IO[Boolean]
 }
 
 object GeneralInfoRepository {
@@ -30,14 +28,6 @@ object GeneralInfoRepository {
         """
           .query[GeneralInformation]
           .option
-          .transact(xa)
-
-      def known(appId: String, userIds: NonEmptyList[DataSubject]): IO[Boolean] =
-        (fr"select count(*) from data_subjects where appid = $appId::uuid and"
-          ++ DbUtil.Fragments.inUuid(fr"id", userIds.map(_.id)))
-          .query[Int]
-          .unique
-          .map(_ > 0)
           .transact(xa)
 
     }
