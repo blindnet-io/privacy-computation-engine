@@ -1,5 +1,5 @@
 package io.blindnet.privacy
-package api.endpoints.payload.response
+package api.endpoints.messages.privacyrequest
 
 import java.time.Instant
 
@@ -18,7 +18,6 @@ import model.vocabulary.terms.*
 
 case class DemandResponse(
     responseId: String,
-    demandId: String,
     date: Instant,
     requestedAction: Action,
     status: Status,

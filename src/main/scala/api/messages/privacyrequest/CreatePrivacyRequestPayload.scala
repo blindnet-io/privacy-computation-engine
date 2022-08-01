@@ -1,5 +1,5 @@
 package io.blindnet.privacy
-package api.endpoints.payload.request
+package api.endpoints.messages.privacyrequest
 
 import cats.effect.*
 import io.blindnet.privacy.model.vocabulary.*
@@ -26,8 +26,7 @@ case class PrivacyRequestDemand(
     message: Option[String],
     language: Option[String],
     data: Option[List[String]],
-    restrictions: Option[List[Restriction]],
-    target: Option[Target]
+    restrictions: Option[List[Restriction]]
 )
 
 object PrivacyRequestDemand {
@@ -37,14 +36,21 @@ object PrivacyRequestDemand {
   given Schema[PrivacyRequestDemand] = Schema.derived[PrivacyRequestDemand]
 }
 
-case class PrivacyRequestPayload(
+case class CreatePrivacyRequestPayload(
+    target: Option[Target],
+    email: Option[String],
     demands: List[PrivacyRequestDemand],
     dataSubject: List[DataSubject]
 )
 
-object PrivacyRequestPayload {
-  given Decoder[PrivacyRequestPayload] = unSnakeCaseIfy(deriveDecoder[PrivacyRequestPayload])
-  given Encoder[PrivacyRequestPayload] = snakeCaseIfy(deriveEncoder[PrivacyRequestPayload])
+object CreatePrivacyRequestPayload {
+  given Decoder[CreatePrivacyRequestPayload] = unSnakeCaseIfy(
+    deriveDecoder[CreatePrivacyRequestPayload]
+  )
+
+  given Encoder[CreatePrivacyRequestPayload] = snakeCaseIfy(
+    deriveEncoder[CreatePrivacyRequestPayload]
+  )
 
   given Schema[PrivacyRequestDemand] = Schema.derived[PrivacyRequestDemand]
 }
