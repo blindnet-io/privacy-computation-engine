@@ -155,7 +155,7 @@ create table legal_bases_scope (
 -- DATA SUBJECT
 
 create table data_subjects (
-  id uuid primary key,
+  id varchar primary key,
   appid uuid not null,
   schema varchar unique not null,
   constraint app_fk
@@ -166,11 +166,16 @@ create table data_subjects (
 
 -- PRIVACY REQUEST
 
+create type action_terms as enum ('ACCESS', 'DELETE', 'MODIFY', 'OBJECT', 'PORTABILITY', 'RESTRICT',
+'REVOKE-CONSENT', 'TRANSPARENCY', 'TRANSPARENCY.DATA-CATEGORIES', 'TRANSPARENCY.DPO', 'TRANSPARENCY.KNOWN', 'TRANSPARENCY.LEGAL-BASES', 'TRANSPARENCY.ORGANIZATION', 'TRANSPARENCY.POLICY', 'TRANSPARENCY.PROCESSING-CATEGORIES', 'TRANSPARENCY.PROVENANCE', 'TRANSPARENCY.PURPOSE', 'TRANSPARENCY.RETENTION', 'TRANSPARENCY.WHERE', 'TRANSPARENCY.WHO');
+
 create table privacy_requests (
   id uuid primary key,
   appid uuid not null,
-  dsid uuid not null,
+  dsid varchar,
   date timestamp not null,
+  target target_terms not null,
+  email varchar,
   constraint data_subject_fk
     foreign key (dsid)
     references data_subjects(id)
@@ -184,7 +189,7 @@ create table privacy_requests (
 create table demands (
   id uuid primary key,
   prid uuid not null,
-  action varchar not null, -- TODO: enum
+  action action_terms not null,
   message varchar,
   lang varchar,
   constraint privacy_request_fk
@@ -267,25 +272,30 @@ create table data_reference_restriction (
 create type status_terms as enum ('GRANTED', 'DENIED', 'PARTIALLY-GRANTED', 'UNDER-REVIEW', 'CANCELED');
 
 -- per demand
-create table privacy_response (
+create table privacy_responses (
   id uuid primary key,
   did uuid not null,
+  parent uuid, -- included in
   constraint demand_fk
     foreign key (did)
     references demands(id)
+    on delete cascade,
+  constraint included_in_fk
+    foreign key (parent)
+    references privacy_responses(id)
     on delete cascade
 );
 
-create table privacy_response_event (
+create table privacy_response_events (
   id uuid primary key,
   prid uuid not null,
   date timestamp not null,
   status status_terms not null,
   message varchar,
-  lang varchar not null,
+  lang varchar,
   constraint privacy_response_fk
     foreign key (prid)
-    references privacy_response(id)
+    references privacy_responses(id)
     on delete cascade
 );
 -----------------
@@ -300,7 +310,7 @@ create table privacy_response_event (
 create table legal_base_events (
   id uuid primary key,
   lbid uuid not null,
-  dsid uuid not null,
+  dsid varchar not null,
   event event_terms not null,
   date timestamp not null,
   constraint legal_base_fk
@@ -316,7 +326,7 @@ create table legal_base_events (
 create table consent_given_events (
   id uuid primary key,
   lbid uuid not null,
-  dsid uuid not null,
+  dsid varchar not null,
   date timestamp not null,
   constraint legal_base_fk
     foreign key (lbid)
@@ -331,7 +341,7 @@ create table consent_given_events (
 create table consent_revoked_events (
   id uuid primary key,
   lbid uuid not null,
-  dsid uuid not null,
+  dsid varchar not null,
   date timestamp not null,
   constraint legal_base_fk
     foreign key (lbid)
@@ -346,7 +356,7 @@ create table consent_revoked_events (
 create table object_events (
   id uuid primary key,
   did uuid not null,
-  dsid uuid not null,
+  dsid varchar not null,
   date timestamp not null,
   constraint demand_fk
     foreign key (did)
@@ -361,7 +371,7 @@ create table object_events (
 create table restrict_events (
   id uuid primary key,
   did uuid not null,
-  dsid uuid not null,
+  dsid varchar not null,
   date timestamp not null,
   constraint demand_fk
     foreign key (did)
