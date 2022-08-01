@@ -4,6 +4,7 @@ package api
 import cats.data.OptionT
 import cats.effect.*
 import org.http4s.*
+import org.http4s.circe.*
 import org.http4s.server.middleware.ErrorHandling
 import org.typelevel.log4cats.*
 import org.typelevel.log4cats.slf4j.*
@@ -17,7 +18,7 @@ object ErrorHandlerMiddleware {
     case e: BadRequestException =>
       for {
         _ <- logger.debug(e)("Bad request exception")
-      } yield Response(Status.BadRequest).condEntity(true, e.getMessage)
+      } yield Response(Status.UnprocessableEntity).withEntity(e.message)
 
     case e: MessageFailure =>
       for {
