@@ -34,7 +34,7 @@ class AppRouter(services: Services) {
   // data consumer endpoints
   // customization endpoints
 
-  val documentedEndpoints = healthCheckEndpoints ++ privacyRequestEndpoints
+  val allEndpoints = healthCheckEndpoints ++ privacyRequestEndpoints
 
   // val docs: OpenAPI =
   //   OpenAPIDocsInterpreter()
@@ -49,14 +49,19 @@ class AppRouter(services: Services) {
   val swagger =
     SwaggerInterpreter(swaggerUIOptions = SwaggerUIOptions.default.pathPrefix(List("swagger")))
       .fromServerEndpoints[IO](
-        documentedEndpoints,
+        allEndpoints,
         "Privacy computation engine",
         build.BuildInfo.version
       )
 
+  private val http4sOptions = Http4sServerOptions
+    .customiseInterceptors[IO]
+    .exceptionHandler(None)
+    .serverLog(None)
+    .options
+
   val allRoutes =
-    Http4sServerInterpreter[IO]().toRoutes(healthCheckEndpoints) <+>
-      Http4sServerInterpreter[IO]().toRoutes(privacyRequestEndpoints) <+>
+    Http4sServerInterpreter[IO](http4sOptions).toRoutes(allEndpoints) <+>
       Http4sServerInterpreter[IO]().toRoutes(swagger)
 
   val routes: HttpRoutes[IO] = allRoutes
