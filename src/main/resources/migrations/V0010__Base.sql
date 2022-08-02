@@ -276,6 +276,7 @@ create table privacy_responses (
   id uuid primary key,
   did uuid not null,
   parent uuid, -- included in
+  system varchar,
   constraint demand_fk
     foreign key (did)
     references demands(id)
@@ -293,6 +294,8 @@ create table privacy_response_events (
   status status_terms not null,
   message varchar,
   lang varchar,
+  data varchar,
+  answer varchar,
   constraint privacy_response_fk
     foreign key (prid)
     references privacy_responses(id)
