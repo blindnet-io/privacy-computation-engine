@@ -1,25 +1,31 @@
 package io.blindnet.privacy
 package db.repositories
 
+import java.time.Instant
+import java.util.UUID
+import javax.xml.crypto.Data
+
 import cats.data.NonEmptyList
 import cats.effect.*
+import cats.effect.std.Random
 import cats.implicits.*
 import doobie.*
 import doobie.implicits.*
 import doobie.postgres.*
 import doobie.postgres.implicits.*
+import io.blindnet.privacy.model.vocabulary.request.{ Demand, PrivacyRequest, PrivacyResponse }
+import io.circe.*
+import io.circe.parser.*
 import model.vocabulary.*
 import model.vocabulary.terms.*
-import db.DbUtil
-import javax.xml.crypto.Data
-import io.blindnet.privacy.model.vocabulary.request.PrivacyRequest
-import io.blindnet.privacy.model.vocabulary.request.Demand
-import cats.effect.std.Random
-import java.util.UUID
 
 trait PrivacyRequestRepository {
 
   def store(pr: PrivacyRequest): IO[Unit]
+
+  def requestExist(reqId: String): IO[Boolean]
+
+  def getResponse(reqId: String): IO[Option[List[PrivacyResponse]]]
 }
 
 object PrivacyRequestRepository {
@@ -71,6 +77,54 @@ object PrivacyRequestRepository {
 
         // TODO: ensure inserted
         store.transact(xa).void
+      }
+
+      def requestExist(reqId: String): IO[Boolean] =
+        sql"""
+            select exists (select 1 from privacy_requests pr where id = $reqId::uuid)
+          """
+          .query[Boolean]
+          .unique
+          .transact(xa)
+
+      def getResponse(reqId: String): IO[Option[List[PrivacyResponse]]] = {
+        sql"""
+            with query as (
+              select pr.id as id, pre.id as eid, pre.date as date, d.action as action, pre.status as status,
+                pre.answer as answer, pre.message as message, pre.lang as lang, pr.system as system, pre.data as data,
+                ROW_NUMBER() OVER (PARTITION BY pr.id ORDER BY date DESC) As r
+              from privacy_response_events pre
+                join privacy_responses pr on pr.id = pre.prid
+                join demands d on d.id = pr.did
+              where d.prid = $reqId::uuid
+            )
+            select * from query where r = 1;
+          """
+          .query[
+            (
+                String,
+                String,
+                Instant,
+                String,
+                String,
+                Option[String],
+                Option[String],
+                Option[String],
+                Option[String],
+                Option[String]
+            )
+          ]
+          .to[List]
+          .map(_.map {
+            case (id, eid, t, action, status, answer, msg, lang, system, data) =>
+              for {
+                a <- Action.parse(action).toOption
+                s <- Status.parse(status).toOption
+                j = answer.flatMap(a => parse(a).toOption)
+              } yield PrivacyResponse(id, eid, t, a, s, j, msg, lang, system, List.empty, data)
+
+          }.sequence)
+          .transact(xa)
       }
 
     }
