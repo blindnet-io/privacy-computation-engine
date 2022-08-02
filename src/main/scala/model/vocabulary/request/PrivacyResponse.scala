@@ -11,15 +11,16 @@ import model.vocabulary.terms.*
 import io.circe.Json
 
 case class PrivacyResponse(
-    responseId: String,
-    demandId: String,
-    date: Instant,
-    requestedAction: Action,
+    id: String,
+    eventId: String,
+    timestamp: Instant,
+    action: Action,
     status: Status,
-    answer: Json,
-    message: Option[String],
-    lang: String,
-    includes: Option[String] = None,
+    answer: Option[Json] = None,
+    message: Option[String] = None,
+    lang: Option[String] = None,
+    system: Option[String] = None,
+    includes: List[PrivacyResponse] = List.empty,
     data: Option[String] = None
 )
 
