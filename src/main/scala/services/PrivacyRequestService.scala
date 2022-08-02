@@ -93,8 +93,6 @@ class PrivacyRequestService(
 
       privResponsesOpt <- repositories.privacyRequest.getResponse(requestId)
 
-      _ = println(privResponsesOpt)
-
       privResponses <- privResponsesOpt match {
         case None      => IO.raiseError(InternalException())
         case Some(prs) => IO.pure(prs)
