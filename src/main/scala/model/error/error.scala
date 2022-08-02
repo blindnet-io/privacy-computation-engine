@@ -17,8 +17,8 @@ case class BadRequestException(message: Json)         extends Exception(message.
 case class ForbiddenException(message: String = null) extends Exception(message)
 case class NotFoundException(message: String = null)  extends Exception(message)
 case class AuthException(message: String = null)      extends Exception(message)
-
-case class MigrationError(message: String) extends Error(message)
+case class InternalException(message: String = null)  extends Exception(message)
+case class MigrationError(message: String)            extends Error(message)
 
 extension (e: Exception) {
   def raise = IO.raiseError(e)

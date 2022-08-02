@@ -25,36 +25,30 @@ class PrivacyRequestService(
 
   // val transparency = new TransparencyDemands(repositories)
 
+  private def failBadRequest(msg: String) =
+    BadRequestException(BadPrivacyRequestPayload(msg).asJson).raise
+
+  private def failNotFound(msg: String) =
+    NotFoundException(msg).raise
+
   private def validateRequest(req: PrivacyRequest) = {
     for {
       _ <-
         if req.demands.map(_.action).toSet.size == req.demands.size then IO.unit
-        else
-          BadRequestException(
-            BadPrivacyRequestPayload("2 or more demands have duplicate action types").asJson
-          ).raise
+        else failBadRequest("2 or more demands have duplicate action types")
 
       (invalid, _) = PrivacyRequest.validateDemands(req)
 
       _ <-
         if invalid.length == 0 then IO.unit
-        else
-          BadRequestException(
-            BadPrivacyRequestPayload(
-              invalid.foldLeft("")((acc, cur) => acc + cur._1 + "\n")
-            ).asJson
-          ).raise
+        else failBadRequest(invalid.foldLeft("")((acc, cur) => acc + cur._1 + "\n"))
 
       _ <- NonEmptyList
         .fromList(req.dataSubject)
         .fold(IO.unit)(
           repositories.dataSubject
             .known(req.appId, _)
-            .flatMap(
-              if _ then IO.unit
-              else
-                BadRequestException(BadPrivacyRequestPayload("Unknown data subject").asJson).raise
-            )
+            .flatMap(if _ then IO.unit else failBadRequest("Unknown data subject"))
         )
 
     } yield ()
@@ -63,23 +57,12 @@ class PrivacyRequestService(
 
   def createPrivacyRequest(req: CreatePrivacyRequestPayload, appId: String) = {
     for {
-      // TODO: reject if number of demands is large
-
       reqId     <- UUIDGen.randomUUID[IO]
       demandIds <- UUIDGen.randomUUID[IO].replicateA(req.demands.length)
       timestamp <- Clock[IO].realTimeInstant
 
       demands = req.demands.zip(demandIds).map {
-        case (d, id) =>
-          Demand(
-            id.toString(),
-            d.action,
-            d.message,
-            d.language,
-            d.data.getOrElse(List.empty),
-            // TODO: restrictions
-            List.empty
-          )
+        case (d, id) => PrivacyRequestDemand.toPrivDemand(id.toString(), d)
       }
 
       pr = PrivacyRequest(
@@ -99,15 +82,26 @@ class PrivacyRequestService(
     } yield PrivacyRequestCreatedPayload(reqId.toString)
   }
 
-  def getRequest(
-      requestId: String,
-      appId: String
-  ) = {
-    for {
-      _ <- IO.unit
-      pr: PrivacyRequest = ???
+  def getResponse(requestId: String, appId: String) = {
 
-    } yield ()
+    for {
+      exist <- repositories.privacyRequest.requestExist(requestId)
+
+      _ <-
+        if exist then IO.unit
+        else failNotFound("Request not found")
+
+      privResponsesOpt <- repositories.privacyRequest.getResponse(requestId)
+
+      _ = println(privResponsesOpt)
+
+      privResponses <- privResponsesOpt match {
+        case None      => IO.raiseError(InternalException())
+        case Some(prs) => IO.pure(prs)
+      }
+
+      resp = privResponses.map(PrivacyResponsePayload.fromPrivPrivacyResponse)
+    } yield resp
   }
 
   // def processRequest(
