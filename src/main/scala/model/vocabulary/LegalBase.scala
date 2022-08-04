@@ -4,7 +4,7 @@ package model.vocabulary
 import model.vocabulary.terms.*
 
 case class LegalBase(
-    term: LegalBaseTerms,
+    lbType: LegalBaseTerms,
     scope: List[PrivacyScopeTriple],
     name: Option[String] = None,
     description: Option[String] = None,
