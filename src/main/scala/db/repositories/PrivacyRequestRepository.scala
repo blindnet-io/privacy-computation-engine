@@ -18,14 +18,17 @@ import io.circe.*
 import io.circe.parser.*
 import model.vocabulary.*
 import model.vocabulary.terms.*
+import cats.data.OptionT
 
 trait PrivacyRequestRepository {
 
   def store(pr: PrivacyRequest): IO[Unit]
 
-  def requestExist(reqId: String): IO[Boolean]
+  def requestExist(reqId: String, appId: String, userId: String): IO[Boolean]
 
-  def getResponse(reqId: String): IO[Option[List[PrivacyResponse]]]
+  def getRequest(reqId: String, appId: String, userId: String): IO[Option[PrivacyRequest]]
+
+  def getResponse(reqId: String, appId: String, userId: String): IO[List[PrivacyResponse]]
 }
 
 object PrivacyRequestRepository {
@@ -79,15 +82,62 @@ object PrivacyRequestRepository {
         store.transact(xa).void
       }
 
-      def requestExist(reqId: String): IO[Boolean] =
+      def requestExist(reqId: String, appId: String, userId: String): IO[Boolean] =
         sql"""
-            select exists (select 1 from privacy_requests pr where id = $reqId::uuid)
+            select exists (
+              select 1 from privacy_requests pr
+              where id = $reqId::uuid and appid = $appId::uuid and dsid = $userId
+            )
           """
           .query[Boolean]
           .unique
           .transact(xa)
 
-      def getResponse(reqId: String): IO[Option[List[PrivacyResponse]]] = {
+      def getRequest(reqId: String, appId: String, userId: String): IO[Option[PrivacyRequest]] = {
+        val getReq =
+          sql"""
+            select id, appid, dsid, date, target, email
+            from privacy_requests
+            where id = $reqId::uuid and appid = $appId::uuid and dsid = $userId
+          """
+            .query[(String, String, String, Instant, Target, Option[String])]
+            .option
+
+        // TODO: restrictions
+        val getDemands =
+          sql"""
+            select id, action, message, lang
+            from demands
+            where prid = $reqId
+          """
+            .query[(String, Action, Option[String], Option[String])]
+            .map {
+              case (id, action, msg, lang) => Demand(id, action, msg, lang, List.empty, List.empty)
+            }
+            .to[List]
+
+        val res =
+          for {
+            (id, appId, dsid, time, target, email) <- OptionT(getReq)
+            demands                                <- OptionT(getDemands.map(_.some))
+          } yield PrivacyRequest(
+            id,
+            appId,
+            time,
+            target,
+            email,
+            List(DataSubject(dsid, "")),
+            demands
+          )
+
+        res.value.transact(xa)
+      }
+
+      def getResponse(
+          reqId: String,
+          appId: String,
+          userId: String
+      ): IO[List[PrivacyResponse]] = {
         sql"""
             with query as (
               select pr.id as id, pre.id as eid, pre.date as date, d.action as action, pre.status as status,
@@ -105,8 +155,8 @@ object PrivacyRequestRepository {
                 String,
                 String,
                 Instant,
-                String,
-                String,
+                Action,
+                Status,
                 Option[String],
                 Option[String],
                 Option[String],
@@ -114,16 +164,24 @@ object PrivacyRequestRepository {
                 Option[String]
             )
           ]
-          .to[List]
-          .map(_.map {
-            case (id, eid, t, action, status, answer, msg, lang, system, data) =>
-              for {
-                a <- Action.parse(action).toOption
-                s <- Status.parse(status).toOption
-                j = answer.flatMap(a => parse(a).toOption)
-              } yield PrivacyResponse(id, eid, t, a, s, j, msg, lang, system, List.empty, data)
+          .map {
+            case (id, eid, t, a, s, answer, msg, lang, system, data) =>
+              PrivacyResponse(
+                id,
+                eid,
+                t,
+                a,
+                s,
+                answer.flatMap(a => parse(a).toOption),
+                msg,
+                lang,
+                system,
+                List.empty,
+                data
+              )
 
-          }.sequence)
+          }
+          .to[List]
           .transact(xa)
       }
 
