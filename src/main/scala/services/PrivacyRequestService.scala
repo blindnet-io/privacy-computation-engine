@@ -95,49 +95,10 @@ class PrivacyRequestService(
         if exist then IO.unit
         else failNotFound("Request not found")
 
-      privResponses <- repositories.privacyRequest.getResponse(requestId, appId, userId)
+      privResponses <- repositories.privacyRequest.getResponse(requestId)
 
       resp = privResponses.map(PrivacyResponsePayload.fromPrivPrivacyResponse)
     } yield resp
   }
-
-  // def processRequest(
-  //     req: CreatePrivacyRequestPayload,
-  //     appId: String
-  // ): IO[CreatePrivacyRequestResponsePayload] = {
-  //   for {
-  //     pr   <- createPrivacyRequest(req, appId)
-  //     id   <- UUIDGen[IO].randomUUID
-  //     date <- Clock[IO].realTimeInstant
-
-  //     (invalid, valid) = PrivacyRequest.validateDemands(pr)
-
-  //     // TODO: store request
-  //     results <- valid.parTraverse(d => processDemand(d, pr.appId, pr.dataSubject))
-
-  //     invalidResults <- invalid.traverse(
-  //       d => createInvalidDemandResponse(d._2, d._1.mkString_("\n"))
-  //     )
-
-  //   } yield PrivacyRequestResponsePayload(id.toString, pr.id, date, results ++ invalidResults)
-  // }
-
-  // private def processDemand(
-  //     demand: Demand,
-  //     appId: String,
-  //     userIds: List[DataSubject]
-  // ): IO[DemandResponse] = {
-
-  //   for {
-  //     date <- Clock[IO].realTimeInstant
-  //     res  <- demand.action match {
-  //       case t if t == Action.Transparency || t.isChildOf(Action.Transparency) =>
-  //         transparency.processTransparencyDemand(demand, appId, userIds, date)
-  //       case _ => IO.raiseError(new NotImplementedError)
-  //     }
-
-  //   } yield res
-
-  // }
 
 }
