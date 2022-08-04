@@ -4,7 +4,7 @@ package services
 import cats.data.{ NonEmptyList, * }
 import cats.effect.*
 import cats.effect.kernel.Clock
-import cats.effect.std.UUIDGen
+import cats.effect.std.*
 import cats.implicits.*
 import io.circe.Json
 import io.circe.generic.auto.*
@@ -18,9 +18,11 @@ import model.vocabulary.terms.*
 // import services.requests.TransparencyDemands
 import io.blindnet.privacy.model.error.given
 import java.time.Instant
+import state.State
 
 class PrivacyRequestService(
-    repositories: Repositories
+    repositories: Repositories,
+    state: State
 ) {
 
   // val transparency = new TransparencyDemands(repositories)
@@ -79,24 +81,21 @@ class PrivacyRequestService(
 
       _ <- repositories.privacyRequest.store(pr)
 
+      _ <- state.pendingRequests.offer(reqId.toString)
+
     } yield PrivacyRequestCreatedPayload(reqId.toString)
   }
 
-  def getResponse(requestId: String, appId: String) = {
+  def getResponse(requestId: String, appId: String, userId: String) = {
 
     for {
-      exist <- repositories.privacyRequest.requestExist(requestId)
+      exist <- repositories.privacyRequest.requestExist(requestId, appId, userId)
 
       _ <-
         if exist then IO.unit
         else failNotFound("Request not found")
 
-      privResponsesOpt <- repositories.privacyRequest.getResponse(requestId)
-
-      privResponses <- privResponsesOpt match {
-        case None      => IO.raiseError(InternalException())
-        case Some(prs) => IO.pure(prs)
-      }
+      privResponses <- repositories.privacyRequest.getResponse(requestId, appId, userId)
 
       resp = privResponses.map(PrivacyResponsePayload.fromPrivPrivacyResponse)
     } yield resp
