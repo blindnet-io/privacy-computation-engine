@@ -4,6 +4,7 @@ package model.vocabulary.terms
 import cats.data.Validated
 import io.circe.*
 import sttp.tapir.*
+import doobie.util.Get
 
 enum Status(term: String) {
   case Granted          extends Status("GRANTED")
@@ -24,6 +25,9 @@ object Status {
       "Unknown status term"
     )
 
+  def parseUnsafe(str: String): Status =
+    Status.values.find(a => a.isTerm(str)).get
+
   given Decoder[Status] =
     Decoder.decodeString.emap(Status.parse(_).toEither)
 
@@ -32,5 +36,8 @@ object Status {
 
   given Schema[Status] =
     Schema.string.validate(Validator.enumeration(Status.values.toList, x => Option(x.encode)))
+
+  given Get[Status] =
+    Get[String].tmap(t => Status.parseUnsafe(t))
 
 }

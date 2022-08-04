@@ -3,6 +3,7 @@ package model.vocabulary.terms
 
 import cats.data.Validated
 import io.circe.*
+import doobie.util.Get
 
 enum RetentionPolicyTerms(term: String) {
   case NoLongerThan extends RetentionPolicyTerms("NO-LONGER-THAN")
@@ -20,10 +21,16 @@ object RetentionPolicyTerms {
       "Unknown retention policy"
     )
 
+  def parseUnsafe(str: String): RetentionPolicyTerms =
+    RetentionPolicyTerms.values.find(a => a.isTerm(str)).get
+
   given Decoder[RetentionPolicyTerms] =
     Decoder.decodeString.emap(RetentionPolicyTerms.parse(_).toEither)
 
   given Encoder[RetentionPolicyTerms] =
     Encoder[String].contramap(_.encode)
+
+  given Get[RetentionPolicyTerms] =
+    Get[String].map(t => RetentionPolicyTerms.parseUnsafe(t))
 
 }

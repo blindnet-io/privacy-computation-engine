@@ -6,6 +6,7 @@ import io.circe.*
 
 import cats.data.Validated
 import io.circe.*
+import doobie.util.Get
 
 enum ProvenanceTerms(term: String, parent: Option[ProvenanceTerms] = None) {
   case All         extends ProvenanceTerms("*")
@@ -34,10 +35,16 @@ object ProvenanceTerms {
       "Unknown provenance"
     )
 
+  def parseUnsafe(str: String): ProvenanceTerms =
+    ProvenanceTerms.values.find(a => a.isTerm(str)).get
+
   given Decoder[ProvenanceTerms] =
     Decoder.decodeString.emap(ProvenanceTerms.parse(_).toEither)
 
   given Encoder[ProvenanceTerms] =
     Encoder[String].contramap(_.encode)
+
+  given Get[ProvenanceTerms] =
+    Get[String].map(t => ProvenanceTerms.parseUnsafe(t))
 
 }

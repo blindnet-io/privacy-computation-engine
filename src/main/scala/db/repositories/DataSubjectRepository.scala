@@ -25,8 +25,8 @@ object DataSubjectRepository {
         (fr"select count(*) from data_subjects where appid = $appId::uuid and"
           ++ Fragments.in(fr"id", userIds.map(_.id)))
           .query[Int]
-          .unique
           .map(_ > 0)
+          .unique
           .transact(xa)
 
     }

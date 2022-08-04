@@ -3,6 +3,7 @@ package model.vocabulary.terms
 
 import cats.data.Validated
 import io.circe.*
+import doobie.util.Get
 
 enum LegalBaseTerms(term: String, parent: Option[LegalBaseTerms] = None) {
   case Contract           extends LegalBaseTerms("CONTRACT")
@@ -34,10 +35,16 @@ object LegalBaseTerms {
       "Unknown legal base"
     )
 
+  def parseUnsafe(str: String): LegalBaseTerms =
+    LegalBaseTerms.values.find(a => a.isTerm(str)).get
+
   given Decoder[LegalBaseTerms] =
     Decoder.decodeString.emap(LegalBaseTerms.parse(_).toEither)
 
   given Encoder[LegalBaseTerms] =
     Encoder[String].contramap(_.encode)
+
+  given Get[LegalBaseTerms] =
+    Get[String].tmap(t => LegalBaseTerms.parseUnsafe(t))
 
 }

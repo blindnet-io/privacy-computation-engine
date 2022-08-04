@@ -42,16 +42,12 @@ object RetentionPolicyRepository {
           join data_categories dc ON rp.dcid = dc.id
           where rp.appid = $appId::uuid
         """
-          .query[(String, String, String, String)]
+          .query[(RetentionPolicyTerms, String, EventTerms, DataCategory)]
+          .map {
+            case (policy, dur, after, dc) => dc -> RetentionPolicy(policy, dur, after)
+          }
           .to[List]
-          .map(_.flatMap {
-            case (policy, dur, after, dc) =>
-              for {
-                p <- RetentionPolicyTerms.parse(policy).toOption
-                a <- EventTerms.parse(after).toOption
-                d <- DataCategory.parse(dc).toOption
-              } yield d -> RetentionPolicy(p, dur, a)
-          }.groupBy(_._1).view.mapValues(_.map(_._2)).toMap)
+          .map(_.groupBy(_._1).view.mapValues(_.map(_._2)).toMap)
           .transact(xa)
 
       def getRetentionPolicyForDataCategory(
@@ -64,15 +60,8 @@ object RetentionPolicyRepository {
           join data_categories dc ON rp.dcid = dc.id
           where rp.appid = $appId::uuid and dc.term = $dc
         """
-          .query[(String, String, String)]
+          .query[RetentionPolicy]
           .to[List]
-          .map(_.flatMap {
-            case (policy, dur, after) =>
-              for {
-                p <- RetentionPolicyTerms.parse(policy).toOption
-                a <- EventTerms.parse(after).toOption
-              } yield RetentionPolicy(p, dur, a)
-          })
           .transact(xa)
 
     }

@@ -23,6 +23,7 @@ trait LegalBaseRepository {
 }
 
 object LegalBaseRepository {
+
   def live(xa: Transactor[IO]): LegalBaseRepository =
     new LegalBaseRepository {
       // TODO: userId
@@ -32,22 +33,16 @@ object LegalBaseRepository {
             from legal_bases
             where appid = $appId::uuid
           """
-          .query[(String, Option[String], Option[String], Boolean)]
+          .query[(LegalBaseTerms, Option[String], Option[String], Boolean)]
+          .map {
+            case (lbType, name, desc, active) =>
+              LegalBase(lbType, List.empty, name, desc, active)
+          }
           .to[List]
-          .map(
-            _.flatMap {
-              case (lbType, name, desc, active) =>
-                LegalBaseTerms
-                  .parse(lbType)
-                  .toOption
-                  .map(
-                    lbTerm => LegalBase(lbTerm, List.empty, name = name, description = desc, active)
-                  )
-            }
-          )
           .transact(xa)
       }
 
+      // TODO: how to derive Get[List[T]] if T has Get instance?
       def getLegalBase(
           appId: String,
           lbId: String,
@@ -66,7 +61,7 @@ object LegalBaseRepository {
         """
           .query[
             (
-                String,
+                LegalBaseTerms,
                 Option[String],
                 Option[String],
                 Boolean,
@@ -75,23 +70,15 @@ object LegalBaseRepository {
                 List[String]
             )
           ]
-          .unique
           .map {
-            case (lbType, name, desc, active, dcs, pcs, pps) => {
-              for {
-                lbTerm <- LegalBaseTerms.parse(lbType).toOption
-                scope = dcs.lazyZip(pcs).lazyZip(pps).flatMap {
-                  case (dc, pc, pp) => {
-                    (
-                      DataCategory.parse(dc),
-                      ProcessingCategory.parse(pc),
-                      Purpose.parse(pp)
-                    ).mapN(PrivacyScopeTriple.apply).toOption
-                  }
-                }
-              } yield LegalBase(lbTerm, scope, name = name, description = desc, active)
+            case (lbTerm, name, desc, active, dcs, pcs, pps) => {
+              val scope = dcs.lazyZip(pcs).lazyZip(pps).map {
+                case (dc, pc, pp) => PrivacyScopeTriple.unsafe(dc, pc, pp)
+              }
+              LegalBase(lbTerm, scope, name, desc, active)
             }
           }
+          .option
           .transact(xa)
       }
 
