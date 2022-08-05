@@ -36,7 +36,7 @@ object LegalBaseRepository {
           .query[(LegalBaseTerms, Option[String], Option[String], Boolean)]
           .map {
             case (lbType, name, desc, active) =>
-              LegalBase(lbType, List.empty, name, desc, active)
+              LegalBase(lbType, PrivacyScope.empty, name, desc, active)
           }
           .to[List]
           .transact(xa)
@@ -75,7 +75,7 @@ object LegalBaseRepository {
               val scope = dcs.lazyZip(pcs).lazyZip(pps).map {
                 case (dc, pc, pp) => PrivacyScopeTriple.unsafe(dc, pc, pp)
               }
-              LegalBase(lbTerm, scope, name, desc, active)
+              LegalBase(lbTerm, PrivacyScope.empty, name, desc, active)
             }
           }
           .option

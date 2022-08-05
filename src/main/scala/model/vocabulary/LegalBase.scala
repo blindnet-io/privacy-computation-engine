@@ -5,7 +5,7 @@ import model.vocabulary.terms.*
 
 case class LegalBase(
     lbType: LegalBaseTerms,
-    scope: List[PrivacyScopeTriple],
+    scope: PrivacyScope,
     name: Option[String] = None,
     description: Option[String] = None,
     active: Boolean

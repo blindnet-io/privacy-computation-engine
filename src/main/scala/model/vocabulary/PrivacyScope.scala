@@ -4,22 +4,21 @@ package model.vocabulary
 import model.vocabulary.terms.*
 import cats.kernel.Eq
 
-case class PrivacyScopeTriple(
-    dataCategories: DataCategory,
-    processingCategories: ProcessingCategory,
-    purpose: Purpose
+// TODO: optimize methods
+case class PrivacyScope(
+    triples: Set[PrivacyScopeTriple]
 ) {
-  def eql(other: PrivacyScopeTriple) = {
-    dataCategories == other.dataCategories &&
-    processingCategories == other.processingCategories &&
-    purpose == other.purpose
-  }
+  def union(other: PrivacyScope) =
+    this.copy(triples union other.triples)
+
+  def intersection(other: PrivacyScope) =
+    this.copy(triples intersect other.triples)
+
+  def difference(other: PrivacyScope) =
+    this.copy(triples diff other.triples)
 
 }
 
-object PrivacyScopeTriple {
-  def unsafe(dc: String, pc: String, pp: String) =
-    PrivacyScopeTriple(DataCategory(dc), ProcessingCategory(pc), Purpose(pp))
-
-  given Eq[PrivacyScopeTriple] = Eq.instance((a, b) => a eql b)
+object PrivacyScope {
+  def empty = PrivacyScope(Set.empty)
 }
