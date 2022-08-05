@@ -18,7 +18,7 @@ import model.vocabulary.terms.*
 import io.blindnet.privacy.model.vocabulary.request.PrivacyResponse
 
 case class PrivacyResponsePayload(
-    responseId: String,
+    demandId: String,
     date: Instant,
     requestedAction: Action,
     status: Status,
@@ -38,7 +38,7 @@ object PrivacyResponsePayload {
 
   def fromPrivPrivacyResponse(pr: PrivacyResponse): PrivacyResponsePayload = {
     PrivacyResponsePayload(
-      pr.id,
+      pr.demandId,
       pr.timestamp,
       pr.action,
       pr.status,
