@@ -7,10 +7,10 @@ import doobie.util.Get
 
 enum EventTerms(term: String) {
   case CaptureDate       extends EventTerms("CAPTURE-DATE")
-  case RelationshipStart extends EventTerms("RELATIONSHIP-END")
-  case RelationshipEnd   extends EventTerms("RELATIONSHIP-START")
-  case ServiceStart      extends EventTerms("SERVICE-END")
-  case ServiceEnd        extends EventTerms("SERVICE-START")
+  case RelationshipStart extends EventTerms("RELATIONSHIP-START")
+  case RelationshipEnd   extends EventTerms("RELATIONSHIP-END")
+  case ServiceStart      extends EventTerms("SERVICE-START")
+  case ServiceEnd        extends EventTerms("SERVICE-END")
 
   def isTerm(str: String) = term == str
 
