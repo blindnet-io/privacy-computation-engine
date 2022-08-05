@@ -30,7 +30,7 @@ class RequestProcessor(
     } yield ()
   }
 
-  def processDemand(request: PrivacyRequest, demand: Demand): IO[Unit] = {
+  private def processDemand(request: PrivacyRequest, demand: Demand): IO[Unit] = {
     for {
       respOpt <- repos.privacyRequest.getDemandResponse(demand.id)
       resp    <- respOpt match {
@@ -49,7 +49,11 @@ class RequestProcessor(
 
   }
 
-  def processAction(request: PrivacyRequest, demand: Demand, resp: PrivacyResponse): IO[Unit] = {
+  private def processAction(
+      request: PrivacyRequest,
+      demand: Demand,
+      resp: PrivacyResponse
+  ): IO[Unit] = {
     demand.action match {
 
       case t if t == Action.Transparency || t.isChildOf(Action.Transparency) =>
@@ -60,7 +64,7 @@ class RequestProcessor(
     }
   }
 
-  def processTransparency(
+  private def processTransparency(
       request: PrivacyRequest,
       demand: Demand,
       resp: PrivacyResponse
@@ -72,7 +76,7 @@ class RequestProcessor(
       timestamp <- Clock[IO].realTimeInstant
 
       newResp = resp.copy(
-        eventId = id.toString,
+        id = id.toString,
         timestamp = timestamp,
         status = Status.Granted,
         answer = Some(answer)

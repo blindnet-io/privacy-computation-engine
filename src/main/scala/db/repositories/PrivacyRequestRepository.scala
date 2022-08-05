@@ -140,7 +140,7 @@ object PrivacyRequestRepository {
       def getResponse(reqId: String): IO[List[PrivacyResponse]] = {
         sql"""
             with query as (
-              select pr.id as id, pre.id as eid, pre.date as date, d.action as action, pre.status as status,
+              select pre.id as id, pr.id as prid, d.id as did, pre.date as date, d.action as action, pre.status as status,
                 pre.answer as answer, pre.message as message, pre.lang as lang, pr.system as system, pre.data as data,
                 ROW_NUMBER() OVER (PARTITION BY pr.id ORDER BY date DESC) As r
               from privacy_response_events pre
@@ -154,6 +154,7 @@ object PrivacyRequestRepository {
             (
                 String,
                 String,
+                String,
                 Instant,
                 Action,
                 Status,
@@ -165,10 +166,11 @@ object PrivacyRequestRepository {
             )
           ]
           .map {
-            case (id, eid, t, a, s, answer, msg, lang, system, data) =>
+            case (id, prid, did, t, a, s, answer, msg, lang, system, data) =>
               PrivacyResponse(
                 id,
-                eid,
+                prid,
+                did,
                 t,
                 a,
                 s,
@@ -189,7 +191,7 @@ object PrivacyRequestRepository {
         // TODO: duplicate code
         sql"""
             with query as (
-              select pr.id as id, pre.id as eid, pre.date as date, d.action as action, pre.status as status,
+              select pre.id as id, pr.id as prid, d.id as did, pre.date as date, d.action as action, pre.status as status,
                 pre.answer as answer, pre.message as message, pre.lang as lang, pr.system as system, pre.data as data,
                 ROW_NUMBER() OVER (PARTITION BY pr.id ORDER BY date DESC) As r
               from privacy_response_events pre
@@ -203,6 +205,7 @@ object PrivacyRequestRepository {
             (
                 String,
                 String,
+                String,
                 Instant,
                 Action,
                 Status,
@@ -214,10 +217,11 @@ object PrivacyRequestRepository {
             )
           ]
           .map {
-            case (id, eid, t, a, s, answer, msg, lang, system, data) =>
+            case (id, prid, did, t, a, s, answer, msg, lang, system, data) =>
               PrivacyResponse(
                 id,
-                eid,
+                prid,
+                did,
                 t,
                 a,
                 s,
@@ -237,8 +241,10 @@ object PrivacyRequestRepository {
       def storeNewResponse(r: PrivacyResponse): IO[Unit] = {
         sql"""
           insert into privacy_response_events (id, prid, date, status, message, lang, data, answer)
-          values (${r.eventId}::uuid, ${r.id}::uuid, ${r.timestamp}, ${r.status.encode}::status_terms,
-          ${r.message}, ${r.lang}, ${r.data}, ${r.answer.map(_.toString)})
+          values (
+            ${r.id}::uuid, ${r.id}::uuid, ${r.timestamp}, ${r.status.encode}::status_terms,
+            ${r.message}, ${r.lang}, ${r.data}, ${r.answer.map(_.toString)}
+          )
         """.update.run
           .transact(xa)
           .void
