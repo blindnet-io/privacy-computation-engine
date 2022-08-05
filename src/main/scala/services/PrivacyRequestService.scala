@@ -18,11 +18,9 @@ import model.vocabulary.terms.*
 // import services.requests.TransparencyDemands
 import io.blindnet.privacy.model.error.given
 import java.time.Instant
-import state.State
 
 class PrivacyRequestService(
-    repositories: Repositories,
-    state: State
+    repositories: Repositories
 ) {
 
   // val transparency = new TransparencyDemands(repositories)
@@ -78,25 +76,20 @@ class PrivacyRequestService(
       )
 
       _ <- validateRequest(pr)
-
       _ <- repositories.privacyRequest.store(pr)
-
-      _ <- state.pendingRequests.offer(reqId.toString)
+      _ <- repositories.pendingRequests.add(reqId.toString)
 
     } yield PrivacyRequestCreatedPayload(reqId.toString)
   }
 
   def getResponse(requestId: String, appId: String, userId: String) = {
-
     for {
       exist <- repositories.privacyRequest.requestExist(requestId, appId, userId)
-
-      _ <-
+      _     <-
         if exist then IO.unit
         else failNotFound("Request not found")
 
       privResponses <- repositories.privacyRequest.getResponse(requestId)
-
       resp = privResponses.map(PrivacyResponsePayload.fromPrivPrivacyResponse)
     } yield resp
   }

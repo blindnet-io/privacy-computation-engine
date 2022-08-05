@@ -4,13 +4,13 @@ package tasks
 import cats.effect.*
 import cats.implicits.*
 import db.repositories.Repositories
-import state.State
 import org.typelevel.log4cats.*
 import org.typelevel.log4cats.slf4j.*
 import io.blindnet.privacy.model.error.*
 import io.blindnet.privacy.model.vocabulary.request.*
 import io.blindnet.privacy.model.vocabulary.terms.*
 import cats.effect.std.UUIDGen
+import scala.concurrent.duration.*
 
 class RequestProcessor(
     repos: Repositories
@@ -71,7 +71,6 @@ class RequestProcessor(
   ): IO[Unit] = {
     for {
       answer    <- transparency.getAnswer(demand, request.appId, request.dataSubject)
-      // TODO: store response
       id        <- UUIDGen.randomUUID[IO]
       timestamp <- Clock[IO].realTimeInstant
 
@@ -91,22 +90,33 @@ class RequestProcessor(
 object RequestProcessor {
   val logger: Logger[IO] = Slf4jLogger.getLogger[IO]
 
-  def run(repos: Repositories, state: State): IO[Unit] = {
+  def run(repos: Repositories): IO[Unit] = {
     val reqProc = new RequestProcessor(repos)
 
     def loop(): IO[Unit] =
       for {
-        reqId <- state.pendingRequests.take
-        _     <- logger.info(s"Processing new request $reqId")
-        // TODO: handle errors - repeat
+        reqId <- repos.pendingRequests.get()
+        _     <- reqId match {
+          case None        => IO.unit
+          case Some(reqId) =>
+            for {
+              _   <- logger.info(s"Processing new request $reqId")
+              fib <- reqProc
+                .processRequest(reqId)
+                .flatMap(_ => logger.info(s"Request $reqId processed"))
+                .handleErrorWith(
+                  e =>
+                    logger
+                      .error(e)(s"Error processing request with id $reqId")
+                      .flatMap(_ => repos.pendingRequests.add(reqId))
+                )
+                .start
+            } yield ()
+        }
 
-        fib <- reqProc
-          .processRequest(reqId)
-          .flatMap(_ => logger.info(s"Request $reqId processed"))
-          .handleErrorWith(e => logger.error(e)(s"Error processing request with id $reqId"))
-          .start
-
-        _ <- loop()
+        // TODO: what do we do to not overwhelm the service with bunch of parallel requests?
+        _     <- IO.sleep(1.seconds)
+        _     <- loop()
       } yield ()
 
     loop()

@@ -4,17 +4,15 @@ package tasks
 import cats.effect.*
 import cats.effect.std.*
 import db.repositories.Repositories
-import state.State
 import tasks.RequestProcessor
 
 object Tasks {
   def run(
-      repos: Repositories,
-      state: State
-  ) = {
+      repos: Repositories
+  ): IO[Unit] = {
 
     for {
-      _ <- RequestProcessor.run(repos, state).start
+      _ <- RequestProcessor.run(repos).start
     } yield ()
   }
 

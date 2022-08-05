@@ -4,7 +4,6 @@ package services
 import cats.effect.*
 import cats.effect.std.*
 import db.repositories.Repositories
-import state.State
 
 trait Services {
   val privacyRequest: PrivacyRequestService
@@ -12,10 +11,9 @@ trait Services {
 
 object Services {
   def make(
-      repos: Repositories,
-      state: State
+      repos: Repositories
   ) = {
-    val privacyRequestService = PrivacyRequestService(repos, state)
+    val privacyRequestService = PrivacyRequestService(repos)
 
     new Services {
       val privacyRequest = privacyRequestService
