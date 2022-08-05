@@ -242,7 +242,7 @@ object PrivacyRequestRepository {
         sql"""
           insert into privacy_response_events (id, prid, date, status, message, lang, data, answer)
           values (
-            ${r.id}::uuid, ${r.id}::uuid, ${r.timestamp}, ${r.status.encode}::status_terms,
+            ${r.id}::uuid, ${r.responseId}::uuid, ${r.timestamp}, ${r.status.encode}::status_terms,
             ${r.message}, ${r.lang}, ${r.data}, ${r.answer.map(_.toString)}
           )
         """.update.run
