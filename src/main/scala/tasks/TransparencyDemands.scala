@@ -20,6 +20,8 @@ class TransparencyDemands(
     repositories: Repositories
 ) {
 
+  import Action.*
+
   val giRepo = repositories.generalInfo
   val psRepo = repositories.privacyScope
   val lbRepo = repositories.legalBase
@@ -44,20 +46,20 @@ class TransparencyDemands(
       userIds: List[DataSubject]
   ): IO[Json] = {
     demand.action match {
-      case Action.Transparency          => processTransparency(appId, userIds).json
-      case Action.TDataCategories       => psRepo.getDataCategories(appId).json
-      case Action.TDPO                  => getDpo(appId).json
-      case Action.TKnown                => getUserKnown(appId, userIds).json
-      case Action.TLegalBases           => lbRepo.getLegalBases(appId, userIds).json
-      case Action.TOrganization         => getOrganization(appId).json
-      case Action.TPolicy               => getPrivacyPolicy(appId).json
-      case Action.TProcessingCategories => psRepo.getProcessingCategories(appId, userIds).json
-      case Action.TProvenance           => prRepo.getProvenances(appId, userIds).json
-      case Action.TPurpose              => psRepo.getPurposes(appId, userIds).json
-      case Action.TRetention            => rpRepo.getRetentionPolicies(appId, userIds).json
-      case Action.TWhere                => getWhere(appId).json
-      case Action.TWho                  => getWho(appId).json
-      case _                            => IO.raiseError(new NotImplementedError)
+      case Transparency          => processTransparency(appId, userIds).json
+      case TDataCategories       => psRepo.getDataCategories(appId).json
+      case TDPO                  => getDpo(appId).json
+      case TKnown                => getUserKnown(appId, userIds).json
+      case TLegalBases           => lbRepo.getLegalBases(appId, userIds).json
+      case TOrganization         => getOrganization(appId).json
+      case TPolicy               => getPrivacyPolicy(appId).json
+      case TProcessingCategories => psRepo.getProcessingCategories(appId, userIds).json
+      case TProvenance           => prRepo.getProvenances(appId, userIds).json
+      case TPurpose              => psRepo.getPurposes(appId, userIds).json
+      case TRetention            => rpRepo.getRetentionPolicies(appId, userIds).json
+      case TWhere                => getWhere(appId).json
+      case TWho                  => getWho(appId).json
+      case _                     => IO.raiseError(new NotImplementedError)
     }
   }
 
@@ -66,18 +68,18 @@ class TransparencyDemands(
       userIds: List[DataSubject]
   ): IO[Map[Action, Json]] = {
     val all = List(
-      psRepo.getDataCategories(appId).json.map((Action.TDataCategories, _)),
-      getDpo(appId).json.map((Action.TDPO, _)),
-      getUserKnown(appId, userIds).json.map((Action.TKnown, _)),
-      lbRepo.getLegalBases(appId, userIds).json.map((Action.TLegalBases, _)),
-      getOrganization(appId).json.map((Action.TOrganization, _)),
-      getPrivacyPolicy(appId).json.map((Action.TPolicy, _)),
-      psRepo.getProcessingCategories(appId, userIds).json.map((Action.TProcessingCategories, _)),
-      prRepo.getProvenances(appId, userIds).json.map((Action.TProvenance, _)),
-      psRepo.getPurposes(appId, userIds).json.map((Action.TPurpose, _)),
-      rpRepo.getRetentionPolicies(appId, userIds).json.map((Action.TRetention, _)),
-      getWhere(appId).json.map((Action.TWhere, _)),
-      getWho(appId).json.map((Action.TWho, _))
+      psRepo.getDataCategories(appId).json.map((TDataCategories, _)),
+      getDpo(appId).json.map((TDPO, _)),
+      getUserKnown(appId, userIds).json.map((TKnown, _)),
+      lbRepo.getLegalBases(appId, userIds).json.map((TLegalBases, _)),
+      getOrganization(appId).json.map((TOrganization, _)),
+      getPrivacyPolicy(appId).json.map((TPolicy, _)),
+      psRepo.getProcessingCategories(appId, userIds).json.map((TProcessingCategories, _)),
+      prRepo.getProvenances(appId, userIds).json.map((TProvenance, _)),
+      psRepo.getPurposes(appId, userIds).json.map((TPurpose, _)),
+      rpRepo.getRetentionPolicies(appId, userIds).json.map((TRetention, _)),
+      getWhere(appId).json.map((TWhere, _)),
+      getWho(appId).json.map((TWho, _))
     ).parSequence
 
     all.map(_.toMap)
