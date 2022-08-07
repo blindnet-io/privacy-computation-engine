@@ -15,43 +15,37 @@ import model.error.*
 import model.vocabulary.DataSubject
 import model.vocabulary.request.{ Demand, PrivacyRequest, * }
 import model.vocabulary.terms.*
-// import services.requests.TransparencyDemands
 import io.blindnet.privacy.model.error.given
 import java.time.Instant
+import io.blindnet.privacy.util.extension.*
 
 class PrivacyRequestService(
-    repositories: Repositories
+    repos: Repositories
 ) {
 
-  // val transparency = new TransparencyDemands(repositories)
-
-  private def failBadRequest(msg: String) =
-    BadRequestException(BadPrivacyRequestPayload(msg).asJson).raise
-
-  private def failNotFound(msg: String) =
-    NotFoundException(msg).raise
+  extension (s: String) {
+    def failBadRequest = BadRequestException(BadPrivacyRequestPayload(s).asJson).raise
+    def failNotFound   = NotFoundException(s).raise
+  }
 
   private def validateRequest(req: PrivacyRequest) = {
     for {
       _ <-
         if req.demands.map(_.action).toSet.size == req.demands.size then IO.unit
-        else failBadRequest("2 or more demands have duplicate action types")
+        else "2 or more demands have duplicate action types".failBadRequest
 
       (invalid, _) = PrivacyRequest.validateDemands(req)
 
       _ <-
         if invalid.length == 0 then IO.unit
-        else
-          failBadRequest(
-            invalid.foldLeft("")((acc, cur) => acc + s"${cur._1.mkString_("\n")}")
-          )
+        else invalid.foldLeft("")((acc, cur) => acc + s"${cur._1.mkString_("\n")}").failBadRequest
 
       _ <- NonEmptyList
         .fromList(req.dataSubject)
         .fold(IO.unit)(
-          repositories.dataSubject
+          repos.dataSubject
             .known(req.appId, _)
-            .flatMap(if _ then IO.unit else failBadRequest("Unknown data subject"))
+            .flatMap(if _ then IO.unit else "Unknown data subject".failBadRequest)
         )
 
     } yield ()
@@ -79,22 +73,62 @@ class PrivacyRequestService(
       )
 
       _ <- validateRequest(pr)
-      _ <- repositories.privacyRequest.store(pr)
-      _ <- repositories.pendingRequests.add(reqId.toString)
+      _ <- repos.privacyRequest.store(pr)
+      _ <- repos.pendingRequests.add(reqId.toString)
 
     } yield PrivacyRequestCreatedPayload(reqId.toString)
   }
 
-  def getResponse(requestId: String, appId: String, userId: String) = {
+  def getRequestHistory(appId: String, userId: String) =
     for {
-      exist <- repositories.privacyRequest.requestExist(requestId, appId, userId)
-      _     <-
-        if exist then IO.unit
-        else failNotFound("Request not found")
+      reqIds <- repos.privacyRequest.getRequestForUser(appId, userId)
+      // TODO: this can be optimized in the db
+      resps  <- reqIds.parTraverse(
+        id =>
+          for {
+            req   <- repos.privacyRequest.getRequest(id)
+            resps <- repos.privacyRequest.getResponse(id)
+          } yield req -> resps
+      )
 
-      privResponses <- repositories.privacyRequest.getResponse(requestId)
-      resp = privResponses.map(PrivacyResponsePayload.fromPrivPrivacyResponse)
+      history = resps.flatMap(
+        r =>
+          r._1.map(
+            req => {
+              val statuses                           = r._2.map(_.status)
+              val (underReview, canceled, completed) =
+                statuses.foldLeft((0, 0, 0))(
+                  (acc, cur) =>
+                    if (cur == Status.UnderReview) then (acc._1 + 1, acc._2, acc._3)
+                    else if (cur == Status.Canceled) then (acc._1, acc._2 + 1, acc._3)
+                    else (acc._1, acc._2 + 1, acc._3 + 1)
+                )
+
+              val l      = statuses.length
+              val status =
+                if (canceled == l) then PrStatus.Canceled
+                else if (completed + canceled == l) then PrStatus.Completed
+                else if (underReview == l) then PrStatus.InProcessing
+                else if (underReview + canceled == l) then PrStatus.InProcessing
+                else PrStatus.PartiallyCompleted
+
+              PrItem(req.id, req.timestamp, req.demands.length, status)
+            }
+          )
+      )
+
+    } yield RequestHistoryPayload(history)
+
+  private def verifyReqExists(requestId: String, appId: String, userId: String) =
+    repos.privacyRequest
+      .requestExist(requestId, appId, userId)
+      .flatMap(if _ then IO.unit else "Request not found".failNotFound)
+
+  def getResponse(requestId: String, appId: String, userId: String) =
+    for {
+      _         <- verifyReqExists(requestId, appId, userId)
+      responses <- repos.privacyRequest.getResponse(requestId)
+      resp = responses.map(PrivacyResponsePayload.fromPrivPrivacyResponse)
     } yield resp
-  }
 
 }

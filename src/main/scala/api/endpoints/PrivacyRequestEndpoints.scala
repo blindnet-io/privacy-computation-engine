@@ -36,6 +36,17 @@ class PrivacyRequestEndpoints(
       .errorOut(jsonBody[BadPrivacyRequestPayload])
       .serverLogicSuccess(req => reqService.createPrivacyRequest(req, appId))
 
+  val getRequestHistory =
+    base
+      .description("Get history of privacy requests")
+      .get
+      .in("history")
+      .out(jsonBody[RequestHistoryPayload])
+      .serverLogicSuccess(_ => reqService.getRequestHistory(appId, userId))
+
+  val getRequestStatus =
+    base
+
   val getReqStatus =
     base
       .description("Get privacy request status")
@@ -47,6 +58,6 @@ class PrivacyRequestEndpoints(
       .errorOut(statusCode(StatusCode.NotFound))
       .serverLogicSuccess(reqId => reqService.getResponse(reqId, appId, userId))
 
-  val endpoints = List(createPrivacyRequest, getReqStatus)
+  val endpoints = List(createPrivacyRequest, getRequestHistory, getReqStatus)
 
 }

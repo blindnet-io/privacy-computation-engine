@@ -33,9 +33,34 @@ trait PrivacyRequestRepository {
   def getDemandResponse(dId: String): IO[Option[PrivacyResponse]]
 
   def storeNewResponse(r: PrivacyResponse): IO[Unit]
+
+  def getRequestForUser(appId: String, userId: String): IO[List[String]]
 }
 
 object PrivacyRequestRepository {
+  given Read[PrivacyResponse] =
+    Read[
+      (
+          String,
+          String,
+          String,
+          Instant,
+          Action,
+          Status,
+          Option[String],
+          Option[String],
+          Option[String],
+          Option[String],
+          Option[String]
+      )
+    ]
+      .map {
+        case (id, prid, did, t, a, s, answer, msg, lang, system, data) =>
+          val answ = answer.flatMap(a => parse(a).toOption)
+          val incl = List.empty
+          PrivacyResponse(id, prid, did, t, a, s, answ, msg, lang, system, incl, data)
+      }
+
   def live(xa: Transactor[IO]): PrivacyRequestRepository =
     new PrivacyRequestRepository {
 
@@ -122,17 +147,9 @@ object PrivacyRequestRepository {
 
         val res =
           for {
-            (id, appId, dsid, time, target, email) <- getReq.toOptionT
-            demands                                <- getDemands.map(_.some).toOptionT
-          } yield PrivacyRequest(
-            id,
-            appId,
-            time,
-            target,
-            email,
-            List(DataSubject(dsid, "")),
-            demands
-          )
+            (id, appId, dsid, t, trg, email) <- getReq.toOptionT
+            ds                               <- getDemands.map(_.some).toOptionT
+          } yield PrivacyRequest(id, appId, t, trg, email, List(DataSubject(dsid, "")), ds)
 
         res.value.transact(xa)
       }
@@ -150,39 +167,7 @@ object PrivacyRequestRepository {
             )
             select * from query where r = 1;
           """
-          .query[
-            (
-                String,
-                String,
-                String,
-                Instant,
-                Action,
-                Status,
-                Option[String],
-                Option[String],
-                Option[String],
-                Option[String],
-                Option[String]
-            )
-          ]
-          .map {
-            case (id, prid, did, t, a, s, answer, msg, lang, system, data) =>
-              PrivacyResponse(
-                id,
-                prid,
-                did,
-                t,
-                a,
-                s,
-                answer.flatMap(a => parse(a).toOption),
-                msg,
-                lang,
-                system,
-                List.empty,
-                data
-              )
-
-          }
+          .query[PrivacyResponse]
           .to[List]
           .transact(xa)
       }
@@ -201,39 +186,7 @@ object PrivacyRequestRepository {
             )
             select * from query where r = 1;
           """
-          .query[
-            (
-                String,
-                String,
-                String,
-                Instant,
-                Action,
-                Status,
-                Option[String],
-                Option[String],
-                Option[String],
-                Option[String],
-                Option[String]
-            )
-          ]
-          .map {
-            case (id, prid, did, t, a, s, answer, msg, lang, system, data) =>
-              PrivacyResponse(
-                id,
-                prid,
-                did,
-                t,
-                a,
-                s,
-                answer.flatMap(a => parse(a).toOption),
-                msg,
-                lang,
-                system,
-                List.empty,
-                data
-              )
-
-          }
+          .query[PrivacyResponse]
           .option
           .transact(xa)
       }
@@ -249,6 +202,16 @@ object PrivacyRequestRepository {
           .transact(xa)
           .void
       }
+
+      def getRequestForUser(appId: String, userId: String): IO[List[String]] =
+        sql"""
+          select id
+          from privacy_requests pr
+          where pr.dsid = ${userId} and pr.appid = ${appId}::uuid
+        """
+          .query[String]
+          .to[List]
+          .transact(xa)
 
     }
 
