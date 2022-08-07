@@ -14,6 +14,7 @@ trait Repositories {
   val privacyRequest: PrivacyRequestRepository
 
   val pendingRequests: PendingRequestsRepository
+  val pendingDemands: PendingDemandsRepository
 }
 
 object Repositories {
@@ -25,6 +26,8 @@ object Repositories {
     val retentionPolicyRepo = RetentionPolicyRepository.live(xa)
     val provenanceRepo      = ProvenancesRepository.live(xa)
     val privacyReqRepo      = PrivacyRequestRepository.live(xa)
+
+    val pendingDemandsRepo = PendingDemandsRepository.live(xa)
 
     for {
       pendingReqsRepo <- PendingRequestsRepository.live()
@@ -38,6 +41,7 @@ object Repositories {
       val privacyRequest  = privacyReqRepo
 
       val pendingRequests = pendingReqsRepo
+      val pendingDemands  = pendingDemandsRepo
     }
   }
 

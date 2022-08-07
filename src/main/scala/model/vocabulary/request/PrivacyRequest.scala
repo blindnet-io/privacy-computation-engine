@@ -27,7 +27,7 @@ object PrivacyRequest {
     pr.demands.foldLeft((List.empty[(NonEmptyList[String], Demand)], List.empty[Demand]))(
       (acc, cur) => {
         val needsDs =
-          if actionsRequiringSubjectId.contains(cur.action)
+          if pr.dataSubject.isEmpty && actionsRequiringSubjectId.contains(cur.action)
           then "Data subject not specified".invalid
           else cur.valid
 

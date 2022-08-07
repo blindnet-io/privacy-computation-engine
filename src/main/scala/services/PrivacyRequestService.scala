@@ -41,7 +41,10 @@ class PrivacyRequestService(
 
       _ <-
         if invalid.length == 0 then IO.unit
-        else failBadRequest(invalid.foldLeft("")((acc, cur) => acc + cur._1 + "\n"))
+        else
+          failBadRequest(
+            invalid.foldLeft("")((acc, cur) => acc + s"${cur._1.mkString_("\n")}")
+          )
 
       _ <- NonEmptyList
         .fromList(req.dataSubject)

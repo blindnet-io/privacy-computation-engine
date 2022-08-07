@@ -17,6 +17,9 @@ class RequestProcessor(
     repos: Repositories
 ) {
 
+  import Action.*
+  import Status.*
+
   val transparency = TransparencyDemands(repos)
 
   def processRequest(reqId: String): IO[Unit] = {
@@ -40,10 +43,7 @@ class RequestProcessor(
           IO.pure(resp)
       }
 
-      _ <-
-        if resp.status == Status.Granted then IO.unit
-        else processAction(request, demand, resp)
-
+      _ <- processAction(request, demand, resp)
     } yield ()
 
   }
@@ -55,8 +55,11 @@ class RequestProcessor(
   ): IO[Unit] = {
     demand.action match {
 
-      case t if t == Action.Transparency || t.isChildOf(Action.Transparency) =>
+      case t if resp.status == UnderReview && (t == Transparency || t.isChildOf(Transparency)) =>
         processTransparency(request, demand, resp)
+
+      case t if resp.status == UnderReview && t == Access =>
+        processAccess(request, demand)
 
       case _ => IO.raiseError(new NotImplementedError)
 
@@ -83,6 +86,9 @@ class RequestProcessor(
       _ <- repos.privacyRequest.storeNewResponse(newResp)
     } yield ()
   }
+
+  private def processAccess(request: PrivacyRequest, demand: Demand): IO[Unit] =
+    repos.pendingDemands.storePendingDemand(request.appId, demand.id)
 
 }
 
