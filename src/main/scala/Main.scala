@@ -3,12 +3,12 @@ package io.blindnet.privacy
 import cats.data.*
 import cats.effect.*
 import cats.implicits.*
-import io.blindnet.privacy.model.vocabulary.terms.DataCategory
 import org.typelevel.log4cats.*
 import org.typelevel.log4cats.slf4j.*
 import model.vocabulary.terms.Action
 import db.*
 import db.repositories.*
+import tasks.*
 import api.*
 import services.*
 import config.{ given, * }
@@ -24,11 +24,15 @@ object Main extends IOApp {
       _    <- Resource.eval(logger.info(show"$conf"))
       _    <- Resource.eval(Migrator.migrateDatabase(conf.db))
       xa   <- DbTransactor.make(conf.db)
-      repositories = Repositories.live(xa)
-      services     = Services.make(repositories)
+
+      repositories <- Resource.eval(Repositories.live(xa))
+      services = Services.make(repositories)
+
+      _ <- Resource.eval(Tasks.run(repositories).start)
 
       app = AppRouter.make(services)
       server <- Server.make(app.httpApp, conf.api)
+
     } yield ()
 
     app.useForever.onError(e => logger.error(e)("Unrecoverable error occurred. Shutting down"))

@@ -4,6 +4,7 @@ package model.vocabulary.terms
 import cats.data.Validated
 import io.circe.*
 import sttp.tapir.*
+import doobie.util.Get
 
 enum Target(term: String, parent: Option[Target] = None) {
   case All          extends Target("*")
@@ -33,6 +34,9 @@ object Target {
       "Unknown target"
     )
 
+  def parseUnsafe(str: String): Target =
+    Target.values.find(a => a.isTerm(str)).get
+
   given Decoder[Target] =
     Decoder.decodeString.emap(Target.parse(_).toEither)
 
@@ -41,5 +45,8 @@ object Target {
 
   given Schema[Target] =
     Schema.string.validate(Validator.enumeration(Target.values.toList, x => Option(x.encode)))
+
+  given Get[Target] =
+    Get[String].tmap(t => Target.parseUnsafe(t))
 
 }

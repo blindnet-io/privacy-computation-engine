@@ -18,14 +18,21 @@ import io.circe.*
 import io.circe.parser.*
 import model.vocabulary.*
 import model.vocabulary.terms.*
+import io.blindnet.privacy.util.extension.*
 
 trait PrivacyRequestRepository {
 
   def store(pr: PrivacyRequest): IO[Unit]
 
-  def requestExist(reqId: String): IO[Boolean]
+  def requestExist(reqId: String, appId: String, userId: String): IO[Boolean]
 
-  def getResponse(reqId: String): IO[Option[List[PrivacyResponse]]]
+  def getRequest(reqId: String): IO[Option[PrivacyRequest]]
+
+  def getResponse(reqId: String): IO[List[PrivacyResponse]]
+
+  def getDemandResponse(dId: String): IO[Option[PrivacyResponse]]
+
+  def storeNewResponse(r: PrivacyResponse): IO[Unit]
 }
 
 object PrivacyRequestRepository {
@@ -47,6 +54,7 @@ object PrivacyRequestRepository {
             values (${d.id}::uuid, ${pr.id}::uuid, ${d.action.encode}::action_terms, ${d.message}, ${d.language})
           """.update.run
 
+        // TODO: this is business logic. move it to service and handle transaction (Resource)
         def storeResponse(d: Demand, id: String) =
           sql"""
             insert into privacy_responses (id, did)
@@ -66,7 +74,6 @@ object PrivacyRequestRepository {
               for {
                 r2a <- storeDemand(d)
                 // TODO: where to generate IDs?
-                // they are not having a particular business value but this makes it harder to test
                 id1 = UUID.randomUUID().toString
                 id2 = UUID.randomUUID().toString
                 r2b <- storeResponse(d, id1)
@@ -79,18 +86,61 @@ object PrivacyRequestRepository {
         store.transact(xa).void
       }
 
-      def requestExist(reqId: String): IO[Boolean] =
+      def requestExist(reqId: String, appId: String, userId: String): IO[Boolean] =
         sql"""
-            select exists (select 1 from privacy_requests pr where id = $reqId::uuid)
+            select exists (
+              select 1 from privacy_requests pr
+              where id = $reqId::uuid and appid = $appId::uuid and dsid = $userId
+            )
           """
           .query[Boolean]
           .unique
           .transact(xa)
 
-      def getResponse(reqId: String): IO[Option[List[PrivacyResponse]]] = {
+      def getRequest(reqId: String): IO[Option[PrivacyRequest]] = {
+        val getReq =
+          sql"""
+            select id, appid, dsid, date, target, email
+            from privacy_requests
+            where id = $reqId::uuid
+          """
+            .query[(String, String, String, Instant, Target, Option[String])]
+            .option
+
+        // TODO: restrictions
+        val getDemands =
+          sql"""
+            select id, action, message, lang
+            from demands
+            where prid = $reqId::uuid
+          """
+            .query[(String, Action, Option[String], Option[String])]
+            .map {
+              case (id, action, msg, lang) => Demand(id, action, msg, lang, List.empty, List.empty)
+            }
+            .to[List]
+
+        val res =
+          for {
+            (id, appId, dsid, time, target, email) <- getReq.toOptionT
+            demands                                <- getDemands.map(_.some).toOptionT
+          } yield PrivacyRequest(
+            id,
+            appId,
+            time,
+            target,
+            email,
+            List(DataSubject(dsid, "")),
+            demands
+          )
+
+        res.value.transact(xa)
+      }
+
+      def getResponse(reqId: String): IO[List[PrivacyResponse]] = {
         sql"""
             with query as (
-              select pr.id as id, pre.id as eid, pre.date as date, d.action as action, pre.status as status,
+              select pre.id as id, pr.id as prid, d.id as did, pre.date as date, d.action as action, pre.status as status,
                 pre.answer as answer, pre.message as message, pre.lang as lang, pr.system as system, pre.data as data,
                 ROW_NUMBER() OVER (PARTITION BY pr.id ORDER BY date DESC) As r
               from privacy_response_events pre
@@ -104,9 +154,10 @@ object PrivacyRequestRepository {
             (
                 String,
                 String,
+                String,
                 Instant,
-                String,
-                String,
+                Action,
+                Status,
                 Option[String],
                 Option[String],
                 Option[String],
@@ -114,17 +165,89 @@ object PrivacyRequestRepository {
                 Option[String]
             )
           ]
-          .to[List]
-          .map(_.map {
-            case (id, eid, t, action, status, answer, msg, lang, system, data) =>
-              for {
-                a <- Action.parse(action).toOption
-                s <- Status.parse(status).toOption
-                j = answer.flatMap(a => parse(a).toOption)
-              } yield PrivacyResponse(id, eid, t, a, s, j, msg, lang, system, List.empty, data)
+          .map {
+            case (id, prid, did, t, a, s, answer, msg, lang, system, data) =>
+              PrivacyResponse(
+                id,
+                prid,
+                did,
+                t,
+                a,
+                s,
+                answer.flatMap(a => parse(a).toOption),
+                msg,
+                lang,
+                system,
+                List.empty,
+                data
+              )
 
-          }.sequence)
+          }
+          .to[List]
           .transact(xa)
+      }
+
+      def getDemandResponse(demandId: String): IO[Option[PrivacyResponse]] = {
+        // TODO: duplicate code
+        sql"""
+            with query as (
+              select pre.id as id, pr.id as prid, d.id as did, pre.date as date, d.action as action, pre.status as status,
+                pre.answer as answer, pre.message as message, pre.lang as lang, pr.system as system, pre.data as data,
+                ROW_NUMBER() OVER (PARTITION BY pr.id ORDER BY date DESC) As r
+              from privacy_response_events pre
+                join privacy_responses pr on pr.id = pre.prid
+                join demands d on d.id = pr.did
+              where d.id = $demandId::uuid
+            )
+            select * from query where r = 1;
+          """
+          .query[
+            (
+                String,
+                String,
+                String,
+                Instant,
+                Action,
+                Status,
+                Option[String],
+                Option[String],
+                Option[String],
+                Option[String],
+                Option[String]
+            )
+          ]
+          .map {
+            case (id, prid, did, t, a, s, answer, msg, lang, system, data) =>
+              PrivacyResponse(
+                id,
+                prid,
+                did,
+                t,
+                a,
+                s,
+                answer.flatMap(a => parse(a).toOption),
+                msg,
+                lang,
+                system,
+                List.empty,
+                data
+              )
+
+          }
+          .option
+          .transact(xa)
+      }
+
+      def storeNewResponse(r: PrivacyResponse): IO[Unit] = {
+        sql"""
+          insert into privacy_response_events (id, prid, date, status, message, lang, data, answer)
+          values (
+            ${r.id}::uuid, ${r.responseId}::uuid, ${r.timestamp}, ${r.status.encode}::status_terms,
+            ${r.message}, ${r.lang}, ${r.data}, ${r.answer.map(_.toString)}
+          )
+        """.update.run
+          .transact(xa)
+          .void
       }
 
     }

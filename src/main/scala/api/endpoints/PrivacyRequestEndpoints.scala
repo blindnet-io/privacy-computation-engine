@@ -22,7 +22,8 @@ class PrivacyRequestEndpoints(
 ) {
   val base = baseEndpoint.in("privacy-request").tag("Privacy requests")
 
-  val appId = "6f083c15-4ada-4671-a6d1-c671bc9105dc"
+  val appId  = "6f083c15-4ada-4671-a6d1-c671bc9105dc"
+  val userId = "fdfc95a6-8fd8-4581-91f7-b3d236a6a10e"
 
   val createPrivacyRequest =
     base
@@ -44,7 +45,7 @@ class PrivacyRequestEndpoints(
       .out(jsonBody[List[PrivacyResponsePayload]])
       .errorOut(statusCode(StatusCode.UnprocessableEntity))
       .errorOut(statusCode(StatusCode.NotFound))
-      .serverLogicSuccess(reqId => reqService.getResponse(reqId, appId))
+      .serverLogicSuccess(reqId => reqService.getResponse(reqId, appId, userId))
 
   val endpoints = List(createPrivacyRequest, getReqStatus)
 

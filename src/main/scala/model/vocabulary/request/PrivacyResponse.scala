@@ -12,7 +12,8 @@ import io.circe.Json
 
 case class PrivacyResponse(
     id: String,
-    eventId: String,
+    responseId: String,
+    demandId: String,
     timestamp: Instant,
     action: Action,
     status: Status,

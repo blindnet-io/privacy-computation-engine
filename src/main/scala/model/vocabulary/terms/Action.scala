@@ -4,6 +4,7 @@ package model.vocabulary.terms
 import cats.data.Validated
 import io.circe.*
 import sttp.tapir.*
+import doobie.util.Get
 
 enum Action(term: String, parent: Option[Action] = None) {
   case Access          extends Action("ACCESS")
@@ -50,6 +51,9 @@ object Action {
       "Unknown action"
     )
 
+  def parseUnsafe(str: String): Action =
+    Action.values.find(a => a.isTerm(str)).get
+
   given Decoder[Action] =
     Decoder.decodeString.emap(Action.parse(_).toEither)
 
@@ -61,5 +65,8 @@ object Action {
 
   given Schema[Action] =
     Schema.string.validate(Validator.enumeration(Action.values.toList, x => Option(x.encode)))
+
+  given Get[Action] =
+    Get[String].tmap(t => Action.parseUnsafe(t))
 
 }

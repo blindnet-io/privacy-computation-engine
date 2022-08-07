@@ -42,15 +42,12 @@ object ProvenancesRepository {
           join data_categories dc ON p.dcid = dc.id
           where p.appid = $appId::uuid
         """
-          .query[(String, String, String)]
+          .query[(ProvenanceTerms, String, DataCategory)]
+          .map {
+            case (prov, system, dc) => dc -> Provenance(prov, system)
+          }
           .to[List]
-          .map(_.flatMap {
-            case (prov, system, dc) =>
-              for {
-                p <- ProvenanceTerms.parse(prov).toOption
-                d <- DataCategory.parse(dc).toOption
-              } yield d -> Provenance(p, system)
-          }.groupBy(_._1).view.mapValues(_.map(_._2)).toMap)
+          .map(_.groupBy(_._1).view.mapValues(_.map(_._2)).toMap)
           .transact(xa)
 
       def getProvenanceForDataCategory(
@@ -63,14 +60,8 @@ object ProvenancesRepository {
           join data_categories dc ON p.dcid = dc.id
           where p.appid = $appId::uuid and dc.term = $dc
         """
-          .query[(String, String)]
+          .query[Provenance]
           .to[List]
-          .map(_.flatMap {
-            case (prov, system) =>
-              for {
-                p <- ProvenanceTerms.parse(prov).toOption
-              } yield Provenance(p, system)
-          })
           .transact(xa)
 
     }

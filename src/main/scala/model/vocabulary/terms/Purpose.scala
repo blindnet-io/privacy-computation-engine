@@ -3,6 +3,7 @@ package model.vocabulary.terms
 
 import cats.data.Validated
 import io.circe.*
+import doobie.util.Get
 
 case class Purpose(term: String)
 
