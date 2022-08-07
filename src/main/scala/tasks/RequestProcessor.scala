@@ -11,6 +11,7 @@ import io.blindnet.privacy.model.vocabulary.request.*
 import io.blindnet.privacy.model.vocabulary.terms.*
 import cats.effect.std.UUIDGen
 import scala.concurrent.duration.*
+import io.blindnet.privacy.util.extension.*
 
 class RequestProcessor(
     repos: Repositories
@@ -20,11 +21,9 @@ class RequestProcessor(
 
   def processRequest(reqId: String): IO[Unit] = {
     for {
-      reqOpt <- repos.privacyRequest.getRequest(reqId)
-      req    <- reqOpt match {
-        case None      => IO.raiseError(new NotFoundException(s"Request with id $reqId not found"))
-        case Some(req) => IO.pure(req)
-      }
+      req <- repos.privacyRequest
+        .getRequest(reqId)
+        .orNotFound(s"Request with id $reqId not found")
 
       _ <- req.demands.parTraverse_(d => processDemand(req, d))
     } yield ()

@@ -15,6 +15,7 @@ import model.vocabulary.*
 import model.vocabulary.terms.*
 import java.time.Instant
 import io.circe.Encoder
+import io.blindnet.privacy.util.extension.*
 
 class TransparencyDemands(
     repositories: Repositories
@@ -30,11 +31,7 @@ class TransparencyDemands(
   val dsRepo = repositories.dataSubject
 
   extension [T](io: IO[Option[T]])
-    def failIfNotFound =
-      io.flatMap {
-        case None    => IO.raiseError(NotFoundException("Requested app could not be found"))
-        case Some(t) => IO(t)
-      }
+    def failIfNotFound = io.orNotFound("Requested app could not be found")
 
   extension [T: Encoder](io: IO[T])
     def json =
