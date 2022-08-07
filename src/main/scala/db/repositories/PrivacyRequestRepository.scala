@@ -18,7 +18,7 @@ import io.circe.*
 import io.circe.parser.*
 import model.vocabulary.*
 import model.vocabulary.terms.*
-import cats.data.OptionT
+import io.blindnet.privacy.util.extension.*
 
 trait PrivacyRequestRepository {
 
@@ -122,8 +122,8 @@ object PrivacyRequestRepository {
 
         val res =
           for {
-            (id, appId, dsid, time, target, email) <- OptionT(getReq)
-            demands                                <- OptionT(getDemands.map(_.some))
+            (id, appId, dsid, time, target, email) <- getReq.toOptionT
+            demands                                <- getDemands.map(_.some).toOptionT
           } yield PrivacyRequest(
             id,
             appId,

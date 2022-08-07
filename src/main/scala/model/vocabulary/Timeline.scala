@@ -8,7 +8,12 @@ import io.blindnet.privacy.api.endpoints.messages.privacyrequest.Restriction
 case class Timeline(
     events: List[TimelineEvent]
 ) {
-  def eligiblePrivScope = {
+
+  def eligiblePrivacyScope = {
+
+    import TimelineEvent.*
+    import EventTerms.*
+    import LegalBaseTerms.*
 
     case class Acc(
         objectScope: PrivacyScope,
@@ -16,79 +21,57 @@ case class Timeline(
         events: List[TimelineEvent]
     )
 
+    def addEvent(ev: TimelineEvent, acc: Acc) =
+      acc.copy(events = ev :: acc.events)
+
+    def removeEvent(id: String, acc: Acc) =
+      acc.copy(events = acc.events.filterNot {
+        case ev: LegalBase if ev.lbId == id      => true
+        case ev: ConsentRevoked if ev.lbId == id => true
+        case _                                   => false
+      })
+
     // TODO: O(n^2). optimize
     val compiled =
       events.foldLeft(Acc(PrivacyScope.empty, PrivacyScope.empty, List.empty))(
         (acc, event) => {
           event match {
-            // TODO: split
-            case ev: TimelineEvent.LegalBase
-                if ev.lb == LegalBaseTerms.Necessary &&
-                  (ev.eType == EventTerms.RelationshipStart || ev.eType == EventTerms.ServiceStart) =>
-              acc.copy(events = ev :: acc.events)
+            case LegalBase(_, RelationshipStart | ServiceStart, Necessary, _, _) =>
+              addEvent(event, acc)
+            case LegalBase(id, RelationshipEnd | ServiceEnd, Necessary, _, _)    =>
+              removeEvent(id, acc)
 
-            case ev: TimelineEvent.LegalBase
-                if ev.lb == LegalBaseTerms.Necessary &&
-                  (ev.eType == EventTerms.RelationshipEnd || ev.eType == EventTerms.ServiceEnd) =>
-              acc.copy(events = acc.events.filterNot {
-                case e: TimelineEvent.LegalBase if e.lbId == ev.lbId => true
-                case _                                               => false
-              })
+            case LegalBase(_, RelationshipStart | ServiceStart, Contract, _, _) =>
+              addEvent(event, acc)
+            case LegalBase(id, RelationshipEnd | ServiceEnd, Contract, _, _)    =>
+              removeEvent(id, acc)
 
-            case ev: TimelineEvent.LegalBase
-                if ev.lb == LegalBaseTerms.Contract &&
-                  (ev.eType == EventTerms.RelationshipStart || ev.eType == EventTerms.ServiceStart) =>
-              acc.copy(events = ev :: acc.events)
+            case LegalBase(_, RelationshipStart | ServiceStart, LegitimateInterest, _, _) =>
+              addEvent(event, acc)
+            case LegalBase(id, RelationshipEnd | ServiceEnd, LegitimateInterest, _, _)    =>
+              removeEvent(id, acc)
 
-            case ev: TimelineEvent.LegalBase
-                if ev.lb == LegalBaseTerms.Contract &&
-                  (ev.eType == EventTerms.RelationshipEnd || ev.eType == EventTerms.ServiceEnd) =>
-              acc.copy(events = acc.events.filterNot {
-                case e: TimelineEvent.LegalBase if e.lbId == ev.lbId => true
-                case _                                               => false
-              })
+            case ev: ConsentGiven => addEvent(ev, acc)
 
-            case ev: TimelineEvent.LegalBase
-                if ev.lb == LegalBaseTerms.LegitimateInterest &&
-                  (ev.eType == EventTerms.RelationshipStart || ev.eType == EventTerms.ServiceStart) =>
-              acc.copy(events = ev :: acc.events)
+            case ev: ConsentRevoked => removeEvent(ev.lbId, acc)
 
-            case ev: TimelineEvent.LegalBase
-                if ev.lb == LegalBaseTerms.LegitimateInterest &&
-                  (ev.eType == EventTerms.RelationshipEnd || ev.eType == EventTerms.ServiceEnd) =>
-              acc.copy(events = acc.events.filterNot {
-                case e: TimelineEvent.LegalBase if e.lbId == ev.lbId => true
-                case _                                               => false
-              })
-
-            case ev: TimelineEvent.ConsentGiven =>
-              acc.copy(events = ev :: acc.events)
-
-            case ev: TimelineEvent.ConsentRevoked =>
-              acc.copy(events = acc.events.filterNot {
-                case e: TimelineEvent.ConsentGiven if e.lbId == ev.lbId => true
-                case _                                                  => false
-              })
-
-            case TimelineEvent.Restrict(_, scope) =>
+            case Restrict(_, scope) =>
               val newRestrictScope = acc.restrictScope intersection scope
               acc.copy(
                 restrictScope = newRestrictScope,
                 events = acc.events.map {
-                  case ev: TimelineEvent.ConsentGiven =>
-                    ev.copy(scope = ev.scope intersection newRestrictScope)
-                  case ev                             => ev
+                  case ev: ConsentGiven => ev.copy(scope = ev.scope intersection newRestrictScope)
+                  case ev               => ev
                 }
               )
 
-            case TimelineEvent.Object(_, scope) =>
+            case Object(_, scope) =>
               val newObjectScope = acc.objectScope union scope
               acc.copy(
                 objectScope = newObjectScope,
                 events = acc.events.map {
-                  case ev: TimelineEvent.ConsentGiven =>
-                    ev.copy(scope = ev.scope difference newObjectScope)
-                  case ev                             => ev
+                  case ev: ConsentGiven => ev.copy(scope = ev.scope difference newObjectScope)
+                  case ev               => ev
                 }
               )
 
@@ -101,7 +84,7 @@ case class Timeline(
       (acc, cur) =>
         cur match {
 
-          case ev: TimelineEvent.LegalBase if ev.lb == LegalBaseTerms.LegitimateInterest =>
+          case ev: LegalBase if ev.lb == LegitimateInterest =>
             acc union ((ev.scope difference compiled.objectScope) intersection compiled.restrictScope)
 
           case ev => acc union cur.getScope
