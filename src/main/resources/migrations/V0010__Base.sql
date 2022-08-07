@@ -198,7 +198,7 @@ create table demands (
     on delete cascade
 );
 
-create table privacy_scope_restriction (
+create table restriction_privacy_scope (
   id uuid primary key,
   did uuid not null,
   constraint demand_fk
@@ -207,14 +207,14 @@ create table privacy_scope_restriction (
     on delete cascade
 );
 
-create table privacy_scope_restriction_scope (
-  psrid uuid not null,
+create table restriction_privacy_scope_scope (
+  rpsid uuid not null,
   scid uuid not null,
-  constraint privacy_scope_restriction_scope_pk
-    primary key (psrid, scid),
-  constraint privacy_scope_restriction_fk
-    foreign key (psrid)
-    references privacy_scope_restriction(id)
+  constraint restriction_privacy_scope_scope_pk
+    primary key (rpsid, scid),
+  constraint restriction_privacy_scope_fk
+    foreign key (rpsid)
+    references restriction_privacy_scope(id)
     on delete cascade,
   constraint scope_fk
     foreign key (scid)
@@ -222,7 +222,7 @@ create table privacy_scope_restriction_scope (
     on delete cascade
 );
 
-create table consent_restriction (
+create table restriction_consent (
   id uuid primary key,
   did uuid not null,
   cid uuid not null,
@@ -236,7 +236,7 @@ create table consent_restriction (
     on delete cascade
 );
 
-create table date_range_restriction (
+create table restriction_date_range (
   id uuid primary key,
   did uuid not null,
   from_timestamp timestamp,
@@ -247,7 +247,7 @@ create table date_range_restriction (
     on delete cascade
 );
 
-create table provenance_restriction (
+create table restriction_provenance (
   id uuid primary key,
   did uuid not null,
   provenance_term varchar not null,
@@ -258,7 +258,7 @@ create table provenance_restriction (
     on delete cascade
 );
 
-create table data_reference_restriction (
+create table restriction_data_reference (
   id uuid primary key,
   did uuid not null,
   constraint demand_fk
