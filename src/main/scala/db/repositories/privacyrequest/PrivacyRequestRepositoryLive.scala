@@ -68,6 +68,9 @@ class PrivacyRequestRepositoryLive(xa: Transactor[IO]) extends PrivacyRequestRep
   def requestExist(reqId: String, appId: String, userId: String): IO[Boolean] =
     queries.requestExist(reqId, appId, userId).transact(xa)
 
+  def demandExist(appId: String, dId: String): IO[Boolean] =
+    queries.demandExist(appId, dId).transact(xa)
+
   def getRequest(reqId: String): IO[Option[PrivacyRequest]] = {
     val res =
       for {

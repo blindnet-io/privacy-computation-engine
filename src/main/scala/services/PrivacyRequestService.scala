@@ -18,15 +18,11 @@ import model.vocabulary.terms.*
 import io.blindnet.privacy.model.error.given
 import java.time.Instant
 import io.blindnet.privacy.util.extension.*
+import util.*
 
 class PrivacyRequestService(
     repos: Repositories
 ) {
-
-  extension (s: String) {
-    def failBadRequest = BadRequestException(BadPrivacyRequestPayload(s).asJson).raise
-    def failNotFound   = NotFoundException(s).raise
-  }
 
   private def validateRequest(req: PrivacyRequest) = {
     for {

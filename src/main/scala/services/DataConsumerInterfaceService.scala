@@ -19,15 +19,13 @@ import io.blindnet.privacy.model.error.given
 import java.time.Instant
 import io.blindnet.privacy.util.extension.*
 import io.blindnet.privacy.api.endpoints.messages.consumerinterface.PendingDemandPayload
+import io.blindnet.privacy.services.util.*
+import io.blindnet.privacy.util.extension.*
+import io.blindnet.privacy.api.endpoints.messages.consumerinterface.PendingDemandDetailsPayload
 
 class DataConsumerInterfaceService(
     repos: Repositories
 ) {
-
-  extension (s: String) {
-    def failBadRequest = BadRequestException(BadPrivacyRequestPayload(s).asJson).raise
-    def failNotFound   = NotFoundException(s).raise
-  }
 
   def getPendingDemands(appId: String) = {
     for {
@@ -44,5 +42,16 @@ class DataConsumerInterfaceService(
       res = (demands.sortBy(_.reqId) zip reqs.sortBy(_.id)).map(PendingDemandPayload.fromPrivDemand)
     } yield res
   }
+
+  def getPendingDemandDetails(appId: String, dId: String) =
+    for {
+      _ <- validateUUID(dId)
+      _ <- repos.privacyRequest.demandExist(appId, dId).emptyNotFound(s"Demand $dId not found")
+      d <- repos.privacyRequest.getDemand(dId).orNotFound(s"Demand $dId not found")
+      rId = d.reqId
+      req <- repos.privacyRequest.getRequestSimple(rId).orNotFound(s"Request $rId not found")
+      rec <- repos.privacyRequest.getRecommendation(dId)
+      res = PendingDemandDetailsPayload.fromPrivDemand(d, req, rec)
+    } yield res
 
 }

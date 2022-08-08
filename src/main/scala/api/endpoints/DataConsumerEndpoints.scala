@@ -14,13 +14,13 @@ import sttp.tapir.server.http4s.*
 import services.*
 import api.endpoints.messages.privacyrequest.*
 import api.endpoints.BaseEndpoint.*
-import io.blindnet.privacy.api.endpoints.messages.consumerinterface.PendingDemandPayload
-
-given Configuration = Configuration.default.withSnakeCaseMemberNames
+import api.endpoints.messages.consumerinterface.*
 
 class DataConsumerEndpoints(
     consumerInterfaceService: DataConsumerInterfaceService
 ) {
+  given Configuration = Configuration.default.withSnakeCaseMemberNames
+
   val base = baseEndpoint.in("consumer-interface").tag("Data consumer interface")
 
   val appId  = "6f083c15-4ada-4671-a6d1-c671bc9105dc"
@@ -33,13 +33,22 @@ class DataConsumerEndpoints(
       .get
       .in("pending-requests")
       .out(jsonBody[List[PendingDemandPayload]])
-      .errorOut(statusCode(StatusCode.UnprocessableEntity))
       .serverLogicSuccess(req => consumerInterfaceService.getPendingDemands(appId))
 
-  // val getPendingDemandDetails =
+  val getPendingDemandDetails =
+    base
+      .description("Get details of a pending privacy request")
+      .get
+      .in("pending-requests")
+      .in(path[String])
+      .out(jsonBody[PendingDemandDetailsPayload])
+      .errorOut(statusCode(StatusCode.UnprocessableEntity))
+      .errorOut(statusCode(StatusCode.NotFound))
+      .serverLogicSuccess(dId => consumerInterfaceService.getPendingDemandDetails(appId, dId))
+
   // val approveDemand =
   // val declineDemand =
 
-  val endpoints = List(getPendingDemands)
+  val endpoints = List(getPendingDemands, getPendingDemandDetails)
 
 }
