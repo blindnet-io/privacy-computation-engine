@@ -163,7 +163,7 @@ object PrivacyRequestRepository {
         def storeResponseEvent(d: Demand, id: String, prId: String) =
           sql"""
             insert into privacy_response_events (id, prid, date, status, message, lang)
-            values (gen_random_uuid(), ${prId}::uuid, ${pr.timestamp}, ${Status.UnderReview.encode}::status_terms, null, null)
+            values ($id::uuid, $prId::uuid, ${pr.timestamp}, ${Status.UnderReview.encode}::status_terms, null, null)
           """.update.run
 
         val store = for {
