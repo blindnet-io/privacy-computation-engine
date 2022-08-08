@@ -3,6 +3,7 @@ package db.repositories
 
 import cats.effect.*
 import doobie.util.transactor.Transactor
+import db.repositories.privacyrequest.*
 
 trait Repositories {
   val generalInfo: GeneralInfoRepository
@@ -19,6 +20,7 @@ trait Repositories {
 
 object Repositories {
   def live(xa: Transactor[IO]): IO[Repositories] = {
+
     val generalInfoRepo     = GeneralInfoRepository.live(xa)
     val dataSubjectRepo     = DataSubjectRepository.live(xa)
     val legalBaseRepo       = LegalBaseRepository.live(xa)

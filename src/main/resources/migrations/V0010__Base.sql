@@ -267,6 +267,19 @@ create table restriction_data_reference (
     on delete cascade
 );
 
+create table demand_recommendations (
+  id uuid primary key,
+  did uuid not null,
+  data_categories varchar[],
+  date_from timestamp,
+  date_to timestamp,
+  provenance provenance_terms,
+  constraint demand_fk
+    foreign key (did)
+    references demands(id)
+    on delete cascade
+);
+
 -- PRIVACY RESPONSE
 
 create type status_terms as enum ('GRANTED', 'DENIED', 'PARTIALLY-GRANTED', 'UNDER-REVIEW', 'CANCELED');

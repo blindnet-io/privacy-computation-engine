@@ -5,13 +5,13 @@ import model.vocabulary.terms.*
 import cats.kernel.Eq
 
 case class PrivacyScopeTriple(
-    dataCategories: DataCategory,
-    processingCategories: ProcessingCategory,
+    dataCategory: DataCategory,
+    processingCategory: ProcessingCategory,
     purpose: Purpose
 ) {
   def eql(other: PrivacyScopeTriple) = {
-    dataCategories == other.dataCategories &&
-    processingCategories == other.processingCategories &&
+    dataCategory == other.dataCategory &&
+    processingCategory == other.processingCategory &&
     purpose == other.purpose
   }
 

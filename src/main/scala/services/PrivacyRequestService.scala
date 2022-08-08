@@ -81,7 +81,7 @@ class PrivacyRequestService(
 
   def getRequestHistory(appId: String, userId: String) =
     for {
-      reqIds <- repos.privacyRequest.getRequestsForUser(appId, userId)
+      reqIds <- repos.privacyRequest.getAllUserRequestIds(appId, userId)
       // TODO: this can be optimized in the db
       resps  <- reqIds.parTraverse(
         id =>
