@@ -1,6 +1,8 @@
 package io.blindnet.privacy
 package api.endpoints
 
+import java.util.UUID
+
 import cats.effect.IO
 import io.circe.generic.auto.*
 import org.http4s.server.Router
@@ -15,14 +17,14 @@ import services.*
 import api.endpoints.messages.privacyrequest.*
 import api.endpoints.BaseEndpoint.*
 
-given Configuration = Configuration.default.withSnakeCaseMemberNames
-
 class PrivacyRequestEndpoints(
     reqService: PrivacyRequestService
 ) {
+  given Configuration = Configuration.default.withSnakeCaseMemberNames
+
   val base = baseEndpoint.in("privacy-request").tag("Privacy requests")
 
-  val appId  = "6f083c15-4ada-4671-a6d1-c671bc9105dc"
+  val appId  = UUID.fromString("6f083c15-4ada-4671-a6d1-c671bc9105dc")
   val userId = "fdfc95a6-8fd8-4581-91f7-b3d236a6a10e"
 
   val createPrivacyRequest =
@@ -52,7 +54,7 @@ class PrivacyRequestEndpoints(
       .description("Get privacy request status")
       .get
       .in("status")
-      .in(path[String]("requestId"))
+      .in(path[UUID]("requestId"))
       .out(jsonBody[List[PrivacyResponsePayload]])
       .errorOut(statusCode(StatusCode.UnprocessableEntity))
       .errorOut(statusCode(StatusCode.NotFound))

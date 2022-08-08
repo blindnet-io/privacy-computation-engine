@@ -2,6 +2,7 @@ package io.blindnet.privacy
 package model.vocabulary.request
 
 import java.time.Instant
+import java.util.UUID
 
 import cats.data.*
 import cats.implicits.*
@@ -10,8 +11,8 @@ import model.vocabulary.*
 import model.vocabulary.terms.*
 
 case class PrivacyRequest(
-    id: String,
-    appId: String,
+    id: UUID,
+    appId: UUID,
     timestamp: Instant,
     target: Target,
     email: Option[String],

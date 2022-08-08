@@ -2,6 +2,7 @@ package io.blindnet.privacy
 package db.repositories.privacyrequest
 
 import java.time.Instant
+import java.util.UUID
 
 import cats.implicits.*
 import doobie.*
@@ -21,9 +22,9 @@ private object codecs {
   given Read[PrivacyResponse] =
     Read[
       (
-          String,
-          String,
-          String,
+          UUID,
+          UUID,
+          UUID,
           Instant,
           Action,
           Status,
@@ -42,7 +43,7 @@ private object codecs {
       }
 
   given Read[PrivacyRequest] =
-    Read[(String, String, String, Instant, Target, Option[String])]
+    Read[(UUID, UUID, String, Instant, Target, Option[String])]
       .map {
         case (id, appId, dsid, t, trg, email) =>
           val ds = List(DataSubject(dsid, ""))
@@ -52,7 +53,7 @@ private object codecs {
   given Get[Set[DataCategory]] = Get[List[String]].map(_.map(DataCategory(_)).toSet)
 
   given Read[Demand] =
-    Read[(String, String, Action, Option[String], Option[String])]
+    Read[(UUID, UUID, Action, Option[String], Option[String])]
       .map { case (id, rid, a, m, l) => Demand(id, rid, a, m, l, List.empty, List.empty) }
 
 }

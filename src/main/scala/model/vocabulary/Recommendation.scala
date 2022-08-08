@@ -1,20 +1,21 @@
 package io.blindnet.privacy
 package model.vocabulary
 
-import model.vocabulary.terms.*
-import model.vocabulary.terms.DataCategory
 import java.time.Instant
+import java.util.UUID
+
+import io.blindnet.privacy.model.vocabulary.terms.{ DataCategory, * }
+import io.blindnet.privacy.util.parsing.*
 import io.circe.*
 import io.circe.generic.semiauto.*
 import io.circe.syntax.*
 import sttp.tapir.*
-import sttp.tapir.generic.auto.*
 import sttp.tapir.generic.Configuration
-import io.blindnet.privacy.util.parsing.*
+import sttp.tapir.generic.auto.*
 
 case class Recommendation(
-    id: String,
-    dId: String,
+    id: UUID,
+    dId: UUID,
     dataCategories: Set[DataCategory],
     dateFrom: Option[Instant],
     dateTo: Option[Instant],

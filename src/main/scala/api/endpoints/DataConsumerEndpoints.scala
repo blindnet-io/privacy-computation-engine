@@ -1,6 +1,8 @@
 package io.blindnet.privacy
 package api.endpoints
 
+import java.util.UUID
+
 import cats.effect.IO
 import io.circe.generic.auto.*
 import org.http4s.server.Router
@@ -23,7 +25,7 @@ class DataConsumerEndpoints(
 
   val base = baseEndpoint.in("consumer-interface").tag("Data consumer interface")
 
-  val appId  = "6f083c15-4ada-4671-a6d1-c671bc9105dc"
+  val appId  = UUID.fromString("6f083c15-4ada-4671-a6d1-c671bc9105dc")
   val userId = "fdfc95a6-8fd8-4581-91f7-b3d236a6a10e"
 
   // TODO: add filtering
@@ -40,7 +42,7 @@ class DataConsumerEndpoints(
       .description("Get details of a pending privacy request")
       .get
       .in("pending-requests")
-      .in(path[String])
+      .in(path[UUID])
       .out(jsonBody[PendingDemandDetailsPayload])
       .errorOut(statusCode(StatusCode.UnprocessableEntity))
       .errorOut(statusCode(StatusCode.NotFound))

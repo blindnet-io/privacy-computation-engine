@@ -1,20 +1,23 @@
 package io.blindnet.privacy
 package tasks
 
+import java.util.UUID
+
+import scala.concurrent.duration.*
+
+import cats.data.NonEmptyList
 import cats.effect.*
+import cats.effect.std.UUIDGen
 import cats.implicits.*
-import db.repositories.Repositories
-import org.typelevel.log4cats.*
-import org.typelevel.log4cats.slf4j.*
 import io.blindnet.privacy.model.error.*
+import io.blindnet.privacy.model.vocabulary.Recommendation
+import io.blindnet.privacy.model.vocabulary.Recommendation.apply
 import io.blindnet.privacy.model.vocabulary.request.*
 import io.blindnet.privacy.model.vocabulary.terms.*
-import cats.effect.std.UUIDGen
-import scala.concurrent.duration.*
 import io.blindnet.privacy.util.extension.*
-import cats.data.NonEmptyList
-import io.blindnet.privacy.model.vocabulary.Recommendation.apply
-import io.blindnet.privacy.model.vocabulary.Recommendation
+import org.typelevel.log4cats.*
+import org.typelevel.log4cats.slf4j.*
+import db.repositories.Repositories
 
 class RequestProcessor(
     repos: Repositories
@@ -25,7 +28,7 @@ class RequestProcessor(
 
   val transparency = TransparencyDemands(repos)
 
-  def processRequest(reqId: String): IO[Unit] = {
+  def processRequest(reqId: UUID): IO[Unit] = {
     for {
       req <- repos.privacyRequest
         .getRequest(reqId)
@@ -80,7 +83,7 @@ class RequestProcessor(
       timestamp <- Clock[IO].realTimeInstant
 
       newResp = resp.copy(
-        id = id.toString,
+        id = id,
         timestamp = timestamp,
         status = Status.Granted,
         answer = Some(answer)
@@ -103,7 +106,7 @@ class RequestProcessor(
             timeline <- repos.privacyScope.getTimeline(pr.appId, ds)
             eps = timeline.eligiblePrivacyScope
             dcs = eps.triples.map(_.dataCategory)
-            r   = Recommendation(id.toString, d.id, dcs, None, None, None)
+            r   = Recommendation(id, d.id, dcs, None, None, None)
             _ <- repos.privacyRequest.storeRecommendation(r)
           } yield r
       }

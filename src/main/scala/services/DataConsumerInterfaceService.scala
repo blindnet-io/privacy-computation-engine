@@ -1,11 +1,18 @@
 package io.blindnet.privacy
 package services
 
+import java.time.Instant
+import java.util.UUID
+
 import cats.data.{ NonEmptyList, * }
 import cats.effect.*
 import cats.effect.kernel.Clock
 import cats.effect.std.*
 import cats.implicits.*
+import io.blindnet.privacy.api.endpoints.messages.consumerinterface.*
+import io.blindnet.privacy.model.error.given
+import io.blindnet.privacy.services.util.*
+import io.blindnet.privacy.util.extension.*
 import io.circe.Json
 import io.circe.generic.auto.*
 import io.circe.syntax.*
@@ -15,19 +22,12 @@ import model.error.*
 import model.vocabulary.DataSubject
 import model.vocabulary.request.{ Demand, PrivacyRequest, * }
 import model.vocabulary.terms.*
-import io.blindnet.privacy.model.error.given
-import java.time.Instant
-import io.blindnet.privacy.util.extension.*
-import io.blindnet.privacy.api.endpoints.messages.consumerinterface.PendingDemandPayload
-import io.blindnet.privacy.services.util.*
-import io.blindnet.privacy.util.extension.*
-import io.blindnet.privacy.api.endpoints.messages.consumerinterface.PendingDemandDetailsPayload
 
 class DataConsumerInterfaceService(
     repos: Repositories
 ) {
 
-  def getPendingDemands(appId: String) = {
+  def getPendingDemands(appId: UUID) = {
     for {
       dIds    <- repos.pendingDemands.getPendingDemandIds(appId)
       demands <- NonEmptyList.fromList(dIds) match {
@@ -43,9 +43,8 @@ class DataConsumerInterfaceService(
     } yield res
   }
 
-  def getPendingDemandDetails(appId: String, dId: String) =
+  def getPendingDemandDetails(appId: UUID, dId: UUID) =
     for {
-      _ <- validateUUID(dId)
       _ <- repos.privacyRequest.demandExist(appId, dId).emptyNotFound(s"Demand $dId not found")
       d <- repos.privacyRequest.getDemand(dId).orNotFound(s"Demand $dId not found")
       rId = d.reqId

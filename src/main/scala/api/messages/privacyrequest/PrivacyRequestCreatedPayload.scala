@@ -2,6 +2,7 @@ package io.blindnet.privacy
 package api.endpoints.messages.privacyrequest
 
 import java.time.Instant
+import java.util.UUID
 
 import cats.effect.*
 import cats.implicits.*
@@ -16,7 +17,7 @@ import sttp.tapir.*
 import sttp.tapir.generic.auto.*
 
 case class PrivacyRequestCreatedPayload(
-    requestId: String
+    requestId: UUID
 )
 
 object PrivacyRequestCreatedPayload {

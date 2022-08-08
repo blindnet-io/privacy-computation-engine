@@ -1,6 +1,9 @@
 package io.blindnet.privacy
 package db.repositories
 
+import java.util.UUID
+import javax.xml.crypto.Data
+
 import cats.data.NonEmptyList
 import cats.effect.*
 import cats.implicits.*
@@ -11,17 +14,16 @@ import doobie.postgres.implicits.*
 import model.vocabulary.*
 import model.vocabulary.terms.*
 import db.DbUtil
-import javax.xml.crypto.Data
 
 trait ProvenancesRepository {
 
   def getProvenances(
-      appId: String,
+      appId: UUID,
       userIds: List[DataSubject]
   ): IO[Map[DataCategory, List[Provenance]]]
 
   def getProvenanceForDataCategory(
-      appId: String,
+      appId: UUID,
       dc: DataCategory
   ): IO[List[Provenance]]
 
@@ -33,14 +35,14 @@ object ProvenancesRepository {
     new ProvenancesRepository {
 
       def getProvenances(
-          appId: String,
+          appId: UUID,
           userIds: List[DataSubject]
       ): IO[Map[DataCategory, List[Provenance]]] =
         sql"""
           select p.provenance, p.system, dc.term
           from provenances p
           join data_categories dc ON p.dcid = dc.id
-          where p.appid = $appId::uuid
+          where p.appid = $appId
         """
           .query[(ProvenanceTerms, String, DataCategory)]
           .map {
@@ -51,14 +53,14 @@ object ProvenancesRepository {
           .transact(xa)
 
       def getProvenanceForDataCategory(
-          appId: String,
+          appId: UUID,
           dc: DataCategory
       ): IO[List[Provenance]] =
         sql"""
           select p.provenance, p.system
           from provenances p
           join data_categories dc ON p.dcid = dc.id
-          where p.appid = $appId::uuid and dc.term = $dc
+          where p.appid = $appId and dc.term = $dc
         """
           .query[Provenance]
           .to[List]

@@ -1,22 +1,23 @@
 package io.blindnet.privacy
 package api.endpoints.messages.consumerinterface
 
+import java.time.Instant
+import java.util.UUID
+
 import cats.effect.*
+import io.blindnet.privacy.model.vocabulary.*
+import io.blindnet.privacy.model.vocabulary.request.*
+import io.blindnet.privacy.model.vocabulary.terms.*
 import io.blindnet.privacy.util.parsing.*
 import io.circe.*
 import io.circe.generic.semiauto.*
 import io.circe.syntax.*
 import sttp.tapir.*
-import sttp.tapir.generic.auto.*
 import sttp.tapir.generic.Configuration
-import io.blindnet.privacy.model.vocabulary.*
-import io.blindnet.privacy.model.vocabulary.terms.*
-import io.blindnet.privacy.util.parsing.*
-import io.blindnet.privacy.model.vocabulary.request.*
-import java.time.Instant
+import sttp.tapir.generic.auto.*
 
 case class PendingDemandDetailsPayload(
-    id: String,
+    id: UUID,
     date: Instant,
     action: Action,
     dataSubject: List[DataSubject],

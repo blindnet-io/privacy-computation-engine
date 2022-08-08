@@ -1,6 +1,9 @@
 package io.blindnet.privacy
 package db.repositories
 
+import java.time.Instant
+import java.util.UUID
+
 import cats.data.NonEmptyList
 import cats.effect.*
 import cats.implicits.*
@@ -11,19 +14,18 @@ import doobie.postgres.implicits.*
 import model.vocabulary.*
 import model.vocabulary.terms.*
 import db.DbUtil
-import java.time.Instant
 
 trait PrivacyScopeRepository  {
-  def getDataCategories(appId: String): IO[List[DataCategory]]
+  def getDataCategories(appId: UUID): IO[List[DataCategory]]
 
   def getProcessingCategories(
-      appId: String,
+      appId: UUID,
       userIds: List[DataSubject]
   ): IO[List[ProcessingCategory]]
 
-  def getPurposes(appId: String, userIds: List[DataSubject]): IO[List[Purpose]]
+  def getPurposes(appId: UUID, userIds: List[DataSubject]): IO[List[Purpose]]
 
-  def getTimeline(appId: String, userIds: NonEmptyList[DataSubject]): IO[Timeline]
+  def getTimeline(appId: UUID, userIds: NonEmptyList[DataSubject]): IO[Timeline]
 }
 
 // TODO: select for users
@@ -57,40 +59,40 @@ object PrivacyScopeRepository {
       }
 
   object queries {
-    def getDataCategories(appId: String) =
+    def getDataCategories(appId: UUID) =
       sql"""
         select distinct(dc.term) from legal_bases lb
         join legal_bases_scope lbsc on lbsc.lbid = lb.id
         join "scope" s on s.id = lbsc.scid
         join data_categories dc on dc.id = s.dcid
-        where lb.active and dc.active and lb.appid = $appId::uuid
+        where lb.active and dc.active and lb.appid = $appId
       """
         .query[DataCategory]
         .to[List]
 
-    def getProcessingCategories(appId: String) =
+    def getProcessingCategories(appId: UUID) =
       sql"""
         select distinct(pc.term) from legal_bases lb
         join legal_bases_scope lbsc on lbsc.lbid = lb.id
         join "scope" s on s.id = lbsc.scid
         join processing_categories pc on pc.id = s.pcid
-        where lb.active and lb.appid = $appId::uuid
+        where lb.active and lb.appid = $appId
       """
         .query[ProcessingCategory]
         .to[List]
 
-    def getPurposes(appId: String) =
+    def getPurposes(appId: UUID) =
       sql"""
         select distinct(pp.term) from legal_bases lb
         join legal_bases_scope lbsc on lbsc.lbid = lb.id
         join "scope" s on s.id = lbsc.scid
         join processing_purposes pp on pp.id = s.ppid
-        where lb.active and lb.appid = $appId::uuid
+        where lb.active and lb.appid = $appId
       """
         .query[Purpose]
         .to[List]
 
-    def getLegalBaseEvents(appId: String, userIds: NonEmptyList[DataSubject]) =
+    def getLegalBaseEvents(appId: UUID, userIds: NonEmptyList[DataSubject]) =
       sql"""
         select lb.id as lbid, lb."type" as lbtype, lbe."date" as "date", lbe."event" as "event",
         array_agg(dc.term) as dc, array_agg(pc.term) as pc, array_agg(pp.term) as pp
@@ -101,14 +103,14 @@ object PrivacyScopeRepository {
           join data_categories dc on dc.id = s.dcid
           join processing_categories pc on pc.id = s.pcid
           join processing_purposes pp on pp.id = s.ppid
-        where dc.active = true and lbe.dsid = ${userIds.head.id} and lb.appid = ${appId}::uuid
+        where dc.active = true and lbe.dsid = ${userIds.head.id} and lb.appid = ${appId}
         group by lbe.id, lb.id, lb."type", lbe."date", lbe."event"
         order by lbe."date" asc
       """
         .query[TimelineEvent.LegalBase]
         .to[List]
 
-    def getConsentGivenEvents(appId: String, userIds: NonEmptyList[DataSubject]) =
+    def getConsentGivenEvents(appId: UUID, userIds: NonEmptyList[DataSubject]) =
       sql"""
         select cge.id as id, lb.id as lbid, cge."date" as "date",
         array_agg(dc.term) as dc, array_agg(pc.term) as pc, array_agg(pp.term) as pp
@@ -119,19 +121,19 @@ object PrivacyScopeRepository {
           join data_categories dc on dc.id = s.dcid
           join processing_categories pc on pc.id = s.pcid
           join processing_purposes pp on pp.id = s.ppid
-        where dc.active = true and cge.dsid = ${userIds.head.id} and lb.appid = ${appId}::uuid
+        where dc.active = true and cge.dsid = ${userIds.head.id} and lb.appid = ${appId}
         group by cge.id, lb.id, cge."date"
         order by cge."date" asc
       """
         .query[TimelineEvent.ConsentGiven]
         .to[List]
 
-    def getConsentRevokedEvents(appId: String, userIds: NonEmptyList[DataSubject]) =
+    def getConsentRevokedEvents(appId: UUID, userIds: NonEmptyList[DataSubject]) =
       sql"""
         select cre.id as id, lb.id as lbid, cre."date" as "date"
         from consent_revoked_events cre
           join legal_bases lb on lb.id = cre.lbid
-        where cre.dsid = ${userIds.head.id} and lb.appid = ${appId}::uuid
+        where cre.dsid = ${userIds.head.id} and lb.appid = ${appId}
         order by cre."date" asc;
       """
         .query[TimelineEvent.ConsentRevoked]
@@ -141,24 +143,24 @@ object PrivacyScopeRepository {
 
   def live(xa: Transactor[IO]): PrivacyScopeRepository =
     new PrivacyScopeRepository {
-      def getDataCategories(appId: String): IO[List[DataCategory]] =
+      def getDataCategories(appId: UUID): IO[List[DataCategory]] =
         queries
           .getDataCategories(appId)
           .transact(xa)
 
       def getProcessingCategories(
-          appId: String,
+          appId: UUID,
           userIds: List[DataSubject]
       ): IO[List[ProcessingCategory]] =
         queries
           .getProcessingCategories(appId)
           .transact(xa)
 
-      def getPurposes(appId: String, userIds: List[DataSubject]): IO[List[Purpose]] =
+      def getPurposes(appId: UUID, userIds: List[DataSubject]): IO[List[Purpose]] =
         queries.getPurposes(appId).transact(xa)
 
       // TODO: add restrict and object events
-      def getTimeline(appId: String, userIds: NonEmptyList[DataSubject]): IO[Timeline] =
+      def getTimeline(appId: UUID, userIds: NonEmptyList[DataSubject]): IO[Timeline] =
         val res =
           for {
             lbEvents <- queries.getLegalBaseEvents(appId, userIds)

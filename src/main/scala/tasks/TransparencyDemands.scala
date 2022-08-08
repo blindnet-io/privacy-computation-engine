@@ -1,21 +1,22 @@
 package io.blindnet.privacy
 package tasks
 
+import java.time.Instant
+import java.util.UUID
+
 import cats.data.{ NonEmptyList, * }
 import cats.effect.*
 import cats.implicits.*
-import io.circe.Json
+import io.blindnet.privacy.util.extension.*
 import io.circe.generic.auto.*
 import io.circe.syntax.*
+import io.circe.{ Encoder, Json }
 import db.repositories.*
 import model.vocabulary.request.PrivacyRequest
 import model.vocabulary.request.Demand
 import model.error.*
 import model.vocabulary.*
 import model.vocabulary.terms.*
-import java.time.Instant
-import io.circe.Encoder
-import io.blindnet.privacy.util.extension.*
 
 class TransparencyDemands(
     repositories: Repositories
@@ -39,7 +40,7 @@ class TransparencyDemands(
 
   def getAnswer(
       demand: Demand,
-      appId: String,
+      appId: UUID,
       userIds: List[DataSubject]
   ): IO[Json] = {
     demand.action match {
@@ -61,7 +62,7 @@ class TransparencyDemands(
   }
 
   private def processTransparency(
-      appId: String,
+      appId: UUID,
       userIds: List[DataSubject]
   ): IO[Map[Action, Json]] = {
     val all = List(
@@ -82,38 +83,38 @@ class TransparencyDemands(
     all.map(_.toMap)
   }
 
-  private def getDpo(appId: String): IO[String] =
+  private def getDpo(appId: UUID): IO[String] =
     giRepo
       .getGeneralInfo(appId)
       .failIfNotFound
       .map(_.dpo)
 
-  private def getOrganization(appId: String): IO[String] =
+  private def getOrganization(appId: UUID): IO[String] =
     giRepo
       .getGeneralInfo(appId)
       .failIfNotFound
       .map(_.organization)
 
-  private def getPrivacyPolicy(appId: String): IO[Option[String]] =
+  private def getPrivacyPolicy(appId: UUID): IO[Option[String]] =
     giRepo
       .getGeneralInfo(appId)
       .failIfNotFound
       .map(_.privacyPolicyLink)
 
-  private def getUserKnown(appId: String, userIds: List[DataSubject]): IO[BooleanTerms] =
+  private def getUserKnown(appId: UUID, userIds: List[DataSubject]): IO[BooleanTerms] =
     NonEmptyList.fromList(userIds) match {
       case None          => IO(BooleanTerms.No)
       case Some(userIds) =>
         dsRepo.known(appId, userIds).map(r => if r then BooleanTerms.Yes else BooleanTerms.No)
     }
 
-  private def getWhere(appId: String): IO[List[String]] =
+  private def getWhere(appId: UUID): IO[List[String]] =
     giRepo
       .getGeneralInfo(appId)
       .failIfNotFound
       .map(_.countries)
 
-  private def getWho(appId: String): IO[List[String]] =
+  private def getWho(appId: UUID): IO[List[String]] =
     giRepo
       .getGeneralInfo(appId)
       .failIfNotFound

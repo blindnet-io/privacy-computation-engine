@@ -1,11 +1,16 @@
 package io.blindnet.privacy
 package services
 
+import java.time.Instant
+import java.util.UUID
+
 import cats.data.{ NonEmptyList, * }
 import cats.effect.*
 import cats.effect.kernel.Clock
 import cats.effect.std.*
 import cats.implicits.*
+import io.blindnet.privacy.model.error.given
+import io.blindnet.privacy.util.extension.*
 import io.circe.Json
 import io.circe.generic.auto.*
 import io.circe.syntax.*
@@ -15,9 +20,6 @@ import model.error.*
 import model.vocabulary.DataSubject
 import model.vocabulary.request.{ Demand, PrivacyRequest, * }
 import model.vocabulary.terms.*
-import io.blindnet.privacy.model.error.given
-import java.time.Instant
-import io.blindnet.privacy.util.extension.*
 import util.*
 
 class PrivacyRequestService(
@@ -48,18 +50,18 @@ class PrivacyRequestService(
 
   }
 
-  def createPrivacyRequest(req: CreatePrivacyRequestPayload, appId: String) = {
+  def createPrivacyRequest(req: CreatePrivacyRequestPayload, appId: UUID) = {
     for {
       reqId     <- UUIDGen.randomUUID[IO]
       demandIds <- UUIDGen.randomUUID[IO].replicateA(req.demands.length)
       timestamp <- Clock[IO].realTimeInstant
 
       demands = req.demands.zip(demandIds).map {
-        case (d, id) => PrivacyRequestDemand.toPrivDemand(id.toString(), reqId.toString(), d)
+        case (d, id) => PrivacyRequestDemand.toPrivDemand(id, reqId, d)
       }
 
       pr = PrivacyRequest(
-        reqId.toString(),
+        reqId,
         appId,
         timestamp,
         req.target.getOrElse(Target.System),
@@ -70,12 +72,12 @@ class PrivacyRequestService(
 
       _ <- validateRequest(pr)
       _ <- repos.privacyRequest.store(pr)
-      _ <- repos.pendingRequests.add(reqId.toString)
+      _ <- repos.pendingRequests.add(reqId)
 
-    } yield PrivacyRequestCreatedPayload(reqId.toString)
+    } yield PrivacyRequestCreatedPayload(reqId)
   }
 
-  def getRequestHistory(appId: String, userId: String) =
+  def getRequestHistory(appId: UUID, userId: String) =
     for {
       reqIds <- repos.privacyRequest.getAllUserRequestIds(appId, userId)
       // TODO: this can be optimized in the db
@@ -116,12 +118,12 @@ class PrivacyRequestService(
 
     } yield RequestHistoryPayload(history)
 
-  private def verifyReqExists(requestId: String, appId: String, userId: String) =
+  private def verifyReqExists(requestId: UUID, appId: UUID, userId: String) =
     repos.privacyRequest
       .requestExist(requestId, appId, userId)
       .flatMap(if _ then IO.unit else "Request not found".failNotFound)
 
-  def getResponse(requestId: String, appId: String, userId: String) =
+  def getResponse(requestId: UUID, appId: UUID, userId: String) =
     for {
       _         <- verifyReqExists(requestId, appId, userId)
       responses <- repos.privacyRequest.getResponse(requestId)

@@ -2,21 +2,21 @@ package io.blindnet.privacy
 package api.endpoints.messages.privacyrequest
 
 import java.time.Instant
+import java.util.UUID
 
 import cats.effect.*
 import cats.implicits.*
+import io.blindnet.privacy.model.vocabulary.request.PrivacyResponse
 import io.blindnet.privacy.util.parsing.*
 import io.circe.*
 import io.circe.generic.semiauto.*
 import io.circe.syntax.*
 import org.http4s.circe.*
-import sttp.tapir.Schema
 import sttp.tapir.generic.Configuration
 import sttp.tapir.generic.auto.*
 import sttp.tapir.json.circe.*
+import sttp.tapir.{ Schema, Validator }
 import model.vocabulary.terms.*
-import io.blindnet.privacy.model.vocabulary.request.PrivacyResponse
-import sttp.tapir.Validator
 
 enum PrStatus(val s: String) {
   case InProcessing       extends PrStatus("IN_PROCESSING")
@@ -35,7 +35,7 @@ object PrStatus {
 }
 
 case class PrItem(
-    id: String,
+    id: UUID,
     date: Instant,
     demands: Int,
     status: PrStatus

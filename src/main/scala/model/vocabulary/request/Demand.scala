@@ -1,6 +1,8 @@
 package io.blindnet.privacy
 package model.vocabulary.request
 
+import java.util.UUID
+
 import cats.data.*
 import cats.implicits.*
 import model.vocabulary.terms.Action
@@ -8,8 +10,8 @@ import model.vocabulary.DataSubject
 import model.vocabulary.terms.Target
 
 case class Demand(
-    id: String,
-    reqId: String,
+    id: UUID,
+    reqId: UUID,
     action: Action,
     message: Option[String],
     // TODO: parse https://datatracker.ietf.org/doc/rfc5646/

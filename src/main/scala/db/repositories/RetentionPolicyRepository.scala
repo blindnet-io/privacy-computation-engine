@@ -1,6 +1,9 @@
 package io.blindnet.privacy
 package db.repositories
 
+import java.util.UUID
+import javax.xml.crypto.Data
+
 import cats.data.NonEmptyList
 import cats.effect.*
 import cats.implicits.*
@@ -11,17 +14,16 @@ import doobie.postgres.implicits.*
 import model.vocabulary.*
 import model.vocabulary.terms.*
 import db.DbUtil
-import javax.xml.crypto.Data
 
 trait RetentionPolicyRepository {
 
   def getRetentionPolicies(
-      appId: String,
+      appId: UUID,
       userIds: List[DataSubject]
   ): IO[Map[DataCategory, List[RetentionPolicy]]]
 
   def getRetentionPolicyForDataCategory(
-      appId: String,
+      appId: UUID,
       dc: DataCategory
   ): IO[List[RetentionPolicy]]
 
@@ -33,14 +35,14 @@ object RetentionPolicyRepository {
     new RetentionPolicyRepository {
 
       def getRetentionPolicies(
-          appId: String,
+          appId: UUID,
           userIds: List[DataSubject]
       ): IO[Map[DataCategory, List[RetentionPolicy]]] =
         sql"""
           select rp.policy, rp.duration, rp.after, dc.term
           from retention_policies rp
           join data_categories dc ON rp.dcid = dc.id
-          where rp.appid = $appId::uuid
+          where rp.appid = $appId
         """
           .query[(RetentionPolicyTerms, String, EventTerms, DataCategory)]
           .map {
@@ -51,14 +53,14 @@ object RetentionPolicyRepository {
           .transact(xa)
 
       def getRetentionPolicyForDataCategory(
-          appId: String,
+          appId: UUID,
           dc: DataCategory
       ): IO[List[RetentionPolicy]] =
         sql"""
           select rp.policy, rp.duration, rp.after
           from retention_policies rp
           join data_categories dc ON rp.dcid = dc.id
-          where rp.appid = $appId::uuid and dc.term = $dc
+          where rp.appid = $appId and dc.term = $dc
         """
           .query[RetentionPolicy]
           .to[List]

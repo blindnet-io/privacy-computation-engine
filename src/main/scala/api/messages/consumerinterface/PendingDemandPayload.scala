@@ -2,6 +2,7 @@ package io.blindnet.privacy
 package api.endpoints.messages.consumerinterface
 
 import java.time.Instant
+import java.util.UUID
 
 import cats.effect.*
 import io.blindnet.privacy.model.vocabulary.*
@@ -16,7 +17,7 @@ import sttp.tapir.generic.Configuration
 import sttp.tapir.generic.auto.*
 
 case class PendingDemandPayload(
-    id: String,
+    id: UUID,
     date: Instant,
     action: Action,
     dataSubject: List[DataSubject]

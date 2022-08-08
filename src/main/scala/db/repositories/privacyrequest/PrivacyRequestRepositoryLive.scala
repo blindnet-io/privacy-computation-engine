@@ -10,11 +10,11 @@ import doobie.*
 import doobie.implicits.*
 import doobie.postgres.*
 import doobie.postgres.implicits.*
+import io.blindnet.privacy.db.DbUtil.*
 import io.blindnet.privacy.model.vocabulary.request.*
+import io.blindnet.privacy.util.extension.*
 import model.vocabulary.*
 import model.vocabulary.terms.*
-import io.blindnet.privacy.util.extension.*
-import io.blindnet.privacy.db.DbUtil.*
 
 class PrivacyRequestRepositoryLive(xa: Transactor[IO]) extends PrivacyRequestRepository {
 
@@ -22,28 +22,27 @@ class PrivacyRequestRepositoryLive(xa: Transactor[IO]) extends PrivacyRequestRep
     def storePR =
       sql"""
         insert into privacy_requests (id, appid, dsid, date, target, email)
-        values (${pr.id}::uuid, ${pr.appId}::uuid,
-        ${pr.dataSubject.headOption.map(_.id)}::uuid, ${pr.timestamp},
+        values (${pr.id}, ${pr.appId}, ${pr.dataSubject.headOption.map(_.id)}, ${pr.timestamp},
         ${pr.target.encode}::target_terms, ${pr.email})
       """.update.run
 
     def storeDemand(d: Demand) =
       sql"""
         insert into demands (id, prid, action, message, lang)
-        values (${d.id}::uuid, ${pr.id}::uuid, ${d.action.encode}::action_terms, ${d.message}, ${d.language})
+        values (${d.id}, ${pr.id}, ${d.action.encode}::action_terms, ${d.message}, ${d.language})
       """.update.run
 
     // TODO: this is business logic. move it to service and handle transaction (Resource)
-    def storeResponse(d: Demand, id: String) =
+    def storeResponse(d: Demand, id: UUID) =
       sql"""
         insert into privacy_responses (id, did)
-        values ($id::uuid, ${d.id}::uuid)
+        values ($id, ${d.id})
       """.update.run
 
-    def storeResponseEvent(d: Demand, id: String, prId: String) =
+    def storeResponseEvent(d: Demand, id: UUID, prId: UUID) =
       sql"""
         insert into privacy_response_events (id, prid, date, status, message, lang)
-        values ($id::uuid, $prId::uuid, ${pr.timestamp}, ${Status.UnderReview.encode}::status_terms, null, null)
+        values ($id, $prId, ${pr.timestamp}, ${Status.UnderReview.encode}::status_terms, null, null)
       """.update.run
 
     val store = for {
@@ -53,8 +52,8 @@ class PrivacyRequestRepositoryLive(xa: Transactor[IO]) extends PrivacyRequestRep
           for {
             r2a <- storeDemand(d)
             // TODO: where to generate IDs?
-            id1 = UUID.randomUUID().toString
-            id2 = UUID.randomUUID().toString
+            id1 = UUID.randomUUID()
+            id2 = UUID.randomUUID()
             r2b <- storeResponse(d, id1)
             r2c <- storeResponseEvent(d, id2, id1)
           } yield r2a + r2b + r2c
@@ -65,13 +64,13 @@ class PrivacyRequestRepositoryLive(xa: Transactor[IO]) extends PrivacyRequestRep
     store.transact(xa).void
   }
 
-  def requestExist(reqId: String, appId: String, userId: String): IO[Boolean] =
+  def requestExist(reqId: UUID, appId: UUID, userId: String): IO[Boolean] =
     queries.requestExist(reqId, appId, userId).transact(xa)
 
-  def demandExist(appId: String, dId: String): IO[Boolean] =
+  def demandExist(appId: UUID, dId: UUID): IO[Boolean] =
     queries.demandExist(appId, dId).transact(xa)
 
-  def getRequest(reqId: String): IO[Option[PrivacyRequest]] = {
+  def getRequest(reqId: UUID): IO[Option[PrivacyRequest]] = {
     val res =
       for {
         pr <- queries.getPrivacyRequest(reqId).toOptionT
@@ -81,22 +80,22 @@ class PrivacyRequestRepositoryLive(xa: Transactor[IO]) extends PrivacyRequestRep
     res.value.transact(xa)
   }
 
-  def getRequestSimple(reqId: String): IO[Option[PrivacyRequest]] =
+  def getRequestSimple(reqId: UUID): IO[Option[PrivacyRequest]] =
     queries.getPrivacyRequest(reqId).transact(xa)
 
-  def getRequestsSimple(reqIds: NonEmptyList[String]): IO[List[PrivacyRequest]] =
+  def getRequestsSimple(reqIds: NonEmptyList[UUID]): IO[List[PrivacyRequest]] =
     queries.getPrivacyRequests(reqIds).transact(xa)
 
-  def getDemand(dId: String): IO[Option[Demand]] =
+  def getDemand(dId: UUID): IO[Option[Demand]] =
     queries.getDemand(dId).transact(xa)
 
-  def getDemands(dIds: NonEmptyList[String]): IO[List[Demand]] =
+  def getDemands(dIds: NonEmptyList[UUID]): IO[List[Demand]] =
     queries.getDemands(dIds).transact(xa)
 
-  def getResponse(reqId: String): IO[List[PrivacyResponse]] =
+  def getResponse(reqId: UUID): IO[List[PrivacyResponse]] =
     queries.getAllDemandResponses(reqId).transact(xa)
 
-  def getDemandResponse(dId: String): IO[Option[PrivacyResponse]] =
+  def getDemandResponse(dId: UUID): IO[Option[PrivacyResponse]] =
     queries.getDemandResponse(dId).transact(xa)
 
   def storeNewResponse(r: PrivacyResponse): IO[Unit] =
@@ -105,10 +104,10 @@ class PrivacyRequestRepositoryLive(xa: Transactor[IO]) extends PrivacyRequestRep
   def storeRecommendation(r: Recommendation): IO[Unit] =
     queries.storeRecommendation(r).transact(xa).void
 
-  def getRecommendation(dId: String): IO[Option[Recommendation]] =
+  def getRecommendation(dId: UUID): IO[Option[Recommendation]] =
     queries.getRecommendation(dId).transact(xa)
 
-  def getAllUserRequestIds(appId: String, userId: String): IO[List[String]] =
+  def getAllUserRequestIds(appId: UUID, userId: String): IO[List[UUID]] =
     queries.getAllUserRequestIds(appId, userId).transact(xa)
 
 }

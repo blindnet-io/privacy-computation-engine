@@ -2,18 +2,19 @@ package io.blindnet.privacy
 package model.vocabulary.request
 
 import java.time.Instant
+import java.util.UUID
 
 import cats.data.*
 import cats.implicits.*
 import cats.kernel.Semigroup
+import io.circe.Json
 import model.vocabulary.*
 import model.vocabulary.terms.*
-import io.circe.Json
 
 case class PrivacyResponse(
-    id: String,
-    responseId: String,
-    demandId: String,
+    id: UUID,
+    responseId: UUID,
+    demandId: UUID,
     timestamp: Instant,
     action: Action,
     status: Status,

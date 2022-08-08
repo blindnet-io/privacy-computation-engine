@@ -1,7 +1,13 @@
 package io.blindnet.privacy
 package api.endpoints.messages.privacyrequest
 
+import java.util.UUID
+
 import cats.effect.*
+import io.blindnet.privacy.model.vocabulary.*
+import io.blindnet.privacy.model.vocabulary.request.*
+import io.blindnet.privacy.model.vocabulary.terms.*
+import io.blindnet.privacy.util.parsing.*
 import io.circe.*
 import io.circe.generic.semiauto.*
 import io.circe.syntax.*
@@ -9,10 +15,6 @@ import org.http4s.*
 import org.http4s.circe.*
 import sttp.tapir.*
 import sttp.tapir.generic.auto.*
-import io.blindnet.privacy.model.vocabulary.*
-import io.blindnet.privacy.model.vocabulary.terms.*
-import io.blindnet.privacy.util.parsing.*
-import io.blindnet.privacy.model.vocabulary.request.*
 
 case class Restriction()
 
@@ -36,7 +38,7 @@ object PrivacyRequestDemand {
 
   given Schema[PrivacyRequestDemand] = Schema.derived[PrivacyRequestDemand]
 
-  def toPrivDemand(id: String, reqId: String, d: PrivacyRequestDemand) = {
+  def toPrivDemand(id: UUID, reqId: UUID, d: PrivacyRequestDemand) = {
     Demand(
       id,
       reqId,
