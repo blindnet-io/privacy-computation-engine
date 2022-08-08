@@ -26,7 +26,7 @@ object PendingDemandsRepository {
     new PendingDemandsRepository {
       def getPendingDemandIds(appId: String): IO[List[String]] =
         sql"""
-          select id
+          select d.id
           from pending_demands pd
             join demands d on d.id = pd.did
             join privacy_requests pr on pr.id = d.prid

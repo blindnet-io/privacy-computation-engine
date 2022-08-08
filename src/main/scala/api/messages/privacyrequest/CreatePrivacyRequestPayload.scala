@@ -36,9 +36,10 @@ object PrivacyRequestDemand {
 
   given Schema[PrivacyRequestDemand] = Schema.derived[PrivacyRequestDemand]
 
-  def toPrivDemand(id: String, d: PrivacyRequestDemand) = {
+  def toPrivDemand(id: String, reqId: String, d: PrivacyRequestDemand) = {
     Demand(
       id,
+      reqId,
       d.action,
       d.message,
       d.language,

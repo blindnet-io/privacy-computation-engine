@@ -59,7 +59,7 @@ class PrivacyRequestService(
       timestamp <- Clock[IO].realTimeInstant
 
       demands = req.demands.zip(demandIds).map {
-        case (d, id) => PrivacyRequestDemand.toPrivDemand(id.toString(), d)
+        case (d, id) => PrivacyRequestDemand.toPrivDemand(id.toString(), reqId.toString(), d)
       }
 
       pr = PrivacyRequest(
@@ -81,7 +81,7 @@ class PrivacyRequestService(
 
   def getRequestHistory(appId: String, userId: String) =
     for {
-      reqIds <- repos.privacyRequest.getRequestForUser(appId, userId)
+      reqIds <- repos.privacyRequest.getRequestsForUser(appId, userId)
       // TODO: this can be optimized in the db
       resps  <- reqIds.parTraverse(
         id =>
@@ -101,12 +101,13 @@ class PrivacyRequestService(
                   (acc, cur) =>
                     if (cur == Status.UnderReview) then (acc._1 + 1, acc._2, acc._3)
                     else if (cur == Status.Canceled) then (acc._1, acc._2 + 1, acc._3)
-                    else (acc._1, acc._2 + 1, acc._3 + 1)
+                    else (acc._1, acc._2, acc._3 + 1)
                 )
 
               val l      = statuses.length
               val status =
-                if (canceled == l) then PrStatus.Canceled
+                if (l == 0) then PrStatus.Completed
+                else if (canceled == l) then PrStatus.Canceled
                 else if (completed + canceled == l) then PrStatus.Completed
                 else if (underReview == l) then PrStatus.InProcessing
                 else if (underReview + canceled == l) then PrStatus.InProcessing

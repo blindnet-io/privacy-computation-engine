@@ -29,12 +29,12 @@ class AppRouter(services: Services) {
 
   val healthCheckEndpoints = new HealthCheckEndpoints().endpoints
 
-  val privacyRequestEndpoints = new PrivacyRequestEndpoints(services.privacyRequest).endpoints
+  val privacyRequestEndpoints    = new PrivacyRequestEndpoints(services.privacyRequest).endpoints
+  val consumerInterfaceEndpoints = new DataConsumerEndpoints(services.consumerInterface).endpoints
   // data subject endpoints
-  // data consumer endpoints
   // customization endpoints
 
-  val allEndpoints = healthCheckEndpoints ++ privacyRequestEndpoints
+  val allEndpoints = healthCheckEndpoints ++ privacyRequestEndpoints ++ consumerInterfaceEndpoints
 
   // val docs: OpenAPI =
   //   OpenAPIDocsInterpreter()

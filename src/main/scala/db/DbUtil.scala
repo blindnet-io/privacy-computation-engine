@@ -15,7 +15,7 @@ object DbUtil {
   def ensureUpdatedAtLeastOne(count: Int): IO[Unit] =
     if count >= 1 then IO.unit else IO.raiseError(NotFoundException())
 
-  object Fragments {
+  object FragmentsC {
 
     /** Returns `f IN (fs0, fs1, ...)`, casting fsn to uuid. */
     def inUuid[F[_]: Reducible, A: util.Put](f: Fragment, fs: F[A]): Fragment =

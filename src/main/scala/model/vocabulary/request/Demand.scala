@@ -9,6 +9,7 @@ import model.vocabulary.terms.Target
 
 case class Demand(
     id: String,
+    reqId: String,
     action: Action,
     message: Option[String],
     // TODO: parse https://datatracker.ietf.org/doc/rfc5646/

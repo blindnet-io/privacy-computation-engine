@@ -19,6 +19,7 @@ import io.circe.parser.*
 import model.vocabulary.*
 import model.vocabulary.terms.*
 import io.blindnet.privacy.util.extension.*
+import io.blindnet.privacy.db.DbUtil.*
 
 trait PrivacyRequestRepository {
 
@@ -28,13 +29,21 @@ trait PrivacyRequestRepository {
 
   def getRequest(reqId: String): IO[Option[PrivacyRequest]]
 
+  def getRequestSimple(reqId: String): IO[Option[PrivacyRequest]]
+
+  def getRequestsSimple(reqId: NonEmptyList[String]): IO[List[PrivacyRequest]]
+
+  def getDemand(dId: String): IO[Option[Demand]]
+
+  def getDemands(dIds: NonEmptyList[String]): IO[List[Demand]]
+
   def getResponse(reqId: String): IO[List[PrivacyResponse]]
 
   def getDemandResponse(dId: String): IO[Option[PrivacyResponse]]
 
   def storeNewResponse(r: PrivacyResponse): IO[Unit]
 
-  def getRequestForUser(appId: String, userId: String): IO[List[String]]
+  def getRequestsForUser(appId: String, userId: String): IO[List[String]]
 }
 
 object PrivacyRequestRepository {
@@ -60,6 +69,71 @@ object PrivacyRequestRepository {
           val incl = List.empty
           PrivacyResponse(id, prid, did, t, a, s, answ, msg, lang, system, incl, data)
       }
+
+  given Read[PrivacyRequest] =
+    Read[(String, String, String, Instant, Target, Option[String])]
+      .map {
+        case (id, appId, dsid, t, trg, email) =>
+          val ds = List(DataSubject(dsid, ""))
+          PrivacyRequest(id, appId, t, trg, email, ds, List.empty)
+      }
+
+  given Read[Demand] =
+    Read[(String, String, Action, Option[String], Option[String])]
+      .map { case (id, rid, a, m, l) => Demand(id, rid, a, m, l, List.empty, List.empty) }
+
+  object queries {
+    def getDemand(id: String) =
+      sql"""
+        select d.id, pr.id, action, message, lang
+        from demands d
+          join privacy_requests pr on pr.id = d.prid
+        where d.id = $id::uuid
+      """
+        .query[Demand]
+        .option
+
+    def getDemands(ids: NonEmptyList[String]) =
+      (sql"""
+        select d.id, pr.id, action, message, lang
+          from demands d
+            join privacy_requests pr on pr.id = d.prid
+          where
+        """
+        ++ FragmentsC.inUuid(fr"d.id", ids))
+        .query[Demand]
+        .to[List]
+
+    def getRequestDemands(reqId: String) =
+      sql"""
+        select d.id, pr.id, action, message, lang
+        from demands d
+          join privacy_requests pr on pr.id = d.prid
+        where prid = $reqId::uuid
+      """
+        .query[Demand]
+        .to[List]
+
+    def getPrivacyRequest(reqId: String) =
+      sql"""
+        select id, appid, dsid, date, target, email
+        from privacy_requests
+        where id = $reqId::uuid
+      """
+        .query[PrivacyRequest]
+        .option
+
+    def getPrivacyRequests(ids: NonEmptyList[String]) =
+      (sql"""
+        select id, appid, dsid, date, target, email
+        from privacy_requests
+        where
+      """
+        ++ FragmentsC.inUuid(fr"id", ids))
+        .query[PrivacyRequest]
+        .to[List]
+
+  }
 
   def live(xa: Transactor[IO]): PrivacyRequestRepository =
     new PrivacyRequestRepository {
@@ -113,48 +187,38 @@ object PrivacyRequestRepository {
 
       def requestExist(reqId: String, appId: String, userId: String): IO[Boolean] =
         sql"""
-            select exists (
-              select 1 from privacy_requests pr
-              where id = $reqId::uuid and appid = $appId::uuid and dsid = $userId
-            )
-          """
+          select exists (
+            select 1 from privacy_requests pr
+            where id = $reqId::uuid and appid = $appId::uuid and dsid = $userId
+          )
+        """
           .query[Boolean]
           .unique
           .transact(xa)
 
       def getRequest(reqId: String): IO[Option[PrivacyRequest]] = {
-        val getReq =
-          sql"""
-            select id, appid, dsid, date, target, email
-            from privacy_requests
-            where id = $reqId::uuid
-          """
-            .query[(String, String, String, Instant, Target, Option[String])]
-            .option
-
-        // TODO: restrictions
-        val getDemands =
-          sql"""
-            select id, action, message, lang
-            from demands
-            where prid = $reqId::uuid
-          """
-            .query[(String, Action, Option[String], Option[String])]
-            .map {
-              case (id, action, msg, lang) => Demand(id, action, msg, lang, List.empty, List.empty)
-            }
-            .to[List]
-
         val res =
           for {
-            (id, appId, dsid, t, trg, email) <- getReq.toOptionT
-            ds                               <- getDemands.map(_.some).toOptionT
-          } yield PrivacyRequest(id, appId, t, trg, email, List(DataSubject(dsid, "")), ds)
+            pr <- queries.getPrivacyRequest(reqId).toOptionT
+            ds <- queries.getRequestDemands(reqId).map(_.some).toOptionT
+          } yield pr.copy(demands = ds)
 
         res.value.transact(xa)
       }
 
-      def getResponse(reqId: String): IO[List[PrivacyResponse]] = {
+      def getRequestSimple(reqId: String): IO[Option[PrivacyRequest]] =
+        queries.getPrivacyRequest(reqId).transact(xa)
+
+      def getRequestsSimple(reqIds: NonEmptyList[String]): IO[List[PrivacyRequest]] =
+        queries.getPrivacyRequests(reqIds).transact(xa)
+
+      def getDemand(dId: String): IO[Option[Demand]] =
+        queries.getDemand(dId).transact(xa)
+
+      def getDemands(dIds: NonEmptyList[String]): IO[List[Demand]] =
+        queries.getDemands(dIds).transact(xa)
+
+      def getResponse(reqId: String): IO[List[PrivacyResponse]] =
         sql"""
             with query as (
               select pre.id as id, pr.id as prid, d.id as did, pre.date as date, d.action as action, pre.status as status,
@@ -170,28 +234,26 @@ object PrivacyRequestRepository {
           .query[PrivacyResponse]
           .to[List]
           .transact(xa)
-      }
 
-      def getDemandResponse(demandId: String): IO[Option[PrivacyResponse]] = {
+      def getDemandResponse(demandId: String): IO[Option[PrivacyResponse]] =
         // TODO: duplicate code
         sql"""
-            with query as (
-              select pre.id as id, pr.id as prid, d.id as did, pre.date as date, d.action as action, pre.status as status,
-                pre.answer as answer, pre.message as message, pre.lang as lang, pr.system as system, pre.data as data,
-                ROW_NUMBER() OVER (PARTITION BY pr.id ORDER BY date DESC) As r
-              from privacy_response_events pre
-                join privacy_responses pr on pr.id = pre.prid
-                join demands d on d.id = pr.did
-              where d.id = $demandId::uuid
-            )
-            select * from query where r = 1;
-          """
+          with query as (
+            select pre.id as id, pr.id as prid, d.id as did, pre.date as date, d.action as action, pre.status as status,
+              pre.answer as answer, pre.message as message, pre.lang as lang, pr.system as system, pre.data as data,
+              ROW_NUMBER() OVER (PARTITION BY pr.id ORDER BY date DESC) As r
+            from privacy_response_events pre
+              join privacy_responses pr on pr.id = pre.prid
+              join demands d on d.id = pr.did
+            where d.id = $demandId::uuid
+          )
+          select * from query where r = 1;
+        """
           .query[PrivacyResponse]
           .option
           .transact(xa)
-      }
 
-      def storeNewResponse(r: PrivacyResponse): IO[Unit] = {
+      def storeNewResponse(r: PrivacyResponse): IO[Unit] =
         sql"""
           insert into privacy_response_events (id, prid, date, status, message, lang, data, answer)
           values (
@@ -201,9 +263,8 @@ object PrivacyRequestRepository {
         """.update.run
           .transact(xa)
           .void
-      }
 
-      def getRequestForUser(appId: String, userId: String): IO[List[String]] =
+      def getRequestsForUser(appId: String, userId: String): IO[List[String]] =
         sql"""
           select id
           from privacy_requests pr
