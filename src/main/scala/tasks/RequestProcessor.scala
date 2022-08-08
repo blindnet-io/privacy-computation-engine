@@ -12,6 +12,9 @@ import io.blindnet.privacy.model.vocabulary.terms.*
 import cats.effect.std.UUIDGen
 import scala.concurrent.duration.*
 import io.blindnet.privacy.util.extension.*
+import cats.data.NonEmptyList
+import io.blindnet.privacy.model.vocabulary.Recommendation.apply
+import io.blindnet.privacy.model.vocabulary.Recommendation
 
 class RequestProcessor(
     repos: Repositories
@@ -32,34 +35,34 @@ class RequestProcessor(
     } yield ()
   }
 
-  private def processDemand(request: PrivacyRequest, demand: Demand): IO[Unit] = {
+  private def processDemand(pr: PrivacyRequest, d: Demand): IO[Unit] = {
     for {
-      respOpt <- repos.privacyRequest.getDemandResponse(demand.id)
+      respOpt <- repos.privacyRequest.getDemandResponse(d.id)
       resp    <- respOpt match {
         case None       =>
           // TODO: do we create a new UNDER-REVIEW response here?
-          IO.raiseError(new NotFoundException(s"Demand response with id ${demand.id} not found"))
+          IO.raiseError(new NotFoundException(s"Demand response with id ${d.id} not found"))
         case Some(resp) =>
           IO.pure(resp)
       }
 
-      _ <- processAction(request, demand, resp)
+      _ <- processAction(pr, d, resp)
     } yield ()
 
   }
 
   private def processAction(
-      request: PrivacyRequest,
-      demand: Demand,
+      pr: PrivacyRequest,
+      d: Demand,
       resp: PrivacyResponse
   ): IO[Unit] = {
-    demand.action match {
+    d.action match {
 
       case t if resp.status == UnderReview && (t == Transparency || t.isChildOf(Transparency)) =>
-        processTransparency(request, demand, resp)
+        processTransparency(pr, d, resp)
 
       case t if resp.status == UnderReview && t == Access =>
-        processAccess(request, demand)
+        processAccess(pr, d)
 
       case _ => IO.raiseError(new NotImplementedError)
 
@@ -67,12 +70,12 @@ class RequestProcessor(
   }
 
   private def processTransparency(
-      request: PrivacyRequest,
-      demand: Demand,
+      pr: PrivacyRequest,
+      d: Demand,
       resp: PrivacyResponse
   ): IO[Unit] = {
     for {
-      answer    <- transparency.getAnswer(demand, request.appId, request.dataSubject)
+      answer    <- transparency.getAnswer(d, pr.appId, pr.dataSubject)
       id        <- UUIDGen.randomUUID[IO]
       timestamp <- Clock[IO].realTimeInstant
 
@@ -87,8 +90,26 @@ class RequestProcessor(
     } yield ()
   }
 
-  private def processAccess(request: PrivacyRequest, demand: Demand): IO[Unit] =
-    repos.pendingDemands.storePendingDemand(request.appId, demand.id)
+  private def processAccess(pr: PrivacyRequest, d: Demand): IO[Unit] =
+    for {
+      recOpt <- repos.privacyRequest.getRecommendation(d.id)
+
+      rec <- recOpt match {
+        case Some(r) => IO.pure(r)
+        case None    =>
+          for {
+            id <- UUIDGen[IO].randomUUID
+            ds = NonEmptyList.fromList(pr.dataSubject).get
+            timeline <- repos.privacyScope.getTimeline(pr.appId, ds)
+            eps = timeline.eligiblePrivacyScope
+            dcs = eps.triples.map(_.dataCategory)
+            r   = Recommendation(id.toString, d.id, dcs, None, None, None)
+            _ <- repos.privacyRequest.storeRecommendation(r)
+          } yield r
+      }
+
+      _ <- repos.pendingDemands.storePendingDemand(pr.appId, d.id)
+    } yield ()
 
 }
 
