@@ -11,13 +11,36 @@ ThisBuild / semanticdbEnabled                              := true
 
 resolvers += Resolver.sonatypeRepo("snapshots")
 
+val commonSettings = Seq(
+  scalacOptions ++= Seq("-Xmax-inlines", "100")
+)
+
 lazy val root = (project in file("."))
-  .enablePlugins(BuildInfoPlugin)
   .settings(
-    name                              := "privacy-computation-engine",
-    scalacOptions ++= Seq("-Xmax-inlines", "100"),
-    buildInfoKeys                     := Seq[BuildInfoKey](name, version, scalaVersion, sbtVersion),
-    buildInfoPackage                  := "build",
+    name := "privacy-computation-engine"
+  )
+  .aggregate(core, priv)
+
+lazy val priv = (project in file("modules/priv"))
+  .settings(commonSettings*)
+  .settings(
+    name := "pce-priv",
+    libraryDependencies ++= Seq(
+      dependencies.main.cats,
+      dependencies.main.circe,
+      dependencies.main.circeGeneric,
+      dependencies.main.tapir,
+      dependencies.main.doobie
+    )
+  )
+
+lazy val core = (project in file("modules/core"))
+  .enablePlugins(BuildInfoPlugin)
+  .settings(commonSettings*)
+  .settings(
+    name                             := "pce-core",
+    buildInfoKeys                    := Seq[BuildInfoKey](name, version, scalaVersion, sbtVersion),
+    buildInfoPackage                 := "build",
     libraryDependencies ++= Seq(
       dependencies.main.catsEffect,
       dependencies.main.ciris,
@@ -44,13 +67,14 @@ lazy val root = (project in file("."))
       dependencies.main.janino,
       dependencies.main.log4catsSlf4j
     ),
-    assembly / mainClass              := Some("io.blindnet.privacy.Main"),
-    assembly / assemblyJarName        := "devkit_pce.jar",
-    assemblyMergeStrategy in assembly := {
+    assembly / mainClass             := Some("io.blindnet.pce.Main"),
+    assembly / assemblyJarName       := "devkit_pce.jar",
+    assembly / assemblyMergeStrategy := {
       case PathList("META-INF", "maven", "org.webjars", "swagger-ui", "pom.properties") =>
         MergeStrategy.singleOrError
       case x                                                                            =>
-        val oldStrategy = (assemblyMergeStrategy in assembly).value
+        val oldStrategy = (assembly / assemblyMergeStrategy).value
         oldStrategy(x)
     }
   )
+  .dependsOn(priv)

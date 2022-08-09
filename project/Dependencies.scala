@@ -4,12 +4,13 @@ object dependencies {
 
   object main {
 
-    val cirisV  = "2.3.3"
-    val circeV  = "0.14.2"
-    val doobieV = "1.0.0-RC2"
-    val http4sV = "0.23.13"
-    val tapirV  = "1.0.1"
+    private val cirisV  = "2.3.3"
+    private val circeV  = "0.14.2"
+    private val doobieV = "1.0.0-RC2"
+    private val http4sV = "0.23.13"
+    private val tapirV  = "1.0.1"
 
+    val cats       = "org.typelevel" %% "cats-core"   % "2.8.0"
     val catsEffect = "org.typelevel" %% "cats-effect" % "3.3.12"
 
     val ciris = "is.cir" %% "ciris" % cirisV
@@ -43,7 +44,7 @@ object dependencies {
   }
 
   object test {
-    val testContainersV = "0.40.8"
+    private val testContainersV = "0.40.8"
 
     val scalatest          = "org.scalatest" %% "scalatest"                     % "3.2.12" % Test
     val ceTestingScalatest = "org.typelevel" %% "cats-effect-testing-scalatest" % "1.4.0"  % Test
