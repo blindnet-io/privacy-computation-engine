@@ -16,6 +16,7 @@ trait Repositories {
 
   val pendingRequests: PendingRequestsRepository
   val pendingDemands: PendingDemandsRepository
+  val callbacks: CallbacksRepository
 }
 
 object Repositories {
@@ -33,6 +34,7 @@ object Repositories {
 
     for {
       pendingReqsRepo <- PendingRequestsRepository.live()
+      callbacksRepo   <- CallbacksRepository.live()
     } yield new Repositories {
       val generalInfo     = generalInfoRepo
       val dataSubject     = dataSubjectRepo
@@ -44,6 +46,8 @@ object Repositories {
 
       val pendingRequests = pendingReqsRepo
       val pendingDemands  = pendingDemandsRepo
+
+      val callbacks = callbacksRepo
     }
   }
 
