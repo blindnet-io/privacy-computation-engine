@@ -23,7 +23,7 @@ import io.blindnet.pce.services.util.failBadRequest
 
 class CallbackService(repos: Repositories) {
 
-  def handle(appId: UUID, cbId: UUID, req: CallbackMsgPayload): IO[Unit] =
+  def handle(appId: UUID, cbId: UUID, req: DataCallbackPayload): IO[Unit] =
     for {
       cbData <- repos.callbacks.get(cbId).orFail(s"Wrong id ${cbId}")
       (appId2, rId) = cbData
@@ -33,7 +33,7 @@ class CallbackService(repos: Repositories) {
         // TODO: msg
         else "Error".failBadRequest
 
-      _ <- repos.privacyRequest.storeResponseData(rId, req.msg)
+      _ <- repos.privacyRequest.storeResponseData(rId, req.data_url)
       _ <- repos.callbacks.remove(cbId)
     } yield ()
 

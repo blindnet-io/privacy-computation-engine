@@ -38,21 +38,23 @@ object StorageInterface {
           rec: Recommendation
       ): IO[Unit] = {
 
-        val payload = RequestAccessPayload(
-          selectors = rec.dataCategories.map(_.term).toList,
-          subjects = subject.map(_.id),
-          provenance = rec.provenance.map(_.encode),
-          target = None,
-          after = rec.dateFrom,
-          until = rec.dateTo,
-          appId = appId.toString(),
-          requestId = dId.toString(),
+        val payload = DataRequestPayload(
+          request_id = dId.toString(),
+          DataQueryPayload(
+            selectors = rec.dataCategories.map(_.term).toList,
+            subjects = subject.map(_.id),
+            provenance = rec.provenance.map(_.encode),
+            target = None,
+            after = rec.dateFrom,
+            until = rec.dateTo
+          ),
+          action = DataRequestActions.Get,
           callback = (conf.callbackUri / "callback" / id).toString
         )
 
         val req = Request[IO](
           method = Method.POST,
-          uri = conf.components.dac.uri / "get"
+          uri = conf.components.dac.uri / "requests"
         )
           .withEntity(payload)
 

@@ -32,7 +32,7 @@ class CallbackEndpoints(
       .description("Link to access data in the storage created")
       .post
       .in(path[UUID])
-      .in(jsonBody[CallbackMsgPayload])
+      .in(jsonBody[DataCallbackPayload])
       .serverLogicSuccess((id, req) => callbacksService.handle(appId, id, req))
 
   val endpoints = List(cb)
