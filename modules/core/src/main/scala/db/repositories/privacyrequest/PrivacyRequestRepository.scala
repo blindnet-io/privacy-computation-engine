@@ -28,17 +28,24 @@ trait PrivacyRequestRepository {
 
   def getDemands(dIds: NonEmptyList[UUID]): IO[List[Demand]]
 
-  def getResponse(reqId: UUID): IO[List[PrivacyResponse]]
+  def getResponsesForRequest(reqId: UUID): IO[List[PrivacyResponse]]
+
+  def getResponse(respId: UUID): IO[Option[PrivacyResponse]]
 
   def getDemandResponse(dId: UUID): IO[Option[PrivacyResponse]]
 
   def storeNewResponse(r: PrivacyResponse): IO[Unit]
+
+  def storeResponseData(preId: UUID, data: Option[String]): IO[Unit]
 
   def storeRecommendation(r: Recommendation): IO[Unit]
 
   def getRecommendation(dId: UUID): IO[Option[Recommendation]]
 
   def getAllUserRequestIds(appId: UUID, userId: String): IO[List[UUID]]
+
+  def getDataSubject(dId: UUID): IO[List[DataSubject]]
+
 }
 
 object PrivacyRequestRepository {

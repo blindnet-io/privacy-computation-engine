@@ -91,11 +91,12 @@ private object queries {
     sql"""
       with query as (
         select pre.id as id, pr.id as prid, d.id as did, pre.date as date, d.action as action, pre.status as status,
-          pre.answer as answer, pre.message as message, pre.lang as lang, pr.system as system, pre.data as data,
+          pre.answer as answer, pre.message as message, pre.lang as lang, pr.system as system, pred.data as data,
           ROW_NUMBER() OVER (PARTITION BY pr.id ORDER BY date DESC) As r
         from privacy_response_events pre
           join privacy_responses pr on pr.id = pre.prid
           join demands d on d.id = pr.did
+          left join privacy_response_events_data pred on pred.preid = pre.id
         where d.prid = $reqId
       )
       select * from query where r = 1;
@@ -108,11 +109,12 @@ private object queries {
     sql"""
       with query as (
         select pre.id as id, pr.id as prid, d.id as did, pre.date as date, d.action as action, pre.status as status,
-          pre.answer as answer, pre.message as message, pre.lang as lang, pr.system as system, pre.data as data,
+          pre.answer as answer, pre.message as message, pre.lang as lang, pr.system as system, pred.data as data,
           ROW_NUMBER() OVER (PARTITION BY pr.id ORDER BY date DESC) As r
         from privacy_response_events pre
           join privacy_responses pr on pr.id = pre.prid
           join demands d on d.id = pr.did
+          left join privacy_response_events_data pred on pred.preid = pre.id
         where d.id = $dId
       )
       select * from query where r = 1;
@@ -120,13 +122,32 @@ private object queries {
       .query[PrivacyResponse]
       .option
 
+  def getResponse(respId: UUID) =
+    sql"""
+      select pre.id as id, pr.id as prid, d.id as did, pre.date as date, d.action as action, pre.status as status,
+        pre.answer as answer, pre.message as message, pre.lang as lang, pr.system as system, pred.data as data
+      from privacy_response_events pre
+        join privacy_responses pr on pr.id = pre.prid
+        join demands d on d.id = pre.did
+        left join privacy_response_events_data pred on pred.preid = pre.id
+      where pre.id = $respId
+    """
+      .query[PrivacyResponse]
+      .option
+
   def storeNewResponse(r: PrivacyResponse) =
     sql"""
-      insert into privacy_response_events (id, prid, date, status, message, lang, data, answer)
+      insert into privacy_response_events (id, prid, date, status, message, lang, answer)
       values (
         ${r.id}, ${r.responseId}, ${r.timestamp}, ${r.status.encode}::status_terms,
-        ${r.message}, ${r.lang}, ${r.data}, ${r.answer.map(_.toString)}
+        ${r.message}, ${r.lang}, ${r.answer.map(_.toString)}
       )
+    """.update.run
+
+  def storeResponseData(preId: UUID, data: Option[String]) =
+    sql"""
+      insert into privacy_response_events_data (preid, data)
+      values ($preId, $data)
     """.update.run
 
   def storeRecommendation(r: Recommendation) =
@@ -154,6 +175,17 @@ private object queries {
       where pr.dsid = $userId and pr.appid = $appId
     """
       .query[UUID]
+      .to[List]
+
+  def getDataSubject(dId: UUID) =
+    sql"""
+      select ds.id, ds.schema
+      from data_subjects ds
+        join privacy_requests pr on pr.dsid = ds.id
+        join demands d on d.prid = pr.id
+      where d.id = $dId
+    """
+      .query[DataSubject]
       .to[List]
 
 }

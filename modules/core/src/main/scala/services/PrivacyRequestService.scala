@@ -85,7 +85,7 @@ class PrivacyRequestService(
         id =>
           for {
             req   <- repos.privacyRequest.getRequest(id)
-            resps <- repos.privacyRequest.getResponse(id)
+            resps <- repos.privacyRequest.getResponsesForRequest(id)
           } yield req -> resps
       )
 
@@ -126,7 +126,7 @@ class PrivacyRequestService(
   def getResponse(requestId: UUID, appId: UUID, userId: String) =
     for {
       _         <- verifyReqExists(requestId, appId, userId)
-      responses <- repos.privacyRequest.getResponse(requestId)
+      responses <- repos.privacyRequest.getResponsesForRequest(requestId)
       resp = responses.map(PrivacyResponsePayload.fromPrivPrivacyResponse)
     } yield resp
 

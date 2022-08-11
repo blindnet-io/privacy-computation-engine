@@ -92,14 +92,20 @@ class PrivacyRequestRepositoryLive(xa: Transactor[IO]) extends PrivacyRequestRep
   def getDemands(dIds: NonEmptyList[UUID]): IO[List[Demand]] =
     queries.getDemands(dIds).transact(xa)
 
-  def getResponse(reqId: UUID): IO[List[PrivacyResponse]] =
+  def getResponsesForRequest(reqId: UUID): IO[List[PrivacyResponse]] =
     queries.getAllDemandResponses(reqId).transact(xa)
+
+  def getResponse(respId: UUID): IO[Option[PrivacyResponse]] =
+    queries.getResponse(respId).transact(xa)
 
   def getDemandResponse(dId: UUID): IO[Option[PrivacyResponse]] =
     queries.getDemandResponse(dId).transact(xa)
 
   def storeNewResponse(r: PrivacyResponse): IO[Unit] =
     queries.storeNewResponse(r).transact(xa).void
+
+  def storeResponseData(preId: UUID, data: Option[String]): IO[Unit] =
+    queries.storeResponseData(preId, data).transact(xa).void
 
   def storeRecommendation(r: Recommendation): IO[Unit] =
     queries.storeRecommendation(r).transact(xa).void
@@ -109,5 +115,8 @@ class PrivacyRequestRepositoryLive(xa: Transactor[IO]) extends PrivacyRequestRep
 
   def getAllUserRequestIds(appId: UUID, userId: String): IO[List[UUID]] =
     queries.getAllUserRequestIds(appId, userId).transact(xa)
+
+  def getDataSubject(dId: UUID): IO[List[DataSubject]] =
+    queries.getDataSubject(dId).transact(xa)
 
 }
