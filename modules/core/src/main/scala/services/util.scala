@@ -12,10 +12,6 @@ import java.util.*
 import scala.util.*
 
 object util {
-  def validateUUID(s: String) =
-    IO.fromTry(Try(UUID.fromString(s)))
-      .as(s)
-      .handleErrorWith(_ => s"Wrong id $s".failBadRequest)
 
   extension (s: String) {
     def failBadRequest = BadRequestException(BadPrivacyRequestPayload(s).asJson).raise
