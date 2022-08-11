@@ -2,20 +2,26 @@ package io.blindnet.pce
 package config
 
 import ciris.*
-import com.comcast.ip4s.{ Ipv4Address, Port }
+import com.comcast.ip4s.*
 import cats.Show
+import cats.implicits.*
+import io.blindnet.pce.config.util.{ *, given }
 
 case class ApiConfig(
     host: Ipv4Address,
     port: Port
 )
 
-given Show[ApiConfig] =
-  Show.show(c => s"""|host: ${c.host.toString}
-                     |port: ${c.port.value}""".stripMargin('|'))
+object ApiConfig {
 
-given ConfigDecoder[String, Ipv4Address] =
-  ConfigDecoder[String].mapOption("com.comcast.ip4s.Ipv4Address")(Ipv4Address.fromString)
+  val load =
+    (
+      env("API_HOST").as[Ipv4Address].default(ipv4"0.0.0.0"),
+      env("API_PORT").as[Port].default(port"9000")
+    ).parMapN(ApiConfig.apply)
 
-given ConfigDecoder[String, Port] =
-  ConfigDecoder[String].mapOption("com.comcast.ip4s.Port")(Port.fromString)
+  given Show[ApiConfig] =
+    Show.show(c => s"""|host: ${c.host.toString}
+                       |port: ${c.port.value}""".stripMargin('|'))
+
+}

@@ -4,13 +4,18 @@ package config
 import cats.implicits.*
 import cats.effect.*
 import ciris.*
+import org.http4s.implicits.*
 import com.comcast.ip4s.*
 import cats.Show
+import org.http4s.Uri
+import io.blindnet.pce.config.util.{ *, given }
 
 case class Config(
     env: AppEnvironment,
+    callbackUri: Uri,
     db: DbConfig,
-    api: ApiConfig
+    api: ApiConfig,
+    components: ComponentsConfig
 )
 
 given Show[Config] =
@@ -20,34 +25,27 @@ given Show[Config] =
           |CONFIGURATION
           | 
           |env: ${show"${c.env}"}
+          |callback uri: ${show"${c.callbackUri}"}
           |
           |db
           |${show"${c.db}"}
           |
           |api
           |${show"${c.api}"}
+          |
+          |components
+          |${show"${c.components}"}
           |----------------------""".stripMargin('|'))
 
 object Config {
 
-  val loadApi =
-    (
-      env("API_HOST").as[Ipv4Address].default(ipv4"0.0.0.0"),
-      env("API_PORT").as[Port].default(port"9000")
-    ).parMapN(ApiConfig.apply)
-
-  val loadDb =
-    (
-      env("DB_URI").as[String],
-      env("DB_USER").as[String],
-      env("DB_PASS").as[String].secret
-    ).parMapN(DbConfig.apply)
-
   val load =
     (
       env("APP_ENV").as[AppEnvironment].default(AppEnvironment.Development),
-      loadDb,
-      loadApi
+      env("APP_CALLBACK_URI").as[Uri].default(uri"localhost"),
+      DbConfig.load,
+      ApiConfig.load,
+      ComponentsConfig.load
     )
       .parMapN(Config.apply)
       .load[IO]
