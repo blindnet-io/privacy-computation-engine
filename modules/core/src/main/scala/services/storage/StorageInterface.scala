@@ -52,7 +52,7 @@ object StorageInterface {
 
         val req = Request[IO](
           method = Method.POST,
-          uri = conf.components.dac.uri
+          uri = conf.components.dac.uri / "get"
         )
           .withEntity(payload)
 

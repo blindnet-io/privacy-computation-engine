@@ -19,6 +19,8 @@ trait PendingDemandsRepository {
   def getPendingDemandIds(appId: UUID): IO[List[UUID]]
 
   def storePendingDemand(appId: UUID, id: UUID): IO[Unit]
+
+  def removePendingDemand(appId: UUID, id: UUID): IO[Unit]
 }
 
 object PendingDemandsRepository {
@@ -53,6 +55,12 @@ object PendingDemandsRepository {
         } yield ()
 
         tr.transact(xa).void
+
+      def removePendingDemand(appId: UUID, id: UUID): IO[Unit] =
+        sql"""
+          delete from pending_demands
+          where id = $id
+        """.update.run.transact(xa).void
 
     }
 

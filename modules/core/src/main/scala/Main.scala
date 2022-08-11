@@ -11,6 +11,8 @@ import tasks.*
 import api.*
 import services.*
 import config.{ given, * }
+import org.http4s.ember.client.EmberClientBuilder
+import ch.qos.logback.core.net.server.Client
 
 object Main extends IOApp {
   val logger: Logger[IO] = Slf4jLogger.getLogger[IO]
@@ -25,7 +27,10 @@ object Main extends IOApp {
       xa   <- DbTransactor.make(conf.db)
 
       repositories <- Resource.eval(Repositories.live(xa))
-      services = Services.make(repositories)
+
+      httpClient <- EmberClientBuilder.default[IO].build
+
+      services = Services.make(repositories, httpClient, conf)
 
       _ <- Resource.eval(Tasks.run(repositories).start)
 

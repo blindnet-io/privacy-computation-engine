@@ -48,9 +48,20 @@ class DataConsumerEndpoints(
       .errorOut(statusCode(StatusCode.NotFound))
       .serverLogicSuccess(dId => consumerInterfaceService.getPendingDemandDetails(appId, dId))
 
-  // val approveDemand =
+  val approveDemand =
+    base
+      .description("Approve privacy request")
+      .post
+      .in("pending-requests")
+      .in("approve")
+      .in(jsonBody[ApproveDemandPayload])
+      .errorOut(statusCode(StatusCode.BadRequest))
+      .errorOut(statusCode(StatusCode.UnprocessableEntity))
+      .errorOut(statusCode(StatusCode.NotFound))
+      .serverLogicSuccess(req => consumerInterfaceService.approveDemand(appId, req))
+
   // val declineDemand =
 
-  val endpoints = List(getPendingDemands, getPendingDemandDetails)
+  val endpoints = List(getPendingDemands, getPendingDemandDetails, approveDemand)
 
 }

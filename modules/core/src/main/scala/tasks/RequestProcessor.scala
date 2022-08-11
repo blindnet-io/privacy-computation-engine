@@ -81,10 +81,13 @@ class RequestProcessor(
       id        <- UUIDGen.randomUUID[IO]
       timestamp <- Clock[IO].realTimeInstant
 
-      newResp = resp.copy(
-        id = id,
-        timestamp = timestamp,
-        status = Status.Granted,
+      newResp = PrivacyResponse(
+        id,
+        resp.responseId,
+        resp.demandId,
+        timestamp,
+        resp.action,
+        Status.Granted,
         answer = Some(answer)
       )
 
