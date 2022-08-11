@@ -4,7 +4,7 @@ package util
 import cats.*
 import cats.data.*
 import cats.implicits.*
-import io.blindnet.pce.model.error.NotFoundException
+import io.blindnet.pce.model.error.*
 
 object extension {
   extension [M[_], A](m: M[Option[A]])
@@ -15,16 +15,24 @@ object extension {
     def toOptionT =
       OptionT(m.map(g => Option(g)))
 
-  extension [M[_], A](m: M[Option[A]])(using M: MonadError[M, Throwable])
-    def orNotFound(msg: String) = m.flatMap {
-      case None    => M.raiseError(new NotFoundException(msg))
-      case Some(x) => M.pure(x)
+  extension [M[_]: MonadThrow, A](m: M[Option[A]]) {
+
+    def orNotFound(msg: String): M[A] = m.flatMap {
+      case None    => new NotFoundException(msg).raiseError
+      case Some(x) => x.pure
     }
 
-  extension [M[_]](m: M[Boolean])(using M: MonadError[M, Throwable])
-    def emptyNotFound(msg: String) = m.flatMap {
-      case false => M.raiseError(new NotFoundException(msg))
-      case true  => M.pure(())
+    def orFail(msg: String): M[A] = m.flatMap {
+      case None    => new InternalException(msg).raiseError
+      case Some(x) => x.pure
+    }
+
+  }
+
+  extension [M[_]: MonadThrow](m: M[Boolean])
+    def emptyNotFound(msg: String): M[Unit] = m.flatMap {
+      case false => new NotFoundException(msg).raiseError
+      case true  => ().pure
     }
 
 }
