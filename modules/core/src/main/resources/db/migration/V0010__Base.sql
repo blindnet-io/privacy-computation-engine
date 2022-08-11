@@ -307,7 +307,6 @@ create table privacy_response_events (
   status status_terms not null,
   message varchar,
   lang varchar,
-  data varchar,
   answer varchar,
   constraint privacy_response_fk
     foreign key (prid)
@@ -316,9 +315,8 @@ create table privacy_response_events (
 );
 
 create table privacy_response_events_data (
-  id uuid primary key,
   preid uuid not null,
-  data_link varchar not null,
+  data varchar not null,
   constraint privacy_response_event_fk
     foreign key (preid)
     references privacy_response_events(id)
