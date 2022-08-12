@@ -5,6 +5,7 @@ package terms
 import cats.data.Validated
 import io.circe.*
 import doobie.util.Get
+import sttp.tapir.{ Schema, Validator }
 
 enum RetentionPolicyTerms(term: String) {
   case NoLongerThan extends RetentionPolicyTerms("NO-LONGER-THAN")
@@ -33,5 +34,10 @@ object RetentionPolicyTerms {
 
   given Get[RetentionPolicyTerms] =
     Get[String].map(t => RetentionPolicyTerms.parseUnsafe(t))
+
+  given Schema[RetentionPolicyTerms] =
+    Schema.string.validate(
+      Validator.enumeration(RetentionPolicyTerms.values.toList, x => Option(x.encode))
+    )
 
 }

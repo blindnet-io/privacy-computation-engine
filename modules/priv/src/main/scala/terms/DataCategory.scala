@@ -4,6 +4,7 @@ package terms
 
 import cats.data.Validated
 import io.circe.*
+import sttp.tapir.{ Schema, Validator }
 
 case class DataCategory(term: String)
 
@@ -65,5 +66,8 @@ object DataCategory {
 
   given KeyEncoder[DataCategory] =
     KeyEncoder[String].contramap(_.term)
+
+  given Schema[DataCategory] =
+    Schema.string.validate(Validator.enumeration(terms.map(DataCategory(_)), x => Option(x.term)))
 
 }

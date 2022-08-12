@@ -8,6 +8,7 @@ import io.circe.*
 import cats.data.Validated
 import io.circe.*
 import doobie.util.Get
+import sttp.tapir.{ Schema, Validator }
 
 enum ProvenanceTerms(term: String, parent: Option[ProvenanceTerms] = None) {
   case All         extends ProvenanceTerms("*")
@@ -47,5 +48,10 @@ object ProvenanceTerms {
 
   given Get[ProvenanceTerms] =
     Get[String].map(t => ProvenanceTerms.parseUnsafe(t))
+
+  given Schema[ProvenanceTerms] =
+    Schema.string.validate(
+      Validator.enumeration(ProvenanceTerms.values.toList, x => Option(x.encode))
+    )
 
 }
