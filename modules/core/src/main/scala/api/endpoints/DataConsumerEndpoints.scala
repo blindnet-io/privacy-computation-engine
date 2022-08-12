@@ -42,7 +42,7 @@ class DataConsumerEndpoints(
       .description("Get details of a pending privacy request")
       .get
       .in("pending-requests")
-      .in(path[UUID])
+      .in(path[UUID]("demandId"))
       .out(jsonBody[PendingDemandDetailsPayload])
       .errorOut(statusCode(StatusCode.UnprocessableEntity))
       .errorOut(statusCode(StatusCode.NotFound))

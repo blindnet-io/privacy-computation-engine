@@ -31,7 +31,7 @@ class CallbackEndpoints(
     base
       .description("Link to access data in the storage created")
       .post
-      .in(path[UUID])
+      .in(path[UUID]("callbackId"))
       .in(jsonBody[DataCallbackPayload])
       .serverLogicSuccess((id, req) => callbacksService.handle(appId, id, req))
 
