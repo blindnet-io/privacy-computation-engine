@@ -50,9 +50,9 @@ class TransparencyDemands(
       case TLegalBases           => lbRepo.getLegalBases(appId, userIds).json
       case TOrganization         => getOrganization(appId).json
       case TPolicy               => getPrivacyPolicy(appId).json
-      case TProcessingCategories => psRepo.getProcessingCategories(appId, userIds).json
+      case TProcessingCategories => psRepo.getProcessingCategories(appId).json
       case TProvenance           => prRepo.getProvenances(appId, userIds).json
-      case TPurpose              => psRepo.getPurposes(appId, userIds).json
+      case TPurpose              => psRepo.getPurposes(appId).json
       case TRetention            => rpRepo.getRetentionPolicies(appId, userIds).json
       case TWhere                => getWhere(appId).json
       case TWho                  => getWho(appId).json
@@ -71,9 +71,9 @@ class TransparencyDemands(
       lbRepo.getLegalBases(appId, userIds).json.map((TLegalBases, _)),
       getOrganization(appId).json.map((TOrganization, _)),
       getPrivacyPolicy(appId).json.map((TPolicy, _)),
-      psRepo.getProcessingCategories(appId, userIds).json.map((TProcessingCategories, _)),
+      psRepo.getProcessingCategories(appId).json.map((TProcessingCategories, _)),
       prRepo.getProvenances(appId, userIds).json.map((TProvenance, _)),
-      psRepo.getPurposes(appId, userIds).json.map((TPurpose, _)),
+      psRepo.getPurposes(appId).json.map((TPurpose, _)),
       rpRepo.getRetentionPolicies(appId, userIds).json.map((TRetention, _)),
       getWhere(appId).json.map((TWhere, _)),
       getWho(appId).json.map((TWho, _))
@@ -84,19 +84,19 @@ class TransparencyDemands(
 
   private def getDpo(appId: UUID): IO[String] =
     giRepo
-      .getGeneralInfo(appId)
+      .get(appId)
       .failIfNotFound
       .map(_.dpo)
 
   private def getOrganization(appId: UUID): IO[String] =
     giRepo
-      .getGeneralInfo(appId)
+      .get(appId)
       .failIfNotFound
       .map(_.organization)
 
   private def getPrivacyPolicy(appId: UUID): IO[Option[String]] =
     giRepo
-      .getGeneralInfo(appId)
+      .get(appId)
       .failIfNotFound
       .map(_.privacyPolicyLink)
 
@@ -109,13 +109,13 @@ class TransparencyDemands(
 
   private def getWhere(appId: UUID): IO[List[String]] =
     giRepo
-      .getGeneralInfo(appId)
+      .get(appId)
       .failIfNotFound
       .map(_.countries)
 
   private def getWho(appId: UUID): IO[List[String]] =
     giRepo
-      .getGeneralInfo(appId)
+      .get(appId)
       .failIfNotFound
       .map(_.dataConsumerCategories)
 

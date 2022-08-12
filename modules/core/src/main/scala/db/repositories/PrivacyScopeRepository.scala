@@ -16,14 +16,11 @@ import priv.terms.*
 import db.DbUtil
 
 trait PrivacyScopeRepository  {
-  def getDataCategories(appId: UUID): IO[List[DataCategory]]
+  def getDataCategories(appId: UUID, selectors: Boolean = true): IO[List[DataCategory]]
 
-  def getProcessingCategories(
-      appId: UUID,
-      userIds: List[DataSubject]
-  ): IO[List[ProcessingCategory]]
+  def getProcessingCategories(appId: UUID): IO[List[ProcessingCategory]]
 
-  def getPurposes(appId: UUID, userIds: List[DataSubject]): IO[List[Purpose]]
+  def getPurposes(appId: UUID): IO[List[Purpose]]
 
   def getTimeline(appId: UUID, userIds: NonEmptyList[DataSubject]): IO[Timeline]
 }
@@ -59,14 +56,14 @@ object PrivacyScopeRepository {
       }
 
   object queries {
-    def getDataCategories(appId: UUID) =
-      sql"""
+    def getDataCategories(appId: UUID, selectors: Boolean) =
+      (fr"""
         select distinct(dc.term) from legal_bases lb
         join legal_bases_scope lbsc on lbsc.lbid = lb.id
         join "scope" s on s.id = lbsc.scid
         join data_categories dc on dc.id = s.dcid
         where lb.active and dc.active and lb.appid = $appId
-      """
+      """ ++ (if selectors then fr"" else fr" and selector = false"))
         .query[DataCategory]
         .to[List]
 
@@ -143,20 +140,17 @@ object PrivacyScopeRepository {
 
   def live(xa: Transactor[IO]): PrivacyScopeRepository =
     new PrivacyScopeRepository {
-      def getDataCategories(appId: UUID): IO[List[DataCategory]] =
+      def getDataCategories(appId: UUID, selectors: Boolean = true): IO[List[DataCategory]] =
         queries
-          .getDataCategories(appId)
+          .getDataCategories(appId, selectors)
           .transact(xa)
 
-      def getProcessingCategories(
-          appId: UUID,
-          userIds: List[DataSubject]
-      ): IO[List[ProcessingCategory]] =
+      def getProcessingCategories(appId: UUID): IO[List[ProcessingCategory]] =
         queries
           .getProcessingCategories(appId)
           .transact(xa)
 
-      def getPurposes(appId: UUID, userIds: List[DataSubject]): IO[List[Purpose]] =
+      def getPurposes(appId: UUID): IO[List[Purpose]] =
         queries.getPurposes(appId).transact(xa)
 
       // TODO: add restrict and object events

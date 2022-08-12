@@ -5,6 +5,7 @@ import java.util.UUID
 
 import cats.data.NonEmptyList
 import cats.effect.IO
+import cats.implicits.*
 import doobie.*
 import doobie.implicits.*
 import doobie.postgres.*
@@ -16,13 +17,15 @@ import priv.*
 import priv.terms.*
 
 trait GeneralInfoRepository {
-  def getGeneralInfo(appId: UUID): IO[Option[GeneralInformation]]
+  def get(appId: UUID): IO[Option[GeneralInformation]]
+
+  def update(appId: UUID, gi: GeneralInformation): IO[Unit]
 }
 
 object GeneralInfoRepository {
   def live(xa: Transactor[IO]): GeneralInfoRepository =
     new GeneralInfoRepository {
-      def getGeneralInfo(appId: UUID): IO[Option[GeneralInformation]] =
+      def get(appId: UUID): IO[Option[GeneralInformation]] =
         sql"""
           select countries, organization, dpo, data_consumer_categories, access_policies, privacy_policy_link, data_security_information
           from general_information
@@ -31,6 +34,19 @@ object GeneralInfoRepository {
           .query[GeneralInformation]
           .option
           .transact(xa)
+
+      def update(appId: UUID, gi: GeneralInformation): IO[Unit] = {
+
+        val del    = sql"""delete from general_information where appId = $appId""".update.run
+        val insert =
+          sql"""
+            insert into general_information
+            values (gen_random_uuid(), $appId, ${gi.organization}, ${gi.dpo}, ${gi.countries},
+            ${gi.dataConsumerCategories}, ${gi.accessPolicies}, ${gi.privacyPolicyLink}, ${gi.dataSecurityInfo})
+          """.update.run
+
+        (del *> insert).transact(xa).void
+      }
 
     }
 
