@@ -316,7 +316,7 @@ create table privacy_response_events (
 
 create table privacy_response_events_data (
   preid uuid not null,
-  data varchar not null,
+  data varchar,
   constraint privacy_response_event_fk
     foreign key (preid)
     references privacy_response_events(id)
@@ -324,10 +324,23 @@ create table privacy_response_events_data (
 );
 -----------------
 
--- DATA CONSUMER
+create table pending_demands_to_review (
+  did uuid unique not null,
+  constraint demand_fk
+    foreign key (did)
+    references demands(id)
+    on delete cascade
+);
 
-create table pending_demands (
-  id uuid primary key,
+create table pending_demands_to_process (
+  did uuid unique not null,
+  constraint demand_fk
+    foreign key (did)
+    references demands(id)
+    on delete cascade
+);
+
+create table pending_demands_to_respond (
   did uuid unique not null,
   constraint demand_fk
     foreign key (did)

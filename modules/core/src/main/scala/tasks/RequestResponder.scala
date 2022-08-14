@@ -17,15 +17,19 @@ import io.blindnet.pce.util.extension.*
 import org.typelevel.log4cats.*
 import org.typelevel.log4cats.slf4j.*
 import db.repositories.Repositories
+import io.blindnet.pce.services.external.StorageInterface
 
-class RequestProcessor(
-    repos: Repositories
+class RequestResponder(
+    repos: Repositories,
+    storage: StorageInterface
 ) {
 
   import priv.terms.Action.*
   import priv.terms.Status.*
 
-  private def processDemand(dId: UUID): IO[Unit] =
+  val transparency = TransparencyDemands(repos)
+
+  private def createResponse(dId: UUID): IO[Unit] =
     for {
       // TODO .get
       d       <- repos.privacyRequest.getDemand(dId).map(_.get)
@@ -39,10 +43,10 @@ class RequestProcessor(
           IO.pure(resp)
       }
 
-      _ <- processDemand(pr, d, resp)
+      _ <- createResponse(pr, d, resp)
     } yield ()
 
-  private def processDemand(
+  private def createResponse(
       pr: PrivacyRequest,
       d: Demand,
       resp: PrivacyResponse
@@ -52,19 +56,10 @@ class RequestProcessor(
       case UnderReview =>
         d.action match {
           case a if a == Transparency || a.isChildOf(Transparency) =>
-            // processTransparency(pr, d, resp)
-            if true
-            then repos.demandsToRespond.store(List(d.id))
-            else repos.demandsToReview.store(List(d.id))
+            createResponseTransparency(pr, d, resp)
 
           case Access =>
-            for {
-              _ <- createRecommendation(pr, d)
-              _ <-
-                if false
-                then repos.demandsToRespond.store(List(d.id))
-                else repos.demandsToReview.store(List(d.id))
-            } yield ()
+            createResponseAccess(pr, d, resp)
 
           case _ => IO.raiseError(new NotImplementedError)
         }
@@ -72,7 +67,58 @@ class RequestProcessor(
       case _           => IO.unit
     }
 
-  private def createRecommendation(pr: PrivacyRequest, d: Demand): IO[Unit] =
+  private def createResponseTransparency(
+      pr: PrivacyRequest,
+      d: Demand,
+      resp: PrivacyResponse
+  ): IO[Unit] =
+    for {
+      answer    <- transparency.getAnswer(d, pr.appId, pr.dataSubject)
+      id        <- UUIDGen.randomUUID[IO]
+      timestamp <- Clock[IO].realTimeInstant
+
+      newResp = PrivacyResponse(
+        id,
+        resp.responseId,
+        resp.demandId,
+        timestamp,
+        resp.action,
+        Status.Granted,
+        answer = Some(answer)
+      )
+
+      _ <- repos.privacyRequest.storeNewResponse(newResp)
+    } yield ()
+
+  // TODO: .get
+  private def createResponseAccess(pr: PrivacyRequest, d: Demand, resp: PrivacyResponse): IO[Unit] =
+    for {
+      rec <- repos.privacyRequest.getRecommendation(d.id).map(_.get)
+
+      newRespId <- UUIDGen.randomUUID[IO]
+
+      cbId <- UUIDGen.randomUUID[IO]
+      _    <- repos.callbacks.set(cbId, pr.appId, newRespId)
+      // TODO
+      _ = println()
+      _ = println(cbId)
+      _ = println()
+      // _    <- storage.requestAccessLink(appId, dId, cbId, ds, rec)
+      _ <- storage.requestAccessLink(pr.appId, d.id, cbId, pr.dataSubject, rec).attempt
+
+      timestamp <- Clock[IO].realTimeInstant
+      newResp = PrivacyResponse(
+        newRespId,
+        resp.responseId,
+        d.id,
+        timestamp,
+        d.action,
+        Status.Granted
+      )
+      _ <- repos.privacyRequest.storeNewResponse(newResp)
+    } yield ()
+
+  private def processAccess(pr: PrivacyRequest, d: Demand): IO[Unit] =
     for {
       recOpt <- repos.privacyRequest.getRecommendation(d.id)
       rec    <- recOpt match {
@@ -93,28 +139,28 @@ class RequestProcessor(
 
 }
 
-object RequestProcessor {
+object RequestResponder {
   val logger: Logger[IO] = Slf4jLogger.getLogger[IO]
 
-  def run(repos: Repositories): IO[Unit] = {
-    val reqProc = new RequestProcessor(repos)
+  def run(repos: Repositories, storage: StorageInterface): IO[Unit] = {
+    val reqProc = new RequestResponder(repos, storage)
 
     def loop(): IO[Unit] =
       for {
-        ids <- repos.demandsToProcess.get()
+        ids <- repos.demandsToRespond.get()
         _   <- ids.parTraverse_(
           id => {
             val p = for {
-              _ <- logger.info(s"Processing new demand $id")
-              _ <- repos.demandsToProcess.remove(NonEmptyList.one(id))
-              _ <- reqProc.processDemand(id)
-              _ <- logger.info(s"Demand $id processed")
+              _ <- logger.info(s"Creating response for demand $id")
+              _ <- repos.demandsToRespond.remove(NonEmptyList.one(id))
+              _ <- reqProc.createResponse(id)
+              _ <- logger.info(s"Response for demand $id created")
             } yield ()
 
             p.handleErrorWith(
               logger
-                .error(_)(s"Error processing demand $id")
-                .flatMap(_ => repos.demandsToProcess.store(List(id)))
+                .error(_)(s"Error responding demand $id")
+                .flatMap(_ => repos.demandsToRespond.store(List(id)))
             )
           }
         )

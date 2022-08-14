@@ -22,23 +22,21 @@ import model.error.*
 import priv.DataSubject
 import priv.privacyrequest.{ Demand, PrivacyRequest, * }
 import priv.terms.*
-import io.blindnet.pce.services.storage.StorageInterface
 
 class DataConsumerInterfaceService(
-    repos: Repositories,
-    storage: StorageInterface
+    repos: Repositories
 ) {
 
   def getPendingDemands(appId: UUID) = {
     for {
-      dIds    <- repos.pendingDemands.getPendingDemandIds(appId)
+      dIds    <- repos.demandsToReview.get(appId)
       demands <- NonEmptyList.fromList(dIds) match {
         case None      => IO(List.empty[Demand])
         case Some(ids) => repos.privacyRequest.getDemands(ids)
       }
       reqs    <- NonEmptyList.fromList(demands.map(_.reqId)) match {
         case None      => IO(List.empty[PrivacyRequest])
-        case Some(ids) => repos.privacyRequest.getRequestsSimple(ids)
+        case Some(ids) => repos.privacyRequest.getRequests(ids)
       }
 
       res = (demands.sortBy(_.reqId) zip reqs.sortBy(_.id)).map(PendingDemandPayload.fromPrivDemand)
@@ -50,46 +48,16 @@ class DataConsumerInterfaceService(
       _ <- repos.privacyRequest.demandExist(appId, dId).emptyNotFound(s"Demand $dId not found")
       d <- repos.privacyRequest.getDemand(dId).orFail(s"Demand $dId not found")
       rId = d.reqId
-      req <- repos.privacyRequest.getRequestSimple(rId).orFail(s"Request $rId not found")
+      req <- repos.privacyRequest.getRequest(rId, false).orFail(s"Request $rId not found")
       rec <- repos.privacyRequest.getRecommendation(dId)
       res = PendingDemandDetailsPayload.fromPrivDemand(d, req, rec)
     } yield res
 
   def approveDemand(appId: UUID, req: ApproveDemandPayload) =
+    // TODO: do we need other info, as msg/lang?
     for {
-      dId <- IO.pure(req.id)
-      _   <- repos.privacyRequest.demandExist(appId, dId).emptyNotFound(s"Demand $dId not found")
-      ds  <- repos.privacyRequest.getDataSubject(dId)
-      r   <- repos.privacyRequest.getDemandResponse(dId).orFail(s"Response for $dId not found")
-      _   <-
-        if r.status == Status.Granted
-        then BadRequestException(s"Demand $dId already granted".asJson).raise
-        else IO.unit
-      rec <- repos.privacyRequest.getRecommendation(dId).orNotFound(s"Rec for $dId not found")
-
-      newRespId <- UUIDGen.randomUUID[IO]
-
-      cbId <- UUIDGen.randomUUID[IO]
-      _    <- repos.callbacks.set(cbId, appId, newRespId)
-      // TODO
-      _ = println()
-      _ = println(cbId)
-      _ = println()
-      // _    <- storage.requestAccessLink(appId, dId, cbId, ds, rec)
-      _ <- storage.requestAccessLink(appId, dId, cbId, ds, rec).attempt
-
-      timestamp <- Clock[IO].realTimeInstant
-      newResp = PrivacyResponse(
-        newRespId,
-        r.responseId,
-        r.demandId,
-        timestamp,
-        r.action,
-        Status.Granted
-      )
-      _ <- repos.privacyRequest.storeNewResponse(newResp)
-
-      _ <- repos.pendingDemands.removePendingDemand(appId, dId)
+      _ <- repos.demandsToReview.remove(NonEmptyList.of(req.id))
+      _ <- repos.demandsToRespond.store(List(req.id))
     } yield ()
 
 }

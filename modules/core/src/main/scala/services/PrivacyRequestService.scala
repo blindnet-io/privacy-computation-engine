@@ -72,7 +72,7 @@ class PrivacyRequestService(
 
       _ <- validateRequest(pr)
       _ <- repos.privacyRequest.store(pr)
-      _ <- repos.pendingRequests.add(reqId)
+      _ <- repos.demandsToProcess.store(demands.map(_.id))
 
     } yield PrivacyRequestCreatedPayload(reqId)
   }

@@ -77,6 +77,15 @@ private object queries {
       .query[PrivacyRequest]
       .option
 
+  def getPrivacyRequestFromDemand(dId: UUID) =
+    sql"""
+      select id, appid, dsid, date, target, email
+      from privacy_requests
+      where id = (select d.prid from demands d where d.id = $dId)
+    """
+      .query[PrivacyRequest]
+      .option
+
   def getPrivacyRequests(ids: NonEmptyList[UUID]) =
     (sql"""
       select id, appid, dsid, date, target, email

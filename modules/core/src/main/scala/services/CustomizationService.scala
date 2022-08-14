@@ -22,7 +22,6 @@ import model.error.*
 import priv.DataSubject
 import priv.privacyrequest.{ Demand, PrivacyRequest, * }
 import priv.terms.*
-import io.blindnet.pce.services.storage.StorageInterface
 import io.blindnet.pce.priv.GeneralInformation
 import io.blindnet.pce.api.endpoints.messages.customization.PrivacyScopeDimensionsPayload
 

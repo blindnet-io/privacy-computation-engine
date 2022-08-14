@@ -14,8 +14,10 @@ trait Repositories {
   val provenance: ProvenancesRepository
   val privacyRequest: PrivacyRequestRepository
 
-  val pendingRequests: PendingRequestsRepository
-  val pendingDemands: PendingDemandsRepository
+  val demandsToProcess: DemandsToProcessRepository
+  val demandsToReview: DemandsToReviewRepository
+  val demandsToRespond: DemandsToRespondRepository
+
   val callbacks: CallbacksRepository
 }
 
@@ -30,11 +32,12 @@ object Repositories {
     val provenanceRepo      = ProvenancesRepository.live(xa)
     val privacyReqRepo      = PrivacyRequestRepository.live(xa)
 
-    val pendingDemandsRepo = PendingDemandsRepository.live(xa)
+    val demandsToProcessRepo = DemandsToProcessRepository.live(xa)
+    val demandsToReviewRepo  = DemandsToReviewRepository.live(xa)
+    val demandsToRespondRepo = DemandsToRespondRepository.live(xa)
 
     for {
-      pendingReqsRepo <- PendingRequestsRepository.live()
-      callbacksRepo   <- CallbacksRepository.live()
+      callbacksRepo <- CallbacksRepository.live()
     } yield new Repositories {
       val generalInfo     = generalInfoRepo
       val dataSubject     = dataSubjectRepo
@@ -44,8 +47,9 @@ object Repositories {
       val provenance      = provenanceRepo
       val privacyRequest  = privacyReqRepo
 
-      val pendingRequests = pendingReqsRepo
-      val pendingDemands  = pendingDemandsRepo
+      val demandsToProcess = demandsToProcessRepo
+      val demandsToReview  = demandsToReviewRepo
+      val demandsToRespond = demandsToRespondRepo
 
       val callbacks = callbacksRepo
     }

@@ -23,10 +23,10 @@ case class DataCallbackPayload(
 )
 
 object DataCallbackPayload {
-  given Decoder[DataCallbackPayload] = unSnakeCaseIfy(deriveDecoder[DataCallbackPayload])
-  given Encoder[DataCallbackPayload] = snakeCaseIfy(deriveEncoder[DataCallbackPayload])
+  given Decoder[DataCallbackPayload] = deriveDecoder[DataCallbackPayload]
+  given Encoder[DataCallbackPayload] = deriveEncoder[DataCallbackPayload]
 
   given Schema[DataCallbackPayload] =
-    Schema.derived[DataCallbackPayload](using Configuration.default.withSnakeCaseMemberNames)
+    Schema.derived[DataCallbackPayload]
 
 }

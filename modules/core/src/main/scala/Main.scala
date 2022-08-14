@@ -13,6 +13,7 @@ import services.*
 import config.{ given, * }
 import org.http4s.ember.client.EmberClientBuilder
 import ch.qos.logback.core.net.server.Client
+import services.external.StorageInterface
 
 object Main extends IOApp {
   val logger: Logger[IO] = Slf4jLogger.getLogger[IO]
@@ -29,10 +30,11 @@ object Main extends IOApp {
       repositories <- Resource.eval(Repositories.live(xa))
 
       httpClient <- EmberClientBuilder.default[IO].build
+      storage = StorageInterface.live(httpClient, conf)
 
-      services = Services.make(repositories, httpClient, conf)
+      services = Services.make(repositories, conf)
 
-      _ <- Resource.eval(Tasks.run(repositories).start)
+      _ <- Resource.eval(Tasks.run(repositories, storage).start)
 
       app = AppRouter.make(services)
       server <- Server.make(app.httpApp, conf.api)

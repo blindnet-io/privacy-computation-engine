@@ -1,5 +1,5 @@
 package io.blindnet.pce
-package services.storage
+package services.external
 
 import java.util.UUID
 

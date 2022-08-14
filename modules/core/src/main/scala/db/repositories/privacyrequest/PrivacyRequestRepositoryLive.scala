@@ -70,20 +70,22 @@ class PrivacyRequestRepositoryLive(xa: Transactor[IO]) extends PrivacyRequestRep
   def demandExist(appId: UUID, dId: UUID): IO[Boolean] =
     queries.demandExist(appId, dId).transact(xa)
 
-  def getRequest(reqId: UUID): IO[Option[PrivacyRequest]] = {
-    val res =
+  def getRequest(reqId: UUID, withDemands: Boolean): IO[Option[PrivacyRequest]] = {
+    val withD =
       for {
         pr <- queries.getPrivacyRequest(reqId).toOptionT
         ds <- queries.getRequestDemands(reqId).map(_.some).toOptionT
       } yield pr.copy(demands = ds)
 
-    res.value.transact(xa)
+    val res = if withDemands then withD.value else queries.getPrivacyRequest(reqId)
+
+    res.transact(xa)
   }
 
-  def getRequestSimple(reqId: UUID): IO[Option[PrivacyRequest]] =
-    queries.getPrivacyRequest(reqId).transact(xa)
+  def getRequest(d: Demand): IO[Option[PrivacyRequest]] =
+    queries.getPrivacyRequestFromDemand(d.id).transact(xa)
 
-  def getRequestsSimple(reqIds: NonEmptyList[UUID]): IO[List[PrivacyRequest]] =
+  def getRequests(reqIds: NonEmptyList[UUID]): IO[List[PrivacyRequest]] =
     queries.getPrivacyRequests(reqIds).transact(xa)
 
   def getDemand(dId: UUID): IO[Option[Demand]] =
