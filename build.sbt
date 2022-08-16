@@ -31,7 +31,9 @@ lazy val priv = (project in file("modules/priv"))
       dependencies.main.circeGeneric,
       dependencies.main.tapir,
       dependencies.main.doobie,
-      dependencies.main.doobiePostres
+      dependencies.main.doobiePostres,
+      dependencies.test.scalatest,
+      dependencies.test.scalaCheck
     )
   )
 

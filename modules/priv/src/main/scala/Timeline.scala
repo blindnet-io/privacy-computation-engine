@@ -7,7 +7,7 @@ case class Timeline(
     events: List[TimelineEvent]
 ) {
 
-  def eligiblePrivacyScope(timestamp: Option[Instant] = None) = {
+  def eligiblePrivacyScope(timestamp: Option[Instant] = None): PrivacyScope = {
 
     import TimelineEvent.*
     import terms.EventTerms.*
@@ -24,9 +24,9 @@ case class Timeline(
 
     def removeEvent(id: String, acc: Acc) =
       acc.copy(events = acc.events.filterNot {
-        case ev: LegalBase if ev.lbId == id      => true
-        case ev: ConsentRevoked if ev.lbId == id => true
-        case _                                   => false
+        case ev: LegalBase if ev.lbId == id    => true
+        case ev: ConsentGiven if ev.lbId == id => true
+        case _                                 => false
       })
 
     val withDateFilter = timestamp match {
@@ -98,4 +98,10 @@ case class Timeline(
     scope
   }
 
+}
+
+object Timeline {
+  def apply(e: TimelineEvent*) = new Timeline(e.toList)
+
+  val empty = Timeline(List.empty)
 }
