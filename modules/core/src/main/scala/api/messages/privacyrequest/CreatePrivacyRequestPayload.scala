@@ -9,18 +9,51 @@ import priv.privacyrequest.*
 import priv.terms.*
 import io.blindnet.pce.util.parsing.*
 import io.circe.*
-import io.circe.generic.semiauto.*
+import io.circe.generic.semiauto.{
+  deriveDecoder as semiDeriveDecoder,
+  deriveEncoder as semiDeriveEncoder
+}
+import io.circe.generic.auto.*
 import io.circe.syntax.*
 import org.http4s.*
 import org.http4s.circe.*
 import sttp.tapir.*
 import sttp.tapir.generic.auto.*
+import java.time.Instant
+import sttp.tapir.generic.Configuration
 
-case class Restriction()
+// TODO: privacy scope
+case class PrivacyScopeRestriction()
+case class ConsentRestriction(id: UUID)
+case class DateRangeRestriction(from: Option[Instant], to: Option[Instant])
+case class ProvenanceRestriction(term: ProvenanceTerms, target: Option[Target])
+case class DataReferenceRestriction(ref: List[String])
 
-object Restriction {
-  given Decoder[Restriction] = deriveDecoder[Restriction]
-  given Encoder[Restriction] = deriveEncoder[Restriction]
+case class Restrictions(
+    privacyScope: Option[PrivacyScopeRestriction],
+    consent: Option[ConsentRestriction],
+    dateRange: Option[DateRangeRestriction],
+    provenance: Option[ProvenanceRestriction],
+    dataReference: Option[DataReferenceRestriction]
+)
+
+object Restrictions {
+  given Decoder[Restrictions] = unSnakeCaseIfy(semiDeriveDecoder[Restrictions])
+  given Encoder[Restrictions] = snakeCaseIfy(semiDeriveEncoder[Restrictions])
+
+  given Schema[Restrictions] =
+    Schema.derived[Restrictions](using Configuration.default.withSnakeCaseMemberNames)
+
+  def toPrivRestrictions(r: Restrictions): List[Restriction] =
+    List(
+      // TODO: privacy scope
+      r.privacyScope.map(ps => Restriction.PrivacyScope(PrivacyScope.empty)),
+      r.consent.map(c => Restriction.Consent(c.id)),
+      r.dateRange.map(dr => Restriction.DateRange(dr.from, dr.to)),
+      r.provenance.map(p => Restriction.Provenance(p.term, p.target)),
+      r.dataReference.map(dr => Restriction.DataReference(dr.ref))
+    ).flatten
+
 }
 
 case class PrivacyRequestDemand(
@@ -29,12 +62,12 @@ case class PrivacyRequestDemand(
     message: Option[String],
     language: Option[String],
     data: Option[List[String]],
-    restrictions: Option[List[Restriction]]
+    restrictions: Option[Restrictions]
 )
 
 object PrivacyRequestDemand {
-  given Decoder[PrivacyRequestDemand] = deriveDecoder[PrivacyRequestDemand]
-  given Encoder[PrivacyRequestDemand] = deriveEncoder[PrivacyRequestDemand]
+  given Decoder[PrivacyRequestDemand] = unSnakeCaseIfy(semiDeriveDecoder[PrivacyRequestDemand])
+  given Encoder[PrivacyRequestDemand] = snakeCaseIfy(semiDeriveEncoder[PrivacyRequestDemand])
 
   given Schema[PrivacyRequestDemand] = Schema.derived[PrivacyRequestDemand]
 
@@ -46,8 +79,7 @@ object PrivacyRequestDemand {
       d.message,
       d.language,
       d.data.getOrElse(List.empty),
-      // TODO: restrictions
-      List.empty
+      d.restrictions.map(Restrictions.toPrivRestrictions).getOrElse(List.empty)
     )
   }
 
@@ -62,11 +94,11 @@ case class CreatePrivacyRequestPayload(
 
 object CreatePrivacyRequestPayload {
   given Decoder[CreatePrivacyRequestPayload] = unSnakeCaseIfy(
-    deriveDecoder[CreatePrivacyRequestPayload]
+    semiDeriveDecoder[CreatePrivacyRequestPayload]
   )
 
   given Encoder[CreatePrivacyRequestPayload] = snakeCaseIfy(
-    deriveEncoder[CreatePrivacyRequestPayload]
+    semiDeriveEncoder[CreatePrivacyRequestPayload]
   )
 
   given Schema[PrivacyRequestDemand] = Schema.derived[PrivacyRequestDemand]

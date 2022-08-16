@@ -68,6 +68,16 @@ private object queries {
       .query[Demand]
       .to[List]
 
+  def getDemandRestrictions(dId: UUID) = {
+    sql"""
+      select type, cid, from_date, to_date, provenance_term, target_term, data_reference
+      from demand_restrictions
+      where did = $dId
+    """
+      .query[Restriction]
+      .to[List]
+  }
+
   def getPrivacyRequest(reqId: UUID) =
     sql"""
       select id, appid, dsid, date, target, email

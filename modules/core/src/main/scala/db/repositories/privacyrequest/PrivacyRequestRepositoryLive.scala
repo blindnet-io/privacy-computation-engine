@@ -15,6 +15,7 @@ import priv.privacyrequest.*
 import io.blindnet.pce.util.extension.*
 import priv.*
 import priv.terms.*
+import io.blindnet.pce.api.endpoints.messages.privacyrequest.Restrictions
 
 class PrivacyRequestRepositoryLive(xa: Transactor[IO]) extends PrivacyRequestRepository {
 
@@ -31,6 +32,27 @@ class PrivacyRequestRepositoryLive(xa: Transactor[IO]) extends PrivacyRequestRep
         insert into demands (id, prid, action, message, lang)
         values (${d.id}, ${pr.id}, ${d.action.encode}::action_terms, ${d.message}, ${d.language})
       """.update.run
+
+    def storeRestriction(id: UUID, dId: UUID, r: Restriction) = {
+
+      val values = r match {
+        case r: Restriction.PrivacyScope  =>
+          fr"($id, $dId, 'PRIVACY_SCOPE', null, null, null, null, null, null)"
+        case r: Restriction.Consent       =>
+          fr"($id, $dId, 'CONSENT', ${r.consentId}, null, null, null, null, null)"
+        case r: Restriction.DateRange     =>
+          fr"($id, $dId, 'DATE_RANGE', null, ${r.from}, ${r.to}, null, null, null)"
+        case r: Restriction.Provenance    =>
+          fr"""($id, $dId, 'PROVENANCE', null, null, null, ${r.term.encode}::provenance_terms,
+          ${r.target.map(_.encode)}::target_terms, null)"""
+        case r: Restriction.DataReference =>
+          fr"($id, $dId, 'DATA_REFERENCE', null, null, null, null, null, ${r.dataReferences})"
+      }
+
+      (fr"""
+        insert into demand_restrictions (id, did, type, cid, from_date, to_date, provenance_term, target_term, data_reference)
+        values""" ++ values).update.run
+    }
 
     // TODO: this is business logic. move it to service and handle transaction (Resource)
     def storeResponse(d: Demand, id: UUID) =
@@ -51,6 +73,7 @@ class PrivacyRequestRepositoryLive(xa: Transactor[IO]) extends PrivacyRequestRep
         d =>
           for {
             r2a <- storeDemand(d)
+            _   <- d.restrictions.traverse(r => storeRestriction(UUID.randomUUID(), d.id, r))
             // TODO: where to generate IDs?
             id1 = UUID.randomUUID()
             id2 = UUID.randomUUID()
@@ -78,7 +101,6 @@ class PrivacyRequestRepositoryLive(xa: Transactor[IO]) extends PrivacyRequestRep
       } yield pr.copy(demands = ds)
 
     val res = if withDemands then withD.value else queries.getPrivacyRequest(reqId)
-
     res.transact(xa)
   }
 
@@ -88,8 +110,17 @@ class PrivacyRequestRepositoryLive(xa: Transactor[IO]) extends PrivacyRequestRep
   def getRequests(reqIds: NonEmptyList[UUID]): IO[List[PrivacyRequest]] =
     queries.getPrivacyRequests(reqIds).transact(xa)
 
-  def getDemand(dId: UUID): IO[Option[Demand]] =
-    queries.getDemand(dId).transact(xa)
+  def getDemand(dId: UUID, withRestrictions: Boolean = true): IO[Option[Demand]] = {
+    val withR =
+      for {
+        d <- queries.getDemand(dId).toOptionT
+        r <- queries.getDemandRestrictions(dId).toOptionT
+        res = d.copy(restrictions = r)
+      } yield res
+
+    val res = if withRestrictions then withR.value else queries.getDemand(dId)
+    res.transact(xa)
+  }
 
   def getDemands(dIds: NonEmptyList[UUID]): IO[List[Demand]] =
     queries.getDemands(dIds).transact(xa)

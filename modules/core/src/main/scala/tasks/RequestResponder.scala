@@ -32,7 +32,7 @@ class RequestResponder(
   private def createResponse(dId: UUID): IO[Unit] =
     for {
       // TODO .get
-      d       <- repos.privacyRequest.getDemand(dId).map(_.get)
+      d       <- repos.privacyRequest.getDemand(dId, true).map(_.get)
       pr      <- repos.privacyRequest.getRequest(d).map(_.get)
       respOpt <- repos.privacyRequest.getDemandResponse(dId)
       resp    <- respOpt match {
@@ -118,25 +118,6 @@ class RequestResponder(
       _ <- repos.privacyRequest.storeNewResponse(newResp)
     } yield ()
 
-  private def processAccess(pr: PrivacyRequest, d: Demand): IO[Unit] =
-    for {
-      recOpt <- repos.privacyRequest.getRecommendation(d.id)
-      rec    <- recOpt match {
-        case Some(r) => IO.pure(r)
-        case None    =>
-          for {
-            id <- UUIDGen[IO].randomUUID
-            ds = NonEmptyList.fromList(pr.dataSubject).get
-            // TODO: take into account the date of the request
-            timeline <- repos.privacyScope.getTimeline(pr.appId, ds)
-            eps = timeline.eligiblePrivacyScope
-            dcs = eps.triples.map(_.dataCategory)
-            r   = Recommendation(id, d.id, dcs, None, None, None)
-            _ <- repos.privacyRequest.storeRecommendation(r)
-          } yield r
-      }
-    } yield ()
-
 }
 
 object RequestResponder {
@@ -158,9 +139,10 @@ object RequestResponder {
             } yield ()
 
             p.handleErrorWith(
-              logger
-                .error(_)(s"Error responding demand $id")
-                .flatMap(_ => repos.demandsToRespond.store(List(id)))
+              e =>
+                logger
+                  .error(e)(s"Error creating response for demand $id - ${e.getMessage}")
+                  .flatMap(_ => repos.demandsToProcess.store(List(id)))
             )
           }
         )

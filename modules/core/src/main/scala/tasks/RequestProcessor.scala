@@ -17,6 +17,7 @@ import io.blindnet.pce.util.extension.*
 import org.typelevel.log4cats.*
 import org.typelevel.log4cats.slf4j.*
 import db.repositories.Repositories
+import io.blindnet.pce.api.endpoints.messages.privacyrequest.DateRangeRestriction.apply
 
 class RequestProcessor(
     repos: Repositories
@@ -28,7 +29,7 @@ class RequestProcessor(
   private def processDemand(dId: UUID): IO[Unit] =
     for {
       // TODO .get
-      d       <- repos.privacyRequest.getDemand(dId).map(_.get)
+      d       <- repos.privacyRequest.getDemand(dId, true).map(_.get)
       pr      <- repos.privacyRequest.getRequest(d).map(_.get)
       respOpt <- repos.privacyRequest.getDemandResponse(dId)
       resp    <- respOpt match {
@@ -77,17 +78,24 @@ class RequestProcessor(
       recOpt <- repos.privacyRequest.getRecommendation(d.id)
       rec    <- recOpt match {
         case Some(r) => IO.pure(r)
-        case None    =>
+        case None    => {
           for {
             id <- UUIDGen[IO].randomUUID
             ds = NonEmptyList.fromList(pr.dataSubject).get
-            // TODO: take into account the date of the request
             timeline <- repos.privacyScope.getTimeline(pr.appId, ds)
-            eps = timeline.eligiblePrivacyScope
-            dcs = eps.triples.map(_.dataCategory)
-            r   = Recommendation(id, d.id, dcs, None, None, None)
+            eps = timeline.eligiblePrivacyScope(Some(pr.timestamp))
+
+            psRec = d.getPSR.map(ps => eps intersection ps).getOrElse(eps)
+            drRec = d.getDateRangeR.getOrElse((None, None))
+            pRec  = d.getProvenanceR.map(_._1)
+            // TODO: data reference restriction
+
+            dcs = psRec.triples.map(_.dataCategory)
+
+            r = Recommendation(id, d.id, dcs, drRec._1, drRec._2, pRec)
             _ <- repos.privacyRequest.storeRecommendation(r)
           } yield r
+        }
       }
     } yield ()
 
@@ -112,9 +120,10 @@ object RequestProcessor {
             } yield ()
 
             p.handleErrorWith(
-              logger
-                .error(_)(s"Error processing demand $id")
-                .flatMap(_ => repos.demandsToProcess.store(List(id)))
+              e =>
+                logger
+                  .error(e)(s"Error processing demand $id - ${e.getMessage}")
+                  .flatMap(_ => repos.demandsToProcess.store(List(id)))
             )
           }
         )

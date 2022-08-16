@@ -7,7 +7,7 @@ ThisBuild / organizationName                               := "blindnet"
 ThisBuild / organizationHomepage                           := Some(url("https://blindnet.io"))
 ThisBuild / scalafixDependencies += "com.github.liancheng" %% "organize-imports" % "0.6.0"
 ThisBuild / semanticdbEnabled                              := true
-// ThisBuild / semanticdbVersion := scalafixSemanticdb.revision
+ThisBuild / semanticdbVersion                              := scalafixSemanticdb.revision
 
 resolvers += Resolver.sonatypeRepo("snapshots")
 
@@ -30,7 +30,8 @@ lazy val priv = (project in file("modules/priv"))
       dependencies.main.circe,
       dependencies.main.circeGeneric,
       dependencies.main.tapir,
-      dependencies.main.doobie
+      dependencies.main.doobie,
+      dependencies.main.doobiePostres
     )
   )
 
