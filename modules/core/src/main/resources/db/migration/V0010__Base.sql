@@ -198,34 +198,18 @@ create table demands (
     on delete cascade
 );
 
-create table restriction_privacy_scope (
+create type restriction_type as enum ('PRIVACY_SCOPE', 'CONSENT', 'DATE_RANGE', 'PROVENANCE', 'DATA_REFERENCE');
+
+create table demand_restrictions(
   id uuid primary key,
   did uuid not null,
-  constraint demand_fk
-    foreign key (did)
-    references demands(id)
-    on delete cascade
-);
-
-create table restriction_privacy_scope_scope (
-  rpsid uuid not null,
-  scid uuid not null,
-  constraint restriction_privacy_scope_scope_pk
-    primary key (rpsid, scid),
-  constraint restriction_privacy_scope_fk
-    foreign key (rpsid)
-    references restriction_privacy_scope(id)
-    on delete cascade,
-  constraint scope_fk
-    foreign key (scid)
-    references scope(id)
-    on delete cascade
-);
-
-create table restriction_consent (
-  id uuid primary key,
-  did uuid not null,
-  cid uuid not null,
+  type restriction_type not null,
+  cid uuid,
+  from_date timestamp,
+  to_date timestamp,
+  provenance_term provenance_terms,
+  target_term target_terms,
+  data_reference varchar[],
   constraint demand_fk
     foreign key (did)
     references demands(id)
@@ -236,34 +220,18 @@ create table restriction_consent (
     on delete cascade
 );
 
-create table restriction_date_range (
-  id uuid primary key,
-  did uuid not null,
-  from_timestamp timestamp,
-  to_timestamp timestamp,
-  constraint demand_fk
-    foreign key (did)
-    references demands(id)
-    on delete cascade
-);
-
-create table restriction_provenance (
-  id uuid primary key,
-  did uuid not null,
-  provenance_term varchar not null,
-  target_term target_terms,
-  constraint demand_fk
-    foreign key (did)
-    references demands(id)
-    on delete cascade
-);
-
-create table restriction_data_reference (
-  id uuid primary key,
-  did uuid not null,
-  constraint demand_fk
-    foreign key (did)
-    references demands(id)
+create table demand_restriction_scope (
+  drid uuid not null,
+  scid uuid not null,
+  constraint demand_restriction_scope_pk
+    primary key (drid, scid),
+  constraint demand_restriction_fk
+    foreign key (drid)
+    references demand_restrictions(id)
+    on delete cascade,
+  constraint scope_fk
+    foreign key (scid)
+    references scope(id)
     on delete cascade
 );
 
