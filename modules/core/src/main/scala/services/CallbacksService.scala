@@ -20,11 +20,15 @@ import api.endpoints.messages.callback.*
 import io.blindnet.pce.util.extension.*
 import cats.effect.std.UUIDGen
 import io.blindnet.pce.services.util.failBadRequest
+import org.typelevel.log4cats.*
+import org.typelevel.log4cats.slf4j.*
 
 class CallbackService(repos: Repositories) {
+  val logger: Logger[IO] = Slf4jLogger.getLogger[IO]
 
   def handle(appId: UUID, cbId: UUID, req: DataCallbackPayload): IO[Unit] =
     for {
+      _      <- logger.info(s"Received callback for id $cbId. req: ${req.asJson}")
       cbData <- repos.callbacks.get(cbId).orFail(s"Wrong id ${cbId}")
       (appId2, rId) = cbData
       _ <-
