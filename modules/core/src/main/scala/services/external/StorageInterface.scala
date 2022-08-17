@@ -15,12 +15,13 @@ import org.http4s.implicits.*
 import priv.*
 import config.Config
 import model.error.InternalException
+import io.blindnet.pce.db.repositories.Repositories
 
 trait StorageInterface {
   def requestAccessLink(
-      id: UUID,
+      callbackId: UUID,
       appId: UUID,
-      dId: UUID,
+      demandId: UUID,
       subject: List[DataSubject],
       rec: Recommendation
   ): IO[Unit]
@@ -28,20 +29,21 @@ trait StorageInterface {
 }
 
 object StorageInterface {
-  def live(c: Client[IO], conf: Config) =
+  def live(c: Client[IO], repos: Repositories, conf: Config) =
     new StorageInterface {
       def requestAccessLink(
-          id: UUID,
+          callbackId: UUID,
           appId: UUID,
-          dId: UUID,
+          demandId: UUID,
           subject: List[DataSubject],
           rec: Recommendation
       ): IO[Unit] = {
 
         val payload = DataRequestPayload(
-          request_id = dId.toString(),
+          request_id = demandId.toString(),
           DataQueryPayload(
-            selectors = rec.dataCategories.map(_.term).toList,
+            // selectors = rec.dataCategories.map(_.term).toList,
+            selectors = List("NAME", "IMAGE"),
             subjects = subject.map(_.id),
             provenance = rec.provenance.map(_.encode),
             target = None,
@@ -49,19 +51,21 @@ object StorageInterface {
             until = rec.dateTo
           ),
           action = DataRequestActions.Get,
-          callback = (conf.callbackUri / "callback" / id).toString
+          callback = (conf.callbackUri / "callback" / callbackId).toString
         )
 
-        val req = Request[IO](
+        def req(uri: Uri) = Request[IO](
           method = Method.POST,
-          uri = conf.components.dac.uri / "requests"
+          uri = uri / "requests"
         )
           .withEntity(payload)
 
-        c.successful(req).flatMap {
-          case true  => IO.unit
-          case false => IO.raiseError(InternalException("Non 200 response from DCA"))
-        }
+        for {
+          // TODO: handle not found
+          app <- repos.app.get(appId).map(_.get)
+          res <- c.successful(req(app.dacUri))
+          _ = if res then IO.unit else IO.raiseError(InternalException("Non 200 response from DCA"))
+        } yield ()
       }
 
     }

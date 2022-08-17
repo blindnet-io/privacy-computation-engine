@@ -4,6 +4,15 @@ create table apps (
   active boolean default true
 );
 
+create table dac (
+  appid uuid not null,
+  uri varchar,
+  constraint app_fk
+    foreign key (appid)
+    references apps(id)
+    on delete cascade
+);
+
 -- GENERAL INFORMATION
 -- parts of TRANSPARENCY requests and ROPA
 

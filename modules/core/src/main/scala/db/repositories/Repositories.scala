@@ -6,6 +6,7 @@ import doobie.util.transactor.Transactor
 import db.repositories.privacyrequest.*
 
 trait Repositories {
+  val app: AppRepository
   val generalInfo: GeneralInfoRepository
   val dataSubject: DataSubjectRepository
   val legalBase: LegalBaseRepository
@@ -24,6 +25,7 @@ trait Repositories {
 object Repositories {
   def live(xa: Transactor[IO]): IO[Repositories] = {
 
+    val appRepo             = AppRepository.live(xa)
     val generalInfoRepo     = GeneralInfoRepository.live(xa)
     val dataSubjectRepo     = DataSubjectRepository.live(xa)
     val legalBaseRepo       = LegalBaseRepository.live(xa)
@@ -39,6 +41,7 @@ object Repositories {
     for {
       callbacksRepo <- CallbacksRepository.live()
     } yield new Repositories {
+      val app             = appRepo
       val generalInfo     = generalInfoRepo
       val dataSubject     = dataSubjectRepo
       val legalBase       = legalBaseRepo

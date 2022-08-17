@@ -100,11 +100,7 @@ class RequestResponder(
       cbId <- UUIDGen.randomUUID[IO]
       _    <- repos.callbacks.set(cbId, pr.appId, newRespId)
       // TODO
-      _ = println()
-      _ = println(cbId)
-      _ = println()
-      // _    <- storage.requestAccessLink(appId, dId, cbId, ds, rec)
-      _ <- storage.requestAccessLink(pr.appId, d.id, cbId, pr.dataSubject, rec).attempt
+      _    <- storage.requestAccessLink(cbId, pr.appId, d.id, pr.dataSubject, rec)
 
       timestamp <- Clock[IO].realTimeInstant
       newResp = PrivacyResponse(

@@ -30,7 +30,7 @@ object Main extends IOApp {
       repositories <- Resource.eval(Repositories.live(xa))
 
       httpClient <- EmberClientBuilder.default[IO].build
-      storage = StorageInterface.live(httpClient, conf)
+      storage = StorageInterface.live(httpClient, repositories, conf)
 
       services = Services.make(repositories, conf)
 
