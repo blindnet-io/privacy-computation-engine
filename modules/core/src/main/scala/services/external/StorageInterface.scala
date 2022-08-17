@@ -16,6 +16,8 @@ import priv.*
 import config.Config
 import model.error.InternalException
 import io.blindnet.pce.db.repositories.Repositories
+import org.typelevel.log4cats.*
+import org.typelevel.log4cats.slf4j.*
 
 trait StorageInterface {
   def requestAccessLink(
@@ -29,6 +31,8 @@ trait StorageInterface {
 }
 
 object StorageInterface {
+  val logger: Logger[IO] = Slf4jLogger.getLogger[IO]
+
   def live(c: Client[IO], repos: Repositories, conf: Config) =
     new StorageInterface {
       def requestAccessLink(
@@ -63,6 +67,7 @@ object StorageInterface {
         for {
           // TODO: handle not found
           app <- repos.app.get(appId).map(_.get)
+          _   <- logger.info(s"Sending request to ${app.dacUri} \n ${payload.asJson}")
           res <- c.successful(req(app.dacUri))
           _ = if res then IO.unit else IO.raiseError(InternalException("Non 200 response from DCA"))
         } yield ()
