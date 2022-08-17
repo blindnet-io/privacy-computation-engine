@@ -51,7 +51,7 @@ object StorageInterface {
             until = rec.dateTo
           ),
           action = DataRequestActions.Get,
-          callback = (conf.callbackUri / "callback" / callbackId).toString
+          callback = (conf.callbackUri / "callback" / callbackId.toString).toString
         )
 
         def req(uri: Uri) = Request[IO](

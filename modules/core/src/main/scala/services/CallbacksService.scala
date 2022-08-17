@@ -29,7 +29,7 @@ class CallbackService(repos: Repositories) {
   def handle(appId: UUID, cbId: UUID, req: DataCallbackPayload): IO[Unit] =
     for {
       _      <- logger.info(s"Received callback for id $cbId. req: ${req.asJson}")
-      cbData <- repos.callbacks.get(cbId).orFail(s"Wrong id ${cbId}")
+      cbData <- repos.callbacks.get(cbId).orFail(s"Wrong callback id ${cbId}")
       (appId2, rId) = cbData
       _ <-
         if appId == appId2
