@@ -54,6 +54,7 @@ class RequestProcessor(
         d.action match {
           case a if a == Transparency || a.isChildOf(Transparency) =>
             // processTransparency(pr, d, resp)
+            // TODO
             if true
             then repos.demandsToRespond.store(List(d.id))
             else repos.demandsToReview.store(List(d.id))
@@ -62,7 +63,8 @@ class RequestProcessor(
             for {
               _ <- createRecommendation(pr, d)
               _ <-
-                if false
+                // TODO
+                if true
                 then repos.demandsToRespond.store(List(d.id))
                 else repos.demandsToReview.store(List(d.id))
             } yield ()
