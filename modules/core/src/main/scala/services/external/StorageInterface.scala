@@ -47,7 +47,7 @@ object StorageInterface {
           request_id = demandId.toString(),
           DataQueryPayload(
             // selectors = rec.dataCategories.map(_.term).toList,
-            selectors = List("NAME", "IMAGE"),
+            selectors = List("NAME"),
             subjects = subject.map(_.id),
             provenance = rec.provenance.map(_.encode),
             target = None,
@@ -60,7 +60,7 @@ object StorageInterface {
 
         def req(uri: Uri) = Request[IO](
           method = Method.POST,
-          uri = uri / "requests"
+          uri = uri / "v1" / "requests"
         )
           .withEntity(payload)
 
