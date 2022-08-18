@@ -4,6 +4,7 @@ package db.repositories
 import cats.effect.*
 import doobie.util.transactor.Transactor
 import db.repositories.privacyrequest.*
+import db.repositories.privacyscope.*
 
 trait Repositories {
   val app: AppRepository
