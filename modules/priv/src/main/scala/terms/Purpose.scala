@@ -5,6 +5,8 @@ package terms
 import cats.data.Validated
 import io.circe.*
 import doobie.util.Get
+import sttp.tapir.Schema
+import sttp.tapir.Validator
 
 case class Purpose(term: String)
 
@@ -12,9 +14,19 @@ object Purpose {
 
   def parse(s: String): Validated[String, Purpose] =
     Validated.fromOption(
-      s.split('.').headOption.filter(terms.contains).map(_ => Purpose(s)),
+      terms.find(_ == s).map(_ => Purpose(s)),
       "Unknown purpose of processing"
     )
+
+  def getSubTerms(dc: Purpose): List[Purpose] = {
+    def getSubTerms0(term: String): List[String] =
+      val n = terms.filter(t => t.startsWith(s"$term."))
+      if n.length == 0 then List(term) else n.flatMap(t => getSubTerms0(t))
+
+    val res =
+      if dc.term == "*" then terms.tail.flatMap(t => getSubTerms0(t)) else getSubTerms0(dc.term)
+    res.map(Purpose(_))
+  }
 
   val terms = List(
     "*",
@@ -43,5 +55,8 @@ object Purpose {
 
   given Encoder[Purpose] =
     Encoder[String].contramap(_.term)
+
+  given Schema[Purpose] =
+    Schema.string.validate(Validator.enumeration(terms.map(Purpose(_)), x => Option(x.term)))
 
 }

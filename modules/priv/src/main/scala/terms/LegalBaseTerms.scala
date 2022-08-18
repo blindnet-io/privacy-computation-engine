@@ -5,6 +5,8 @@ package terms
 import cats.data.Validated
 import io.circe.*
 import doobie.util.Get
+import sttp.tapir.Schema
+import sttp.tapir.Validator
 
 enum LegalBaseTerms(term: String, parent: Option[LegalBaseTerms] = None) {
   case Contract           extends LegalBaseTerms("CONTRACT")
@@ -44,6 +46,11 @@ object LegalBaseTerms {
 
   given Encoder[LegalBaseTerms] =
     Encoder[String].contramap(_.encode)
+
+  given Schema[LegalBaseTerms] =
+    Schema.string.validate(
+      Validator.enumeration(LegalBaseTerms.values.toList, x => Option(x.encode))
+    )
 
   given Get[LegalBaseTerms] =
     Get[String].tmap(t => LegalBaseTerms.parseUnsafe(t))

@@ -4,7 +4,7 @@ package terms
 
 import cats.data.Validated
 import io.circe.*
-import sttp.tapir.{ Schema, Validator }
+import sttp.tapir.{ Schema, Validator, ValidationResult }
 
 case class DataCategory(term: String)
 
@@ -12,9 +12,21 @@ object DataCategory {
 
   def parse(s: String): Validated[String, DataCategory] =
     Validated.fromOption(
-      s.split('.').headOption.filter(terms.contains).map(_ => DataCategory(s)),
+      (terms.find(t => s.contains(t))).map(_ => DataCategory(s)),
       "Unknown data category"
     )
+
+  def getSubTerms(dc: DataCategory, selectors: List[DataCategory]): List[DataCategory] = {
+    val allterms = terms ++ selectors.map(_.term)
+
+    def getSubTerms0(term: String): List[String] =
+      val n = allterms.filter(t => t.startsWith(s"$term."))
+      if n.length == 0 then List(term) else n.flatMap(t => getSubTerms0(t))
+
+    val res =
+      if dc.term == "*" then allterms.tail.flatMap(t => getSubTerms0(t)) else getSubTerms0(dc.term)
+    res.map(DataCategory(_))
+  }
 
   val terms = List(
     "*",
@@ -53,8 +65,8 @@ object DataCategory {
     "UID",
     "UID.ID",
     "UID.IP",
-    "UID.USER-ACCOUNT ",
-    "UID.SOCIAL-MEDIA ",
+    "UID.USER-ACCOUNT",
+    "UID.SOCIAL-MEDIA",
     "OTHER-DATA"
   )
 
@@ -68,6 +80,8 @@ object DataCategory {
     KeyEncoder[String].contramap(_.term)
 
   given Schema[DataCategory] =
-    Schema.string.validate(Validator.enumeration(terms.map(DataCategory(_)), x => Option(x.term)))
+    Schema.string.validate(
+      Validator.custom(s => ValidationResult.validWhen(terms.exists(s.term.startsWith)))
+    )
 
 }

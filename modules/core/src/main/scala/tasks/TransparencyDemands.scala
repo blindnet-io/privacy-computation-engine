@@ -47,7 +47,7 @@ class TransparencyDemands(
       case TDataCategories       => psRepo.getDataCategories(appId).json
       case TDPO                  => getDpo(appId).json
       case TKnown                => getUserKnown(appId, userIds).json
-      case TLegalBases           => lbRepo.getLegalBases(appId, userIds).json
+      case TLegalBases           => lbRepo.getLegalBases(appId, scope = false).json
       case TOrganization         => getOrganization(appId).json
       case TPolicy               => getPrivacyPolicy(appId).json
       case TProcessingCategories => psRepo.getProcessingCategories(appId).json
@@ -68,7 +68,7 @@ class TransparencyDemands(
       psRepo.getDataCategories(appId).json.map((TDataCategories, _)),
       getDpo(appId).json.map((TDPO, _)),
       getUserKnown(appId, userIds).json.map((TKnown, _)),
-      lbRepo.getLegalBases(appId, userIds).json.map((TLegalBases, _)),
+      lbRepo.getLegalBases(appId, scope = false).json.map((TLegalBases, _)),
       getOrganization(appId).json.map((TOrganization, _)),
       getPrivacyPolicy(appId).json.map((TPolicy, _)),
       psRepo.getProcessingCategories(appId).json.map((TProcessingCategories, _)),

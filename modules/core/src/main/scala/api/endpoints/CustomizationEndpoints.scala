@@ -17,6 +17,7 @@ import services.*
 import api.endpoints.BaseEndpoint.*
 import api.endpoints.messages.customization.*
 import io.blindnet.pce.priv.GeneralInformation
+import io.blindnet.pce.priv.LegalBase
 
 class CustomizationEndpoints(
     customizationService: CustomizationService
@@ -57,7 +58,7 @@ class CustomizationEndpoints(
   //     .get
   //     .in("selectors")
   //     .out(jsonBody[List[SelectorInfoPayload]])
-  //     .serverLogicSuccess(req => ???)
+  //     .serverLogicSuccess(req => customizationService.getSelectors(appId))
 
   // val addSelector =
   //   base
@@ -69,30 +70,39 @@ class CustomizationEndpoints(
 
   // add provenance/retention for data categories/selectors
 
-  // val getLegalBases =
-  //   base
-  //     .description("Get the list of legal bases")
-  //     .get
-  //     .in("legal-bases")
-  //     .out(jsonBody[List[LegalBaseInfoPayload]])
-  //     .serverLogicSuccess(req => ???)
+  val getLegalBases =
+    base
+      .description("Get the list of legal bases")
+      .get
+      .in("legal-bases")
+      .out(jsonBody[List[LegalBase]])
+      .serverLogicSuccess(req => customizationService.getLegalBases(appId))
 
-  // val addLegalBase =
-  //   base
-  //     .description("Add new legal base")
-  //     .post
-  //     .in("legal-bases")
-  //     .in(jsonBody[LegalBaseInfoPayload])
-  //     .serverLogicSuccess(req => ???)
+  val getLegalBase =
+    base
+      .description("Get a legal bases")
+      .get
+      .in("legal-bases")
+      .in(path[UUID]("legalBaseId"))
+      .out(jsonBody[LegalBase])
+      .serverLogicSuccess(lbId => customizationService.getLegalBase(appId, lbId))
+
+  val createLegalBase =
+    base
+      .description("Create new legal bases")
+      .put
+      .in("legal-bases")
+      .in(jsonBody[CreateLegalBasePayload])
+      .out(stringBody)
+      .serverLogicSuccess(req => customizationService.createLegalBase(appId, req))
 
   val endpoints = List(
     getGeneralInfo,
     updateGeneralInfo,
-    getPrivacyScopeDimensions
-    // getSelectors,
-    // addSelector,
-    // getLegalBases,
-    // addLegalBase
+    getPrivacyScopeDimensions,
+    getLegalBases,
+    getLegalBase,
+    createLegalBase
   )
 
 }

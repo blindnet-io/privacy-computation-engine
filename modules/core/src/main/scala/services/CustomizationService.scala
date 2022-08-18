@@ -19,11 +19,11 @@ import io.circe.syntax.*
 import api.endpoints.messages.privacyrequest.*
 import db.repositories.*
 import model.error.*
-import priv.DataSubject
 import priv.privacyrequest.{ Demand, PrivacyRequest, * }
+import priv.*
 import priv.terms.*
-import io.blindnet.pce.priv.GeneralInformation
-import io.blindnet.pce.api.endpoints.messages.customization.PrivacyScopeDimensionsPayload
+import io.blindnet.pce.api.endpoints.messages.customization.*
+import scala.concurrent.duration.*
 
 class CustomizationService(
     repos: Repositories
@@ -44,5 +44,35 @@ class CustomizationService(
       pps <- repos.privacyScope.getPurposes(appId)
       resp = PrivacyScopeDimensionsPayload(dcs, pcs, pps)
     } yield resp
+
+  def getLegalBases(appId: UUID) =
+    for {
+      res <- repos.legalBase.getLegalBases(appId, scope = false)
+    } yield res
+
+  def getLegalBase(appId: UUID, lbId: UUID) =
+    for {
+      res <- repos.legalBase
+        .getLegalBase(appId, lbId)
+        .orNotFound(s"Legal base with id $lbId not found")
+    } yield res
+
+  def createLegalBase(appId: UUID, req: CreateLegalBasePayload) =
+    for {
+      id        <- UUIDGen.randomUUID[IO]
+      selectors <- repos.privacyScope.getSelectors(appId, active = true)
+      triples = req.scope.flatMap(
+        triple =>
+          for {
+            dc <- DataCategory.getSubTerms(triple.dc, selectors)
+            pc <- ProcessingCategory.getSubTerms(triple.pc)
+            pp <- Purpose.getSubTerms(triple.pp)
+          } yield PrivacyScopeTriple(dc, pc, pp)
+      )
+      scope   = PrivacyScope(triples)
+      lb      = LegalBase(id, req.lbType, scope, req.name, req.description, true)
+      // TODO: handling error
+      _ <- repos.legalBase.store(appId, lb).start
+    } yield id.toString
 
 }

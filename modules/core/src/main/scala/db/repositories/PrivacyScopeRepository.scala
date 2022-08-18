@@ -23,6 +23,8 @@ trait PrivacyScopeRepository  {
   def getPurposes(appId: UUID): IO[List[Purpose]]
 
   def getTimeline(appId: UUID, userIds: NonEmptyList[DataSubject]): IO[Timeline]
+
+  def getSelectors(appId: UUID, active: Boolean): IO[List[DataCategory]]
 }
 
 // TODO: select for users
@@ -136,6 +138,15 @@ object PrivacyScopeRepository {
         .query[TimelineEvent.ConsentRevoked]
         .to[List]
 
+    def getSelectors(appId: UUID, active: Boolean) =
+      sql"""
+        select term
+        from data_categories
+        where selector = true and appid = $appId and active = $active
+      """
+        .query[DataCategory]
+        .to[List]
+
   }
 
   def live(xa: Transactor[IO]): PrivacyScopeRepository =
@@ -164,6 +175,9 @@ object PrivacyScopeRepository {
           } yield Timeline(allEvents)
 
         res.transact(xa)
+
+      def getSelectors(appId: UUID, active: Boolean): IO[List[DataCategory]] =
+        queries.getSelectors(appId, active).transact(xa)
 
     }
 

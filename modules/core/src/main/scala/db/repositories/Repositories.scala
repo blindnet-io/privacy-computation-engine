@@ -23,12 +23,12 @@ trait Repositories {
 }
 
 object Repositories {
-  def live(xa: Transactor[IO]): IO[Repositories] = {
+  def live(xa: Transactor[IO], pools: Pools): IO[Repositories] = {
 
     val appRepo             = AppRepository.live(xa)
     val generalInfoRepo     = GeneralInfoRepository.live(xa)
     val dataSubjectRepo     = DataSubjectRepository.live(xa)
-    val legalBaseRepo       = LegalBaseRepository.live(xa)
+    val legalBaseRepo       = LegalBaseRepository.live(xa, pools)
     val privacyScopeRepo    = PrivacyScopeRepository.live(xa)
     val retentionPolicyRepo = RetentionPolicyRepository.live(xa)
     val provenanceRepo      = ProvenancesRepository.live(xa)
