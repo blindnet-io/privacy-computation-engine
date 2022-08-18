@@ -27,7 +27,10 @@ object Main extends IOApp {
       _    <- Resource.eval(Migrator.migrateDatabase(conf.db))
       xa   <- DbTransactor.make(conf.db)
 
-      repositories <- Resource.eval(Repositories.live(xa))
+      cpuPool <- Pools.cpu
+      pools = Pools(cpuPool)
+
+      repositories <- Resource.eval(Repositories.live(xa, pools))
 
       httpClient <- EmberClientBuilder.default[IO].build
       storage = StorageInterface.live(httpClient, repositories, conf)
