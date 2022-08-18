@@ -14,7 +14,7 @@ import scala.util.*
 object util {
 
   extension (s: String) {
-    def failBadRequest = BadRequestException(BadPrivacyRequestPayload(s).asJson).raise
+    def failBadRequest = BadRequestException(s).raise
     def failNotFound   = NotFoundException(s).raise
   }
 

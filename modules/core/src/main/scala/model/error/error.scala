@@ -13,7 +13,7 @@ object ValidationException {
   def apply(error: String) = new ValidationException(NonEmptyList.one(error))
 }
 
-case class BadRequestException(message: Json)         extends Exception(message.toString)
+case class BadRequestException(message: String)       extends Exception(message)
 case class ForbiddenException(message: String = null) extends Exception(message)
 case class NotFoundException(message: String = null)  extends Exception(message)
 case class AuthException(message: String = null)      extends Exception(message)
