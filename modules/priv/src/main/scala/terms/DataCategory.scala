@@ -16,7 +16,7 @@ object DataCategory {
       "Unknown data category"
     )
 
-  def getSubTerms(dc: DataCategory, selectors: List[DataCategory]): List[DataCategory] = {
+  def getSubTerms(dc: DataCategory, selectors: List[DataCategory]): Set[DataCategory] = {
     val allterms = terms ++ selectors.map(_.term)
 
     def getSubTerms0(term: String): List[String] =
@@ -25,8 +25,12 @@ object DataCategory {
 
     val res =
       if dc.term == "*" then allterms.tail.flatMap(t => getSubTerms0(t)) else getSubTerms0(dc.term)
-    res.map(DataCategory(_))
+
+    res.toSet.map(DataCategory(_))
   }
+
+  def exists(dc: DataCategory, selectors: List[DataCategory]): Boolean =
+    terms.contains(dc.term) || selectors.contains(dc)
 
   val terms = List(
     "*",

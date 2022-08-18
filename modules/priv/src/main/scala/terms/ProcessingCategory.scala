@@ -17,14 +17,15 @@ object ProcessingCategory {
       "Unknown processing category"
     )
 
-  def getSubTerms(dc: ProcessingCategory): List[ProcessingCategory] = {
+  def getSubTerms(dc: ProcessingCategory): Set[ProcessingCategory] = {
     def getSubTerms0(term: String): List[String] =
       val n = terms.filter(t => t.startsWith(s"$term."))
       if n.length == 0 then List(term) else n.flatMap(t => getSubTerms0(t))
 
     val res =
       if dc.term == "*" then terms.tail.flatMap(t => getSubTerms0(t)) else getSubTerms0(dc.term)
-    res.map(ProcessingCategory(_))
+
+    res.toSet.map(ProcessingCategory(_))
   }
 
   val terms = List(
