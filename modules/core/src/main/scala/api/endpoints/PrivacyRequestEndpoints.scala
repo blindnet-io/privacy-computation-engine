@@ -31,11 +31,9 @@ class PrivacyRequestEndpoints(
     base
       .description("Create a privacy request")
       .post
-      .in("create")
       .in(jsonBody[CreatePrivacyRequestPayload])
       .out(jsonBody[PrivacyRequestCreatedPayload])
       .errorOut(statusCode(StatusCode.UnprocessableEntity))
-      .errorOut(jsonBody[BadPrivacyRequestPayload])
       .serverLogicSuccess(req => reqService.createPrivacyRequest(req, appId))
 
   val getRequestHistory =
@@ -53,7 +51,6 @@ class PrivacyRequestEndpoints(
     base
       .description("Get privacy request status")
       .get
-      .in("status")
       .in(path[UUID]("requestId"))
       .out(jsonBody[List[PrivacyResponsePayload]])
       .errorOut(statusCode(StatusCode.UnprocessableEntity))
