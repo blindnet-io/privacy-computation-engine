@@ -5,6 +5,8 @@ package terms
 import cats.data.Validated
 import io.circe.*
 import doobie.util.Get
+import sttp.tapir.Schema
+import sttp.tapir.Validator
 
 enum EventTerms(term: String) {
   case CaptureDate       extends EventTerms("CAPTURE-DATE")
@@ -33,6 +35,11 @@ object EventTerms {
 
   given Encoder[EventTerms] =
     Encoder[String].contramap(_.encode)
+
+  given Schema[EventTerms] =
+    Schema.string.validate(
+      Validator.enumeration(EventTerms.values.toList, x => Option(x.encode))
+    )
 
   given Get[EventTerms] =
     Get[String].map(t => EventTerms.parseUnsafe(t))

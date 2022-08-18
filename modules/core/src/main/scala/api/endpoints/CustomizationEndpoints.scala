@@ -61,16 +61,6 @@ class CustomizationEndpoints(
       .in(jsonBody[List[CreateSelectorPayload]])
       .serverLogicSuccess(req => customizationService.addSelectors(appId, req))
 
-  // val addSelector =
-  //   base
-  //     .description("Add new new selectors")
-  //     .post
-  //     .in("selectors")
-  //     .in(jsonBody[SelectorInfoPayload])
-  //     .serverLogicSuccess(req => ???)
-
-  // add provenance/retention for data categories/selectors
-
   val getLegalBases =
     base
       .description("Get the list of legal bases")
@@ -97,6 +87,17 @@ class CustomizationEndpoints(
       .out(stringBody)
       .serverLogicSuccess(req => customizationService.createLegalBase(appId, req))
 
+  val addRetentionPolicy =
+    base
+      .description("Create new legal bases")
+      .put
+      .in("retention-policies")
+      .in(jsonBody[List[CreateRetentionPolicyPayload]])
+      .serverLogicSuccess(req => customizationService.addRetentionPolicies(appId, req))
+
+  // get list of DCs
+  // add provenances
+
   val endpoints = List(
     getGeneralInfo,
     updateGeneralInfo,
@@ -104,7 +105,8 @@ class CustomizationEndpoints(
     addSelectors,
     getLegalBases,
     getLegalBase,
-    createLegalBase
+    createLegalBase,
+    addRetentionPolicy
   )
 
 }

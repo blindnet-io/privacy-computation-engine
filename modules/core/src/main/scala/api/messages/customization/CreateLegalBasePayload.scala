@@ -24,10 +24,8 @@ case class ScopePayload(
 
 object ScopePayload {
   given Decoder[ScopePayload] = deriveDecoder[ScopePayload]
-
   given Encoder[ScopePayload] = deriveEncoder[ScopePayload]
-
-  given Schema[ScopePayload] = Schema.derived[ScopePayload]
+  given Schema[ScopePayload]  = Schema.derived[ScopePayload]
 }
 
 case class CreateLegalBasePayload(

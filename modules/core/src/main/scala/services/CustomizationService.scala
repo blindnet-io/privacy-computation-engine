@@ -88,4 +88,27 @@ class CustomizationService(
       _ <- repos.legalBase.store(appId, lb).start
     } yield id.toString
 
+  def addRetentionPolicies(appId: UUID, req: List[CreateRetentionPolicyPayload]) =
+    for {
+      reqNel    <- NonEmptyList.fromList(req).fold("Add at least one policy".failBadRequest)(IO(_))
+      selectors <- repos.privacyScope.getSelectors(appId, active = true)
+      _         <-
+        if !reqNel.forall(r => DataCategory.exists(r.dataCategory, selectors))
+        then "Unknown data category".failBadRequest
+        else IO.unit
+
+      rps = reqNel.flatMap(
+        r =>
+          NonEmptyList
+            .fromList(
+              DataCategory
+                .getSubTerms(r.dataCategory, selectors)
+                .map(dc => (dc, RetentionPolicy(r.policy, r.duration, r.after)))
+                .toList
+            )
+            .get
+      )
+      _ <- repos.privacyScope.addRetentionPolicies(appId, rps)
+    } yield ()
+
 }

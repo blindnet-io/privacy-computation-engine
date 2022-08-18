@@ -109,7 +109,7 @@ create table retention_policies (
   appid uuid not null,
   dcid uuid not null,
   policy policy_terms not null,
-  duration integer not null, -- for now days, should be https://www.rfc-editor.org/rfc/pdfrfc/rfc3339.txt.pdf duration in appendix a
+  duration varchar not null, -- https://www.rfc-editor.org/rfc/pdfrfc/rfc3339.txt.pdf duration in appendix a
   after event_terms not null,
   constraint app_fk
     foreign key (appid)
@@ -161,7 +161,7 @@ create table legal_bases_scope (
 create table data_subjects (
   id varchar primary key,
   appid uuid not null,
-  schema varchar unique not null,
+  schema varchar not null,
   constraint app_fk
     foreign key (appid)
     references apps(id)

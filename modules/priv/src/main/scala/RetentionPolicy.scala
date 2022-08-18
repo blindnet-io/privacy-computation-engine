@@ -19,7 +19,6 @@ case class RetentionPolicy(
 
 object RetentionPolicy {
   given Decoder[RetentionPolicy] = unSnakeCaseIfy(deriveDecoder[RetentionPolicy])
-
   given Encoder[RetentionPolicy] = snakeCaseIfy(deriveEncoder[RetentionPolicy])
 
   given Schema[RetentionPolicy] =

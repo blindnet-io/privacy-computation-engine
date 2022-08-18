@@ -123,4 +123,13 @@ object queries {
     sql.update.run
   }
 
+  def addRetentionPolicies(appId: UUID, rs: NonEmptyList[(DataCategory, RetentionPolicy)]) = {
+    val sql = s"""
+      insert into retention_policies (id, appid, dcid, policy, duration, after)
+      values ( gen_random_uuid(), '$appId', (select id from data_categories where term = ?), ?::policy_terms, ?, ?::event_terms)
+    """
+    Update[(DataCategory, String, String, String)](sql)
+      .updateMany(rs.map(r => (r._1, r._2.policyType.encode, r._2.duration, r._2.after.encode)))
+  }
+
 }
