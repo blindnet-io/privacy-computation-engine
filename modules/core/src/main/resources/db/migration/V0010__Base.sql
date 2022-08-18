@@ -38,13 +38,8 @@ create table data_categories (
   id uuid primary key,
   term varchar unique not null,
   selector boolean not null default false, -- selector
-  parent uuid, -- selector
   appid uuid, -- selector
   active boolean not null default true, -- selector
-  constraint data_categories_fk
-    foreign key (parent)
-    references data_categories(id)
-    on delete cascade,
   constraint app_fk
     foreign key (appid)
     references apps(id)

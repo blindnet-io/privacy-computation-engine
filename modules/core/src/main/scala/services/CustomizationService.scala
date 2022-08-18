@@ -24,6 +24,7 @@ import priv.*
 import priv.terms.*
 import io.blindnet.pce.api.endpoints.messages.customization.*
 import scala.concurrent.duration.*
+import services.util.*
 
 class CustomizationService(
     repos: Repositories
@@ -44,6 +45,18 @@ class CustomizationService(
       pps <- repos.privacyScope.getPurposes(appId)
       resp = PrivacyScopeDimensionsPayload(dcs, pcs, pps)
     } yield resp
+
+  def addSelectors(appId: UUID, req: List[CreateSelectorPayload]) =
+    for {
+      reqNel <- NonEmptyList.fromList(req).fold("Add at least one selector".failBadRequest)(IO(_))
+      ids    <- UUIDGen.randomUUID[IO].replicateA(reqNel.length)
+      idsNel = NonEmptyList.fromList(ids).get
+      _ <-
+        if req.exists(_.dataCategory.term == "*") then "Selector can't be top level".failBadRequest
+        else IO.unit
+      selectors = reqNel.map(p => p.dataCategory.copy(term = s"${p.dataCategory.term}.${p.name}"))
+      _ <- repos.privacyScope.addSelectors(appId, idsNel zip selectors)
+    } yield ()
 
   def getLegalBases(appId: UUID) =
     for {

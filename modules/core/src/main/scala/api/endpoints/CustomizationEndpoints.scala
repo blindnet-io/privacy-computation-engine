@@ -18,6 +18,7 @@ import api.endpoints.BaseEndpoint.*
 import api.endpoints.messages.customization.*
 import io.blindnet.pce.priv.GeneralInformation
 import io.blindnet.pce.priv.LegalBase
+import cats.data.NonEmptyList
 
 class CustomizationEndpoints(
     customizationService: CustomizationService
@@ -52,13 +53,13 @@ class CustomizationEndpoints(
       .out(jsonBody[PrivacyScopeDimensionsPayload])
       .serverLogicSuccess(req => customizationService.getPrivacyScopeDimensions(appId))
 
-  // val getSelectors =
-  //   base
-  //     .description("Get the list of selectors defined in the app")
-  //     .get
-  //     .in("selectors")
-  //     .out(jsonBody[List[SelectorInfoPayload]])
-  //     .serverLogicSuccess(req => customizationService.getSelectors(appId))
+  val addSelectors =
+    base
+      .description("Add selectors")
+      .put
+      .in("selectors")
+      .in(jsonBody[List[CreateSelectorPayload]])
+      .serverLogicSuccess(req => customizationService.addSelectors(appId, req))
 
   // val addSelector =
   //   base
@@ -100,6 +101,7 @@ class CustomizationEndpoints(
     getGeneralInfo,
     updateGeneralInfo,
     getPrivacyScopeDimensions,
+    addSelectors,
     getLegalBases,
     getLegalBase,
     createLegalBase
