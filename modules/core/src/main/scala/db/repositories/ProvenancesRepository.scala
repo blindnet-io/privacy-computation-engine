@@ -17,16 +17,15 @@ import db.DbUtil
 
 trait ProvenancesRepository {
 
-  def getProvenances(
-      appId: UUID,
-      userIds: List[DataSubject]
-  ): IO[Map[DataCategory, List[Provenance]]]
+  def get(appId: UUID, userIds: List[DataSubject]): IO[Map[DataCategory, List[Provenance]]]
 
-  def getProvenanceForDataCategory(
-      appId: UUID,
-      dc: DataCategory
-  ): IO[List[Provenance]]
+  def get(appId: UUID, dc: DataCategory): IO[List[Provenance]]
 
+  def add(appId: UUID, rs: NonEmptyList[(DataCategory, Provenance)]): IO[Unit]
+
+  def delete(appId: UUID, pId: UUID): IO[Unit]
+
+  def deleteAll(appId: UUID, dcId: UUID): IO[Unit]
 }
 
 // TODO: select for users
@@ -34,30 +33,24 @@ object ProvenancesRepository {
   def live(xa: Transactor[IO]): ProvenancesRepository =
     new ProvenancesRepository {
 
-      def getProvenances(
-          appId: UUID,
-          userIds: List[DataSubject]
-      ): IO[Map[DataCategory, List[Provenance]]] =
+      def get(appId: UUID, userIds: List[DataSubject]): IO[Map[DataCategory, List[Provenance]]] =
         sql"""
-          select p.provenance, p.system, dc.term
+          select p.id, p.provenance, p.system, dc.term
           from provenances p
           join data_categories dc ON p.dcid = dc.id
           where p.appid = $appId
         """
-          .query[(ProvenanceTerms, String, DataCategory)]
+          .query[(UUID, ProvenanceTerms, String, DataCategory)]
           .map {
-            case (prov, system, dc) => dc -> Provenance(prov, system)
+            case (id, prov, system, dc) => dc -> Provenance(id, prov, system)
           }
           .to[List]
           .map(_.groupBy(_._1).view.mapValues(_.map(_._2)).toMap)
           .transact(xa)
 
-      def getProvenanceForDataCategory(
-          appId: UUID,
-          dc: DataCategory
-      ): IO[List[Provenance]] =
+      def get(appId: UUID, dc: DataCategory): IO[List[Provenance]] =
         sql"""
-          select p.provenance, p.system
+          select p.id, p.provenance, p.system
           from provenances p
           join data_categories dc ON p.dcid = dc.id
           where p.appid = $appId and dc.term = $dc
@@ -65,6 +58,29 @@ object ProvenancesRepository {
           .query[Provenance]
           .to[List]
           .transact(xa)
+
+      def add(appId: UUID, rs: NonEmptyList[(DataCategory, Provenance)]): IO[Unit] = {
+        val sql = s"""
+          insert into provenances (id, appid, dcid, provenance, system)
+          values (?, '$appId', (select id from data_categories where term = ?), ?::provenance_terms, ?)
+        """
+        Update[(UUID, DataCategory, String, String)](sql)
+          .updateMany(
+            rs.map(r => (r._2.id, r._1, r._2.provenance.encode, r._2.system))
+          )
+          .transact(xa)
+          .void
+      }
+
+      def delete(appId: UUID, pId: UUID): IO[Unit] =
+        sql"""delete from provenances where appid = $appId and id = $pId""".update.run
+          .transact(xa)
+          .void
+
+      def deleteAll(appId: UUID, dcId: UUID): IO[Unit] =
+        sql"""delete from provenances where appid = $appId and dcid = $dcId""".update.run
+          .transact(xa)
+          .void
 
     }
 

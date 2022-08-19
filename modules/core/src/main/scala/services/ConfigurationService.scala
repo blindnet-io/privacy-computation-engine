@@ -121,4 +121,37 @@ class ConfigurationService(
       _ <- repos.retentionPolicy.delete(appId, id)
     } yield ()
 
+  def addProvenances(appId: UUID, req: List[CreateProvenancePayload]) =
+    for {
+      _         <- if req.length == 0 then "Add at least one provenance".failBadRequest else IO.unit
+      selectors <- repos.privacyScope.getSelectors(appId, active = true)
+      _         <-
+        if !req.forall(r => DataCategory.exists(r.dataCategory, selectors))
+        then "Unknown data category".failBadRequest
+        else IO.unit
+
+      ids <- UUIDGen.randomUUID[IO].replicateA(req.length)
+
+      ps <- req.flatTraverse {
+        r =>
+          DataCategory
+            .getSubTerms(r.dataCategory, selectors)
+            .toList
+            .traverse(
+              dc =>
+                for {
+                  id <- UUIDGen.randomUUID[IO]
+                  res = (dc, Provenance(id, r.provenance, r.system))
+                } yield res
+            )
+      }
+      psNel = NonEmptyList.fromListUnsafe(ps)
+      _  <- repos.provenance.add(appId, psNel)
+    } yield ()
+
+  def deleteProvenance(appId: UUID, id: UUID) =
+    for {
+      _ <- repos.provenance.delete(appId, id)
+    } yield ()
+
 }

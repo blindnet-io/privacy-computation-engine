@@ -97,14 +97,29 @@ class ConfigurationEndpoints(
 
   val deleteRetentionPolicy =
     base
-      .description("Delete a retention policy")
+      .description("Delete retention policy")
       .delete
       .in("retention-policies")
       .in(path[UUID]("retentionPolicyId"))
       .serverLogicSuccess(id => configurationService.deleteRetentionPolicy(appId, id))
 
+  val addProvenances =
+    base
+      .description("Create provenances for data categories")
+      .put
+      .in("provenances")
+      .in(jsonBody[List[CreateProvenancePayload]])
+      .serverLogicSuccess(req => configurationService.addProvenances(appId, req))
+
+  val deleteProvenance =
+    base
+      .description("Delete provenance")
+      .delete
+      .in("provenances")
+      .in(path[UUID]("provenanceId"))
+      .serverLogicSuccess(id => configurationService.deleteProvenance(appId, id))
+
   // get list of DCs
-  // add provenances
 
   val endpoints = List(
     getGeneralInfo,
@@ -115,7 +130,9 @@ class ConfigurationEndpoints(
     getLegalBase,
     createLegalBase,
     addRetentionPolicies,
-    deleteRetentionPolicy
+    deleteRetentionPolicy,
+    addProvenances,
+    deleteProvenance
   )
 
 }

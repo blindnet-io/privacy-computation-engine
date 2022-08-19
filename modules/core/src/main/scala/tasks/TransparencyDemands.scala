@@ -51,7 +51,7 @@ class TransparencyDemands(
       case TOrganization         => getOrganization(appId).json
       case TPolicy               => getPrivacyPolicy(appId).json
       case TProcessingCategories => psRepo.getProcessingCategories(appId).json
-      case TProvenance           => prRepo.getProvenances(appId, userIds).json
+      case TProvenance           => prRepo.get(appId, userIds).json
       case TPurpose              => psRepo.getPurposes(appId).json
       case TRetention            => rpRepo.get(appId, userIds).json
       case TWhere                => getWhere(appId).json
@@ -72,7 +72,7 @@ class TransparencyDemands(
       getOrganization(appId).json.map((TOrganization, _)),
       getPrivacyPolicy(appId).json.map((TPolicy, _)),
       psRepo.getProcessingCategories(appId).json.map((TProcessingCategories, _)),
-      prRepo.getProvenances(appId, userIds).json.map((TProvenance, _)),
+      prRepo.get(appId, userIds).json.map((TProvenance, _)),
       psRepo.getPurposes(appId).json.map((TPurpose, _)),
       rpRepo.get(appId, userIds).json.map((TRetention, _)),
       getWhere(appId).json.map((TWhere, _)),
