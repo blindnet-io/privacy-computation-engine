@@ -9,8 +9,10 @@ import io.circe.syntax.*
 import sttp.tapir.*
 import sttp.tapir.generic.Configuration
 import sttp.tapir.generic.auto.*
+import java.util.UUID
 
 case class RetentionPolicy(
+    id: UUID,
     policyType: RetentionPolicyTerms,
     // TODO: https://json-schema.org/draft/2020-12/json-schema-validation.html#name-dates-times-and-duration
     duration: String,

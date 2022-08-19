@@ -90,25 +90,30 @@ class ConfigurationService(
 
   def addRetentionPolicies(appId: UUID, req: List[CreateRetentionPolicyPayload]) =
     for {
-      reqNel    <- NonEmptyList.fromList(req).fold("Add at least one policy".failBadRequest)(IO(_))
+      _         <- if req.length == 0 then "Add at least one policy".failBadRequest else IO.unit
       selectors <- repos.privacyScope.getSelectors(appId, active = true)
       _         <-
-        if !reqNel.forall(r => DataCategory.exists(r.dataCategory, selectors))
+        if !req.forall(r => DataCategory.exists(r.dataCategory, selectors))
         then "Unknown data category".failBadRequest
         else IO.unit
 
-      rps = reqNel.flatMap(
+      ids <- UUIDGen.randomUUID[IO].replicateA(req.length)
+
+      rps <- req.flatTraverse {
         r =>
-          NonEmptyList
-            .fromList(
-              DataCategory
-                .getSubTerms(r.dataCategory, selectors)
-                .map(dc => (dc, RetentionPolicy(r.policy, r.duration, r.after)))
-                .toList
+          DataCategory
+            .getSubTerms(r.dataCategory, selectors)
+            .toList
+            .traverse(
+              dc =>
+                for {
+                  id <- UUIDGen.randomUUID[IO]
+                  res = (dc, RetentionPolicy(id, r.policy, r.duration, r.after))
+                } yield res
             )
-            .get
-      )
-      _ <- repos.privacyScope.addRetentionPolicies(appId, rps)
+      }
+      rpsNel = NonEmptyList.fromListUnsafe(rps)
+      _   <- repos.privacyScope.addRetentionPolicies(appId, rpsNel)
     } yield ()
 
 }

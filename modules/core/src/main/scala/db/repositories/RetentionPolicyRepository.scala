@@ -39,14 +39,14 @@ object RetentionPolicyRepository {
           userIds: List[DataSubject]
       ): IO[Map[DataCategory, List[RetentionPolicy]]] =
         sql"""
-          select rp.policy, rp.duration, rp.after, dc.term
+          select rp.id, rp.policy, rp.duration, rp.after, dc.term
           from retention_policies rp
           join data_categories dc ON rp.dcid = dc.id
           where rp.appid = $appId
         """
-          .query[(RetentionPolicyTerms, String, EventTerms, DataCategory)]
+          .query[(UUID, RetentionPolicyTerms, String, EventTerms, DataCategory)]
           .map {
-            case (policy, dur, after, dc) => dc -> RetentionPolicy(policy, dur, after)
+            case (id, policy, dur, after, dc) => dc -> RetentionPolicy(id, policy, dur, after)
           }
           .to[List]
           .map(_.groupBy(_._1).view.mapValues(_.map(_._2)).toMap)
@@ -57,7 +57,7 @@ object RetentionPolicyRepository {
           dc: DataCategory
       ): IO[List[RetentionPolicy]] =
         sql"""
-          select rp.policy, rp.duration, rp.after
+          select rp.id, rp.policy, rp.duration, rp.after
           from retention_policies rp
           join data_categories dc ON rp.dcid = dc.id
           where rp.appid = $appId and dc.term = $dc
