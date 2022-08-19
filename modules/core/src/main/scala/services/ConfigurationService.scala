@@ -36,7 +36,7 @@ class ConfigurationService(
       .orFail(s"General info for app $appId not found")
 
   def updateGeneralInfo(appId: UUID, gi: GeneralInformation) =
-    repos.generalInfo.update(appId, gi)
+    repos.generalInfo.upsert(appId, gi)
 
   def getPrivacyScopeDimensions(appId: UUID) =
     for {
@@ -60,13 +60,13 @@ class ConfigurationService(
 
   def getLegalBases(appId: UUID) =
     for {
-      res <- repos.legalBase.getLegalBases(appId, scope = false)
+      res <- repos.legalBase.get(appId, scope = false)
     } yield res
 
   def getLegalBase(appId: UUID, lbId: UUID) =
     for {
       res <- repos.legalBase
-        .getLegalBase(appId, lbId)
+        .get(appId, lbId)
         .orNotFound(s"Legal base with id $lbId not found")
     } yield res
 
@@ -85,7 +85,7 @@ class ConfigurationService(
       scope   = PrivacyScope(triples)
       lb      = LegalBase(id, req.lbType, scope, req.name, req.description, true)
       // TODO: handling error
-      _ <- repos.legalBase.store(appId, lb).start
+      _ <- repos.legalBase.add(appId, lb).start
     } yield id.toString
 
   def addRetentionPolicies(appId: UUID, req: List[CreateRetentionPolicyPayload]) =

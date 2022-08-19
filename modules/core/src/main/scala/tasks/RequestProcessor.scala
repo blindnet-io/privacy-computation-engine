@@ -56,8 +56,8 @@ class RequestProcessor(
             // processTransparency(pr, d, resp)
             // TODO
             if true
-            then repos.demandsToRespond.store(List(d.id))
-            else repos.demandsToReview.store(List(d.id))
+            then repos.demandsToRespond.add(List(d.id))
+            else repos.demandsToReview.add(List(d.id))
 
           case Access =>
             for {
@@ -65,8 +65,8 @@ class RequestProcessor(
               _ <-
                 // TODO
                 if true
-                then repos.demandsToRespond.store(List(d.id))
-                else repos.demandsToReview.store(List(d.id))
+                then repos.demandsToRespond.add(List(d.id))
+                else repos.demandsToReview.add(List(d.id))
             } yield ()
 
           case _ => IO.raiseError(new NotImplementedError)
@@ -125,7 +125,7 @@ object RequestProcessor {
               e =>
                 logger
                   .error(e)(s"Error processing demand $id - ${e.getMessage}")
-                  .flatMap(_ => repos.demandsToProcess.store(List(id)))
+                  .flatMap(_ => repos.demandsToProcess.add(List(id)))
             )
           }
         )

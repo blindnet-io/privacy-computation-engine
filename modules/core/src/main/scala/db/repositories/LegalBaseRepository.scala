@@ -14,13 +14,13 @@ import priv.*
 import priv.terms.*
 
 trait LegalBaseRepository {
-  def getLegalBases(appId: UUID, scope: Boolean = true): IO[List[LegalBase]]
+  def get(appId: UUID, scope: Boolean = true): IO[List[LegalBase]]
 
-  def getLegalBasesForUser(appId: UUID, userIds: List[DataSubject]): IO[List[LegalBase]]
+  def get(appId: UUID, userIds: List[DataSubject]): IO[List[LegalBase]]
 
-  def getLegalBase(appId: UUID, lbId: UUID): IO[Option[LegalBase]]
+  def get(appId: UUID, lbId: UUID): IO[Option[LegalBase]]
 
-  def store(appId: UUID, lb: LegalBase): IO[Unit]
+  def add(appId: UUID, lb: LegalBase): IO[Unit]
 
 }
 
@@ -50,7 +50,7 @@ object LegalBaseRepository {
 
   def live(xa: Transactor[IO], pools: Pools): LegalBaseRepository =
     new LegalBaseRepository {
-      def getLegalBases(appId: UUID, scope: Boolean = true): IO[List[LegalBase]] = {
+      def get(appId: UUID, scope: Boolean = true): IO[List[LegalBase]] = {
         val qNoPS =
           sql"""
             select id, type, name, description, active
@@ -82,9 +82,9 @@ object LegalBaseRepository {
         res.to[List].transact(xa)
       }
 
-      def getLegalBasesForUser(appId: UUID, userIds: List[DataSubject]): IO[List[LegalBase]] = ???
+      def get(appId: UUID, userIds: List[DataSubject]): IO[List[LegalBase]] = ???
 
-      def getLegalBase(appId: UUID, lbId: UUID): IO[Option[LegalBase]] = {
+      def get(appId: UUID, lbId: UUID): IO[Option[LegalBase]] = {
         sql"""
           select lb.id as id, lb.type as type, lb.name as name, lb.description as description, lb.active, array_agg(dc.term) as dc, array_agg(pc.term) as pc, array_agg(pp.term) as pp
           from legal_bases lb
@@ -101,7 +101,7 @@ object LegalBaseRepository {
           .transact(xa)
       }
 
-      def store(appId: UUID, lb: LegalBase): IO[Unit] = {
+      def add(appId: UUID, lb: LegalBase): IO[Unit] = {
 
         val insertLb =
           sql"""

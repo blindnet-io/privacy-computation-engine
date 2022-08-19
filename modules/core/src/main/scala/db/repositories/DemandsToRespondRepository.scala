@@ -18,7 +18,7 @@ import priv.terms.*
 trait DemandsToRespondRepository {
   def get(n: Int = 0): IO[List[UUID]]
 
-  def store(ids: List[UUID]): IO[Unit]
+  def add(ids: List[UUID]): IO[Unit]
 
   def remove(id: NonEmptyList[UUID]): IO[Unit]
 }
@@ -38,7 +38,7 @@ object DemandsToRespondRepository {
           .to[List]
           .transact(xa)
 
-      def store(ids: List[UUID]): IO[Unit] =
+      def add(ids: List[UUID]): IO[Unit] =
         val sql = """
             insert into pending_demands_to_respond
             values (?)

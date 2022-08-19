@@ -42,7 +42,7 @@ class PrivacyRequestService(
         .fromList(req.dataSubject)
         .fold(IO.unit)(
           repos.dataSubject
-            .known(req.appId, _)
+            .isKnown(req.appId, _)
             .flatMap(if _ then IO.unit else "Unknown data subject".failBadRequest)
         )
 
@@ -72,7 +72,7 @@ class PrivacyRequestService(
 
       _ <- validateRequest(pr)
       _ <- repos.privacyRequest.store(pr)
-      _ <- repos.demandsToProcess.store(demands.map(_.id))
+      _ <- repos.demandsToProcess.add(demands.map(_.id))
 
     } yield PrivacyRequestCreatedPayload(reqId)
   }

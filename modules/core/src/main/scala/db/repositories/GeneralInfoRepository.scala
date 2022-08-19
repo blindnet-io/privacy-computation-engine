@@ -19,7 +19,7 @@ import priv.terms.*
 trait GeneralInfoRepository {
   def get(appId: UUID): IO[Option[GeneralInformation]]
 
-  def update(appId: UUID, gi: GeneralInformation): IO[Unit]
+  def upsert(appId: UUID, gi: GeneralInformation): IO[Unit]
 }
 
 object GeneralInfoRepository {
@@ -35,7 +35,7 @@ object GeneralInfoRepository {
           .option
           .transact(xa)
 
-      def update(appId: UUID, gi: GeneralInformation): IO[Unit] = {
+      def upsert(appId: UUID, gi: GeneralInformation): IO[Unit] = {
 
         val del    = sql"""delete from general_information where appId = $appId""".update.run
         val insert =

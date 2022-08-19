@@ -138,7 +138,7 @@ object RequestResponder {
               e =>
                 logger
                   .error(e)(s"Error creating response for demand $id - ${e.getMessage}")
-                  .flatMap(_ => repos.demandsToProcess.store(List(id)))
+                  .flatMap(_ => repos.demandsToProcess.add(List(id)))
             )
           }
         )

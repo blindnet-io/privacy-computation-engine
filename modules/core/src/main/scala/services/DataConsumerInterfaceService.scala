@@ -57,7 +57,7 @@ class DataConsumerInterfaceService(
     // TODO: do we need other info, as msg/lang?
     for {
       _ <- repos.demandsToReview.remove(NonEmptyList.of(req.id))
-      _ <- repos.demandsToRespond.store(List(req.id))
+      _ <- repos.demandsToRespond.add(List(req.id))
     } yield ()
 
 }

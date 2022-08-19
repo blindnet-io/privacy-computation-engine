@@ -18,7 +18,7 @@ import priv.terms.*
 trait DemandsToReviewRepository {
   def get(appId: UUID, n: Int = 0): IO[List[UUID]]
 
-  def store(ids: List[UUID]): IO[Unit]
+  def add(ids: List[UUID]): IO[Unit]
 
   def remove(id: NonEmptyList[UUID]): IO[Unit]
 }
@@ -39,7 +39,7 @@ object DemandsToReviewRepository {
           .to[List]
           .transact(xa)
 
-      def store(ids: List[UUID]): IO[Unit] =
+      def add(ids: List[UUID]): IO[Unit] =
         val sql = """
             insert into pending_demands_to_review
             values (?)

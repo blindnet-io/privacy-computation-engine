@@ -16,14 +16,14 @@ import priv.*
 import priv.terms.*
 
 trait DataSubjectRepository {
-  def known(appId: UUID, userIds: NonEmptyList[DataSubject]): IO[Boolean]
+  def isKnown(appId: UUID, userIds: NonEmptyList[DataSubject]): IO[Boolean]
 }
 
 object DataSubjectRepository {
   def live(xa: Transactor[IO]): DataSubjectRepository =
     new DataSubjectRepository {
 
-      def known(appId: UUID, userIds: NonEmptyList[DataSubject]): IO[Boolean] =
+      def isKnown(appId: UUID, userIds: NonEmptyList[DataSubject]): IO[Boolean] =
         (fr"select count(*) from data_subjects where appid = $appId and"
           ++ Fragments.in(fr"id", userIds.map(_.id)))
           .query[Int]
