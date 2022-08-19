@@ -22,11 +22,11 @@ import model.error.*
 import priv.privacyrequest.{ Demand, PrivacyRequest, * }
 import priv.*
 import priv.terms.*
-import io.blindnet.pce.api.endpoints.messages.customization.*
+import io.blindnet.pce.api.endpoints.messages.configuration.*
 import scala.concurrent.duration.*
 import services.util.*
 
-class CustomizationService(
+class ConfigurationService(
     repos: Repositories
 ) {
 

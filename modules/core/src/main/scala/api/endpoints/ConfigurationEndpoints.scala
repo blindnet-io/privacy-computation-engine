@@ -15,17 +15,17 @@ import sttp.tapir.server.*
 import sttp.tapir.server.http4s.*
 import services.*
 import api.endpoints.BaseEndpoint.*
-import api.endpoints.messages.customization.*
+import api.endpoints.messages.configuration.*
 import io.blindnet.pce.priv.GeneralInformation
 import io.blindnet.pce.priv.LegalBase
 import cats.data.NonEmptyList
 
-class CustomizationEndpoints(
-    customizationService: CustomizationService
+class ConfigurationEndpoints(
+    configurationService: ConfigurationService
 ) {
   given Configuration = Configuration.default.withSnakeCaseMemberNames
 
-  val base = baseEndpoint.in("customize").tag("Customization")
+  val base = baseEndpoint.in("configure").tag("Configuration")
 
   val appId = UUID.fromString("6f083c15-4ada-4671-a6d1-c671bc9105dc")
 
@@ -35,7 +35,7 @@ class CustomizationEndpoints(
       .get
       .in("general-info")
       .out(jsonBody[GeneralInformation])
-      .serverLogicSuccess(_ => customizationService.getGeneralInfo(appId))
+      .serverLogicSuccess(_ => configurationService.getGeneralInfo(appId))
 
   val updateGeneralInfo =
     base
@@ -43,7 +43,7 @@ class CustomizationEndpoints(
       .put
       .in("general-info")
       .in(jsonBody[GeneralInformation])
-      .serverLogicSuccess(req => customizationService.updateGeneralInfo(appId, req))
+      .serverLogicSuccess(req => configurationService.updateGeneralInfo(appId, req))
 
   val getPrivacyScopeDimensions =
     base
@@ -51,7 +51,7 @@ class CustomizationEndpoints(
       .get
       .in("privacy-scope-dimensions")
       .out(jsonBody[PrivacyScopeDimensionsPayload])
-      .serverLogicSuccess(req => customizationService.getPrivacyScopeDimensions(appId))
+      .serverLogicSuccess(req => configurationService.getPrivacyScopeDimensions(appId))
 
   val addSelectors =
     base
@@ -59,7 +59,7 @@ class CustomizationEndpoints(
       .put
       .in("selectors")
       .in(jsonBody[List[CreateSelectorPayload]])
-      .serverLogicSuccess(req => customizationService.addSelectors(appId, req))
+      .serverLogicSuccess(req => configurationService.addSelectors(appId, req))
 
   val getLegalBases =
     base
@@ -67,7 +67,7 @@ class CustomizationEndpoints(
       .get
       .in("legal-bases")
       .out(jsonBody[List[LegalBase]])
-      .serverLogicSuccess(req => customizationService.getLegalBases(appId))
+      .serverLogicSuccess(req => configurationService.getLegalBases(appId))
 
   val getLegalBase =
     base
@@ -76,7 +76,7 @@ class CustomizationEndpoints(
       .in("legal-bases")
       .in(path[UUID]("legalBaseId"))
       .out(jsonBody[LegalBase])
-      .serverLogicSuccess(lbId => customizationService.getLegalBase(appId, lbId))
+      .serverLogicSuccess(lbId => configurationService.getLegalBase(appId, lbId))
 
   val createLegalBase =
     base
@@ -85,7 +85,7 @@ class CustomizationEndpoints(
       .in("legal-bases")
       .in(jsonBody[CreateLegalBasePayload])
       .out(stringBody)
-      .serverLogicSuccess(req => customizationService.createLegalBase(appId, req))
+      .serverLogicSuccess(req => configurationService.createLegalBase(appId, req))
 
   val addRetentionPolicy =
     base
@@ -93,7 +93,7 @@ class CustomizationEndpoints(
       .put
       .in("retention-policies")
       .in(jsonBody[List[CreateRetentionPolicyPayload]])
-      .serverLogicSuccess(req => customizationService.addRetentionPolicies(appId, req))
+      .serverLogicSuccess(req => configurationService.addRetentionPolicies(appId, req))
 
   // get list of DCs
   // add provenances

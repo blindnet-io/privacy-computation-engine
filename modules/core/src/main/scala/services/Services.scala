@@ -11,7 +11,7 @@ import io.blindnet.pce.services.*
 trait Services {
   val privacyRequest: PrivacyRequestService
   val consumerInterface: DataConsumerInterfaceService
-  val customization: CustomizationService
+  val configuration: ConfigurationService
   val callbacks: CallbackService
 }
 
@@ -22,13 +22,13 @@ object Services {
   ) = {
     lazy val privacyRequestService    = PrivacyRequestService(repos)
     lazy val consumerInterfaceService = DataConsumerInterfaceService(repos)
-    lazy val customizationService     = CustomizationService(repos)
+    lazy val configurationService     = ConfigurationService(repos)
     lazy val callbackService          = CallbackService(repos)
 
     new Services {
       val privacyRequest    = privacyRequestService
       val consumerInterface = consumerInterfaceService
-      val customization     = customizationService
+      val configuration     = configurationService
       val callbacks         = callbackService
     }
   }

@@ -1,5 +1,5 @@
 package io.blindnet.pce
-package api.endpoints.messages.customization
+package api.endpoints.messages.configuration
 
 import java.time.Instant
 import java.util.UUID
