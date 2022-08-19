@@ -51,10 +51,4 @@ class PrivacyScopeRepositoryLive(xa: Transactor[IO]) extends PrivacyScopeReposit
       .transact(xa)
       .void
 
-  def addRetentionPolicies(
-      appId: UUID,
-      rs: NonEmptyList[(DataCategory, RetentionPolicy)]
-  ): IO[Unit] =
-    queries.addRetentionPolicies(appId, rs).transact(xa).void
-
 }

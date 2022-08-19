@@ -113,7 +113,12 @@ class ConfigurationService(
             )
       }
       rpsNel = NonEmptyList.fromListUnsafe(rps)
-      _   <- repos.privacyScope.addRetentionPolicies(appId, rpsNel)
+      _   <- repos.retentionPolicy.add(appId, rpsNel)
+    } yield ()
+
+  def deleteRetentionPolicy(appId: UUID, id: UUID) =
+    for {
+      _ <- repos.retentionPolicy.delete(appId, id)
     } yield ()
 
 }

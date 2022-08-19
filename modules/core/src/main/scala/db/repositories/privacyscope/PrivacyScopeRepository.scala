@@ -28,8 +28,6 @@ trait PrivacyScopeRepository {
 
   def addSelectors(appId: UUID, terms: NonEmptyList[(UUID, DataCategory)]): IO[Unit]
 
-  def addRetentionPolicies(appId: UUID, rs: NonEmptyList[(DataCategory, RetentionPolicy)]): IO[Unit]
-
 }
 
 object PrivacyScopeRepository {

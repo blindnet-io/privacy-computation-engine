@@ -87,13 +87,21 @@ class ConfigurationEndpoints(
       .out(stringBody)
       .serverLogicSuccess(req => configurationService.createLegalBase(appId, req))
 
-  val addRetentionPolicy =
+  val addRetentionPolicies =
     base
-      .description("Create new legal bases")
+      .description("Create retention policies for data categories")
       .put
       .in("retention-policies")
       .in(jsonBody[List[CreateRetentionPolicyPayload]])
       .serverLogicSuccess(req => configurationService.addRetentionPolicies(appId, req))
+
+  val deleteRetentionPolicy =
+    base
+      .description("Delete a retention policy")
+      .delete
+      .in("retention-policies")
+      .in(path[UUID]("retentionPolicyId"))
+      .serverLogicSuccess(id => configurationService.deleteRetentionPolicy(appId, id))
 
   // get list of DCs
   // add provenances
@@ -106,7 +114,8 @@ class ConfigurationEndpoints(
     getLegalBases,
     getLegalBase,
     createLegalBase,
-    addRetentionPolicy
+    addRetentionPolicies,
+    deleteRetentionPolicy
   )
 
 }
