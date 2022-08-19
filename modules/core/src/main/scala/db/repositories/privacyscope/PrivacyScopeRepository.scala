@@ -18,6 +18,8 @@ import db.DbUtil
 trait PrivacyScopeRepository {
   def getDataCategories(appId: UUID, selectors: Boolean = true): IO[List[DataCategory]]
 
+  def getAllDataCategories(appId: UUID): IO[List[DataCategory]]
+
   def getProcessingCategories(appId: UUID): IO[List[ProcessingCategory]]
 
   def getPurposes(appId: UUID): IO[List[Purpose]]

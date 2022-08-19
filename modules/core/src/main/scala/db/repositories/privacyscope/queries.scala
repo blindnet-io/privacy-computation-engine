@@ -26,6 +26,14 @@ object queries {
       .query[DataCategory]
       .to[List]
 
+  def getAllDataCategories(appId: UUID) =
+    sql"""
+      select term from data_categories
+      where (active = true or active is null) and (appid = $appId or appid is null)
+    """
+      .query[DataCategory]
+      .to[List]
+
   def getProcessingCategories(appId: UUID) =
     sql"""
       select distinct(pc.term) from legal_bases lb

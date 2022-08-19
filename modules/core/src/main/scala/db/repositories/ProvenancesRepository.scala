@@ -17,7 +17,7 @@ import db.DbUtil
 
 trait ProvenancesRepository {
 
-  def get(appId: UUID, userIds: List[DataSubject]): IO[Map[DataCategory, List[Provenance]]]
+  def get(appId: UUID): IO[Map[DataCategory, List[Provenance]]]
 
   def get(appId: UUID, dc: DataCategory): IO[List[Provenance]]
 
@@ -33,7 +33,7 @@ object ProvenancesRepository {
   def live(xa: Transactor[IO]): ProvenancesRepository =
     new ProvenancesRepository {
 
-      def get(appId: UUID, userIds: List[DataSubject]): IO[Map[DataCategory, List[Provenance]]] =
+      def get(appId: UUID): IO[Map[DataCategory, List[Provenance]]] =
         sql"""
           select p.id, p.provenance, p.system, dc.term
           from provenances p

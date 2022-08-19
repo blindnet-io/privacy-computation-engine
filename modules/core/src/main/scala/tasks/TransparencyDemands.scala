@@ -51,9 +51,9 @@ class TransparencyDemands(
       case TOrganization         => getOrganization(appId).json
       case TPolicy               => getPrivacyPolicy(appId).json
       case TProcessingCategories => psRepo.getProcessingCategories(appId).json
-      case TProvenance           => prRepo.get(appId, userIds).json
+      case TProvenance           => prRepo.get(appId).json
       case TPurpose              => psRepo.getPurposes(appId).json
-      case TRetention            => rpRepo.get(appId, userIds).json
+      case TRetention            => rpRepo.get(appId).json
       case TWhere                => getWhere(appId).json
       case TWho                  => getWho(appId).json
       case _                     => IO.raiseError(new NotImplementedError)
@@ -72,9 +72,9 @@ class TransparencyDemands(
       getOrganization(appId).json.map((TOrganization, _)),
       getPrivacyPolicy(appId).json.map((TPolicy, _)),
       psRepo.getProcessingCategories(appId).json.map((TProcessingCategories, _)),
-      prRepo.get(appId, userIds).json.map((TProvenance, _)),
+      prRepo.get(appId).json.map((TProvenance, _)),
       psRepo.getPurposes(appId).json.map((TPurpose, _)),
-      rpRepo.get(appId, userIds).json.map((TRetention, _)),
+      rpRepo.get(appId).json.map((TRetention, _)),
       getWhere(appId).json.map((TWhere, _)),
       getWho(appId).json.map((TWho, _))
     ).parSequence

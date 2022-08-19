@@ -19,14 +19,13 @@ import db.DbUtil
 class PrivacyScopeRepositoryLive(xa: Transactor[IO]) extends PrivacyScopeRepository {
 
   def getDataCategories(appId: UUID, selectors: Boolean = true): IO[List[DataCategory]] =
-    queries
-      .getDataCategories(appId, selectors)
-      .transact(xa)
+    queries.getDataCategories(appId, selectors).transact(xa)
+
+  def getAllDataCategories(appId: UUID): IO[List[DataCategory]] =
+    queries.getAllDataCategories(appId).transact(xa)
 
   def getProcessingCategories(appId: UUID): IO[List[ProcessingCategory]] =
-    queries
-      .getProcessingCategories(appId)
-      .transact(xa)
+    queries.getProcessingCategories(appId).transact(xa)
 
   def getPurposes(appId: UUID): IO[List[Purpose]] =
     queries.getPurposes(appId).transact(xa)

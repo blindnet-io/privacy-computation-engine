@@ -154,4 +154,19 @@ class ConfigurationService(
       _ <- repos.provenance.delete(appId, id)
     } yield ()
 
+  def getDataCategories(appId: UUID) =
+    for {
+      dcs <- repos.privacyScope.getAllDataCategories(appId)
+      ps  <- repos.provenance.get(appId)
+      rps <- repos.retentionPolicy.get(appId)
+
+      res = dcs.map(
+        dc => {
+          val p  = ps.getOrElse(dc, List.empty)
+          val rp = rps.getOrElse(dc, List.empty)
+          DataCategoryResponsePayload(dc, p, rp)
+        }
+      )
+    } yield res
+
 }

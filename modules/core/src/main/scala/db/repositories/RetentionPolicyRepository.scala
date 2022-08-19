@@ -17,7 +17,7 @@ import db.DbUtil
 
 trait RetentionPolicyRepository {
 
-  def get(appId: UUID, userIds: List[DataSubject]): IO[Map[DataCategory, List[RetentionPolicy]]]
+  def get(appId: UUID): IO[Map[DataCategory, List[RetentionPolicy]]]
 
   def get(appId: UUID, dc: DataCategory): IO[List[RetentionPolicy]]
 
@@ -34,10 +34,7 @@ object RetentionPolicyRepository {
   def live(xa: Transactor[IO]): RetentionPolicyRepository =
     new RetentionPolicyRepository {
 
-      def get(
-          appId: UUID,
-          userIds: List[DataSubject]
-      ): IO[Map[DataCategory, List[RetentionPolicy]]] =
+      def get(appId: UUID): IO[Map[DataCategory, List[RetentionPolicy]]] =
         sql"""
           select rp.id, rp.policy, rp.duration, rp.after, dc.term
           from retention_policies rp

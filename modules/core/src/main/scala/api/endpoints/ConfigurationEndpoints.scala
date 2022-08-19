@@ -119,7 +119,13 @@ class ConfigurationEndpoints(
       .in(path[UUID]("provenanceId"))
       .serverLogicSuccess(id => configurationService.deleteProvenance(appId, id))
 
-  // get list of DCs
+  def getDataCategories =
+    base
+      .description("Get data categories with retention policies and provenances")
+      .get
+      .in("data-categories")
+      .out(jsonBody[List[DataCategoryResponsePayload]])
+      .serverLogicSuccess(_ => configurationService.getDataCategories(appId))
 
   val endpoints = List(
     getGeneralInfo,
@@ -132,7 +138,8 @@ class ConfigurationEndpoints(
     addRetentionPolicies,
     deleteRetentionPolicy,
     addProvenances,
-    deleteProvenance
+    deleteProvenance,
+    getDataCategories
   )
 
 }
