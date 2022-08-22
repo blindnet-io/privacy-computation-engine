@@ -1,13 +1,13 @@
 package io.blindnet.pce
-package tasks
+package requesthandlers
 
 import cats.effect.*
 import cats.effect.std.*
 import db.repositories.Repositories
-import tasks.RequestProcessor
-import io.blindnet.pce.services.external.StorageInterface
+import services.external.StorageInterface
 
-object Tasks {
+object RequestHandlers {
+  // TODO: resource
   def run(
       repos: Repositories,
       storage: StorageInterface

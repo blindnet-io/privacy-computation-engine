@@ -1,5 +1,5 @@
 package io.blindnet.pce
-package tasks
+package requesthandlers
 
 import java.util.UUID
 
@@ -107,6 +107,7 @@ class RequestResponder(
       cbId <- UUIDGen.randomUUID[IO]
       _    <- repos.callbacks.set(cbId, pr.appId, newRespId)
       // TODO
+      // _    <- storage.requestAccessLink(cbId, pr.appId, d.id, pr.dataSubject, rec).attempt
       _    <- storage.requestAccessLink(cbId, pr.appId, d.id, pr.dataSubject, rec)
 
       timestamp <- Clock[IO].realTimeInstant

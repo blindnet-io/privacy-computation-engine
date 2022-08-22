@@ -7,7 +7,7 @@ import org.typelevel.log4cats.*
 import org.typelevel.log4cats.slf4j.*
 import db.*
 import db.repositories.*
-import tasks.*
+import requesthandlers.*
 import api.*
 import services.*
 import config.{ given, * }
@@ -37,7 +37,7 @@ object Main extends IOApp {
 
       services = Services.make(repositories, conf)
 
-      _ <- Resource.eval(Tasks.run(repositories, storage).start)
+      _ <- Resource.eval(RequestHandlers.run(repositories, storage).start)
 
       app = AppRouter.make(services)
       server <- Server.make(app.httpApp, conf.api)
