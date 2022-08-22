@@ -18,6 +18,7 @@ import org.typelevel.log4cats.*
 import org.typelevel.log4cats.slf4j.*
 import db.repositories.Repositories
 import io.blindnet.pce.api.endpoints.messages.privacyrequest.DateRangeRestriction.apply
+import io.blindnet.pce.model.DemandToRespond
 
 class RequestProcessor(
     repos: Repositories
@@ -56,7 +57,7 @@ class RequestProcessor(
             // processTransparency(pr, d, resp)
             // TODO
             if true
-            then repos.demandsToRespond.add(List(d.id))
+            then repos.demandsToRespond.add(List(DemandToRespond(d.id)))
             else repos.demandsToReview.add(List(d.id))
 
           case Access =>
@@ -65,7 +66,7 @@ class RequestProcessor(
               _ <-
                 // TODO
                 if true
-                then repos.demandsToRespond.add(List(d.id))
+                then repos.demandsToRespond.add(List(DemandToRespond(d.id)))
                 else repos.demandsToReview.add(List(d.id))
             } yield ()
 

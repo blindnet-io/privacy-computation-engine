@@ -314,6 +314,7 @@ create table pending_demands_to_process (
 
 create table pending_demands_to_respond (
   did uuid unique not null,
+  data varchar not null,
   constraint demand_fk
     foreign key (did)
     references demands(id)

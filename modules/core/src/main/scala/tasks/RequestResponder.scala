@@ -18,6 +18,7 @@ import org.typelevel.log4cats.*
 import org.typelevel.log4cats.slf4j.*
 import db.repositories.Repositories
 import io.blindnet.pce.services.external.StorageInterface
+import io.blindnet.pce.model.DemandToRespond
 
 class RequestResponder(
     repos: Repositories,
@@ -29,25 +30,26 @@ class RequestResponder(
 
   val transparency = TransparencyDemands(repos)
 
-  private def createResponse(dId: UUID): IO[Unit] =
+  private def createResponse(dtr: DemandToRespond): IO[Unit] =
     for {
       // TODO .get
-      d       <- repos.privacyRequest.getDemand(dId, true).map(_.get)
+      d       <- repos.privacyRequest.getDemand(dtr.dId, true).map(_.get)
       pr      <- repos.privacyRequest.getRequest(d).map(_.get)
-      respOpt <- repos.privacyRequest.getDemandResponse(dId)
+      respOpt <- repos.privacyRequest.getDemandResponse(dtr.dId)
       resp    <- respOpt match {
         case None       =>
           // TODO: do we create a new UNDER-REVIEW response here?
-          IO.raiseError(new NotFoundException(s"Demand response with id $dId not found"))
+          IO.raiseError(new NotFoundException(s"Demand response with id ${dtr.dId} not found"))
         case Some(resp) =>
           IO.pure(resp)
       }
 
-      _ <- createResponse(pr, d, resp)
+      _ <- createResponse(pr, dtr, d, resp)
     } yield ()
 
   private def createResponse(
       pr: PrivacyRequest,
+      dtr: DemandToRespond,
       d: Demand,
       resp: PrivacyResponse
   ): IO[Unit] =
@@ -59,7 +61,7 @@ class RequestResponder(
             createResponseTransparency(pr, d, resp)
 
           case Access =>
-            createResponseAccess(pr, d, resp)
+            createResponseAccess(pr, dtr, d, resp)
 
           case _ => IO.raiseError(new NotImplementedError)
         }
@@ -91,7 +93,12 @@ class RequestResponder(
     } yield ()
 
   // TODO: .get
-  private def createResponseAccess(pr: PrivacyRequest, d: Demand, resp: PrivacyResponse): IO[Unit] =
+  private def createResponseAccess(
+      pr: PrivacyRequest,
+      dtr: DemandToRespond,
+      d: Demand,
+      resp: PrivacyResponse
+  ): IO[Unit] =
     for {
       rec <- repos.privacyRequest.getRecommendation(d.id).map(_.get)
 
@@ -103,13 +110,19 @@ class RequestResponder(
       _    <- storage.requestAccessLink(cbId, pr.appId, d.id, pr.dataSubject, rec)
 
       timestamp <- Clock[IO].realTimeInstant
+
+      msg  = dtr.data.hcursor.downField("msg").as[String].toOption
+      lang = dtr.data.hcursor.downField("lang").as[String].toOption
+
       newResp = PrivacyResponse(
         newRespId,
         resp.responseId,
         d.id,
         timestamp,
         d.action,
-        Status.Granted
+        Status.Granted,
+        message = msg,
+        lang = lang
       )
       _ <- repos.privacyRequest.storeNewResponse(newResp)
     } yield ()
@@ -124,13 +137,14 @@ object RequestResponder {
 
     def loop(): IO[Unit] =
       for {
-        ids <- repos.demandsToRespond.get()
-        _   <- ids.parTraverse_(
-          id => {
-            val p = for {
+        ds <- repos.demandsToRespond.get()
+        _  <- ds.parTraverse_(
+          d => {
+            val id = d.dId
+            val p  = for {
               _ <- logger.info(s"Creating response for demand $id")
               _ <- repos.demandsToRespond.remove(NonEmptyList.one(id))
-              _ <- reqProc.createResponse(id)
+              _ <- reqProc.createResponse(d)
               _ <- logger.info(s"Response for demand $id created")
             } yield ()
 
@@ -138,7 +152,7 @@ object RequestResponder {
               e =>
                 logger
                   .error(e)(s"Error creating response for demand $id - ${e.getMessage}")
-                  .flatMap(_ => repos.demandsToProcess.add(List(id)))
+                  .flatMap(_ => repos.demandsToRespond.add(List(d)))
             )
           }
         )

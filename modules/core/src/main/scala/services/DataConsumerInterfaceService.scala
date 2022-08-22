@@ -22,6 +22,7 @@ import model.error.*
 import priv.DataSubject
 import priv.privacyrequest.{ Demand, PrivacyRequest, * }
 import priv.terms.*
+import io.blindnet.pce.model.DemandToRespond
 
 class DataConsumerInterfaceService(
     repos: Repositories
@@ -54,10 +55,17 @@ class DataConsumerInterfaceService(
     } yield res
 
   def approveDemand(appId: UUID, req: ApproveDemandPayload) =
-    // TODO: do we need other info, as msg/lang?
     for {
       _ <- repos.demandsToReview.remove(NonEmptyList.of(req.id))
-      _ <- repos.demandsToRespond.add(List(req.id))
+      d = DemandToRespond(
+        req.id,
+        // TODO: refactor
+        Json.obj(
+          "msg"  -> req.msg.map(_.asJson).getOrElse(Json.Null),
+          "lang" -> req.lang.map(_.asJson).getOrElse(Json.Null)
+        )
+      )
+      _ <- repos.demandsToRespond.add(List(d))
     } yield ()
 
 }
