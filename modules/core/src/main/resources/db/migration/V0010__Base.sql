@@ -13,6 +13,18 @@ create table dac (
     on delete cascade
 );
 
+create table automatic_responses_config (
+  appid uuid not null,
+  auto_transparency boolean not null,
+  auto_consents boolean not null,
+  auto_access boolean not null,
+  auto_delete boolean not null,
+  constraint app_fk
+    foreign key (appid)
+    references apps(id)
+    on delete cascade
+);
+
 -- GENERAL INFORMATION
 -- parts of TRANSPARENCY requests and ROPA
 

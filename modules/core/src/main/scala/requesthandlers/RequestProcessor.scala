@@ -19,6 +19,7 @@ import org.typelevel.log4cats.slf4j.*
 import db.repositories.Repositories
 import io.blindnet.pce.api.endpoints.messages.privacyrequest.DateRangeRestriction.apply
 import io.blindnet.pce.model.DemandToRespond
+import io.blindnet.pce.model.PCEApp
 
 class RequestProcessor(
     repos: Repositories
@@ -41,22 +42,21 @@ class RequestProcessor(
           IO.pure(resp)
       }
 
-      _ <- processDemand(pr, d, resp)
+      app <- repos.app.get(pr.appId).map(_.get)
+      _   <- processDemand(app, pr, d, resp)
     } yield ()
 
   private def processDemand(
+      app: PCEApp,
       pr: PrivacyRequest,
       d: Demand,
       resp: PrivacyResponse
   ): IO[Unit] =
-    // TODO: get setting about which action to respond and which needs review
     resp.status match {
       case UnderReview =>
         d.action match {
           case a if a == Transparency || a.isChildOf(Transparency) =>
-            // processTransparency(pr, d, resp)
-            // TODO
-            if true
+            if app.autoResolve.transparency
             then repos.demandsToRespond.add(List(DemandToRespond(d.id)))
             else repos.demandsToReview.add(List(d.id))
 
@@ -64,8 +64,7 @@ class RequestProcessor(
             for {
               _ <- createRecommendation(pr, d)
               _ <-
-                // TODO
-                if true
+                if app.autoResolve.access
                 then repos.demandsToRespond.add(List(DemandToRespond(d.id)))
                 else repos.demandsToReview.add(List(d.id))
             } yield ()

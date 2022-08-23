@@ -44,9 +44,6 @@ class PrivacyRequestEndpoints(
       .out(jsonBody[RequestHistoryPayload])
       .serverLogicSuccess(_ => reqService.getRequestHistory(appId, userId))
 
-  val getRequestStatus =
-    base
-
   val getReqStatus =
     base
       .description("Get privacy request status")
