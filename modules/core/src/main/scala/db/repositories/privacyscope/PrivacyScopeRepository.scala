@@ -24,8 +24,6 @@ trait PrivacyScopeRepository {
 
   def getPurposes(appId: UUID): IO[List[Purpose]]
 
-  def getTimeline(appId: UUID, userIds: NonEmptyList[DataSubject]): IO[Timeline]
-
   def getSelectors(appId: UUID, active: Boolean): IO[List[DataCategory]]
 
   def addSelectors(appId: UUID, terms: NonEmptyList[(UUID, DataCategory)]): IO[Unit]

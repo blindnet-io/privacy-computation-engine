@@ -11,11 +11,4 @@ import io.blindnet.pce.util.extension.*
 import java.util.*
 import scala.util.*
 
-object util {
-
-  extension (s: String) {
-    def failBadRequest = BadRequestException(s).raise
-    def failNotFound   = NotFoundException(s).raise
-  }
-
-}
+object util {}

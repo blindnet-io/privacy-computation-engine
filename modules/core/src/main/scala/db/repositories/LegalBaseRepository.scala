@@ -18,7 +18,7 @@ trait LegalBaseRepository {
 
   def get(appId: UUID, userIds: List[DataSubject]): IO[List[LegalBase]]
 
-  def get(appId: UUID, lbId: UUID): IO[Option[LegalBase]]
+  def get(appId: UUID, lbId: UUID, scope: Boolean): IO[Option[LegalBase]]
 
   def add(appId: UUID, lb: LegalBase): IO[Unit]
 
@@ -73,7 +73,7 @@ object LegalBaseRepository {
               join processing_categories pc on pc.id = s.pcid
               join processing_purposes pp on pp.id = s.ppid
             where lb.appid = $appId
-            group by lb.id;
+            group by lb.id
           """
             .query[LegalBase]
 
@@ -84,21 +84,36 @@ object LegalBaseRepository {
 
       def get(appId: UUID, userIds: List[DataSubject]): IO[List[LegalBase]] = ???
 
-      def get(appId: UUID, lbId: UUID): IO[Option[LegalBase]] = {
-        sql"""
-          select lb.id as id, lb.type as type, lb.name as name, lb.description as description, lb.active, array_agg(dc.term) as dc, array_agg(pc.term) as pc, array_agg(pp.term) as pp
-          from legal_bases lb
-            join legal_bases_scope lbs on lbs.lbid = lb.id
-            join "scope" s on s.id = lbs.scid
-            join data_categories dc on dc.id = s.dcid
-            join processing_categories pc on pc.id = s.pcid
-            join processing_purposes pp on pp.id = s.ppid
-          where lb.appid = $appId and lb.id = $lbId
-          group by lb.id;
-        """
-          .query[LegalBase]
-          .option
-          .transact(xa)
+      def get(appId: UUID, lbId: UUID, scope: Boolean): IO[Option[LegalBase]] = {
+        val qNoPS =
+          sql"""
+            select id, type, name, description, active
+            from legal_bases
+            where appid = $appId and id = $lbId
+          """
+            .query[(UUID, LegalBaseTerms, Option[String], Option[String], Boolean)]
+            .map {
+              case (id, lbType, name, desc, active) =>
+                LegalBase(id, lbType, PrivacyScope.empty, name, desc, active)
+            }
+
+        val qWithPS =
+          sql"""
+            select lb.id as id, lb.type as type, lb.name as name, lb.description as description, lb.active, array_agg(dc.term) as dc, array_agg(pc.term) as pc, array_agg(pp.term) as pp
+            from legal_bases lb
+              join legal_bases_scope lbs on lbs.lbid = lb.id
+              join "scope" s on s.id = lbs.scid
+              join data_categories dc on dc.id = s.dcid
+              join processing_categories pc on pc.id = s.pcid
+              join processing_purposes pp on pp.id = s.ppid
+            where lb.appid = $appId and lb.id = $lbId
+            group by lb.id
+          """
+            .query[LegalBase]
+
+        val res = if scope then qWithPS else qNoPS
+
+        res.option.transact(xa)
       }
 
       def add(appId: UUID, lb: LegalBase): IO[Unit] = {

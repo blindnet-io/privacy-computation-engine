@@ -54,7 +54,7 @@ object StorageInterface {
             after = rec.dateFrom,
             until = rec.dateTo
           ),
-          action = DataRequestActions.Get,
+          action = DataRequestAction.GET,
           callback = (conf.callbackUri / "callback" / callbackId.toString).toString
         )
 

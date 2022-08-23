@@ -30,18 +30,6 @@ class PrivacyScopeRepositoryLive(xa: Transactor[IO]) extends PrivacyScopeReposit
   def getPurposes(appId: UUID): IO[List[Purpose]] =
     queries.getPurposes(appId).transact(xa)
 
-  // TODO: add restrict and object events
-  def getTimeline(appId: UUID, userIds: NonEmptyList[DataSubject]): IO[Timeline] =
-    val res =
-      for {
-        lbEvents <- queries.getLegalBaseEvents(appId, userIds)
-        cgEvents <- queries.getConsentGivenEvents(appId, userIds)
-        crEvents <- queries.getConsentRevokedEvents(appId, userIds)
-        allEvents = (lbEvents ++ cgEvents ++ crEvents).sortBy(_.getTimestamp)
-      } yield Timeline(allEvents)
-
-    res.transact(xa)
-
   def getSelectors(appId: UUID, active: Boolean): IO[List[DataCategory]] =
     queries.getSelectors(appId, active).transact(xa)
 

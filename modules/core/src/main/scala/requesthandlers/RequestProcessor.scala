@@ -85,7 +85,7 @@ class RequestProcessor(
           for {
             id <- UUIDGen[IO].randomUUID
             ds = NonEmptyList.fromList(pr.dataSubject).get
-            timeline <- repos.privacyScope.getTimeline(pr.appId, ds)
+            timeline <- repos.events.getTimeline(pr.appId, ds)
             eps = timeline.eligiblePrivacyScope(Some(pr.timestamp))
 
             psRec = d.getPSR.map(ps => eps intersection ps).getOrElse(eps)

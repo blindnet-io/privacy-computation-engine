@@ -16,7 +16,11 @@ case class LegalBase(
     name: Option[String] = None,
     description: Option[String] = None,
     active: Boolean
-)
+) {
+  def isConsent            = lbType == LegalBaseTerms.Consent
+  def isContract           = lbType == LegalBaseTerms.Contract
+  def isLegitimateInterest = lbType == LegalBaseTerms.LegitimateInterest
+}
 
 object LegalBase {
   given Decoder[LegalBase] = unSnakeCaseIfy(deriveDecoder[LegalBase])

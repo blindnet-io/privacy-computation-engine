@@ -24,7 +24,6 @@ import priv.*
 import priv.terms.*
 import io.blindnet.pce.api.endpoints.messages.configuration.*
 import scala.concurrent.duration.*
-import services.util.*
 
 class ConfigurationService(
     repos: Repositories
@@ -66,7 +65,7 @@ class ConfigurationService(
   def getLegalBase(appId: UUID, lbId: UUID) =
     for {
       res <- repos.legalBase
-        .get(appId, lbId)
+        .get(appId, lbId, true)
         .orNotFound(s"Legal base with id $lbId not found")
     } yield res
 

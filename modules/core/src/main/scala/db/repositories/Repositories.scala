@@ -5,6 +5,7 @@ import cats.effect.*
 import doobie.util.transactor.Transactor
 import db.repositories.privacyrequest.*
 import db.repositories.privacyscope.*
+import db.repositories.events.*
 
 trait Repositories {
   val app: AppRepository
@@ -15,6 +16,7 @@ trait Repositories {
   val retentionPolicy: RetentionPolicyRepository
   val provenance: ProvenancesRepository
   val privacyRequest: PrivacyRequestRepository
+  val events: EventsRepository
 
   val demandsToProcess: DemandsToProcessRepository
   val demandsToReview: DemandsToReviewRepository
@@ -34,6 +36,7 @@ object Repositories {
     val retentionPolicyRepo = RetentionPolicyRepository.live(xa)
     val provenanceRepo      = ProvenancesRepository.live(xa)
     val privacyReqRepo      = PrivacyRequestRepository.live(xa)
+    val eventsRepo          = EventsRepository.live(xa)
 
     val demandsToProcessRepo = DemandsToProcessRepository.live(xa)
     val demandsToReviewRepo  = DemandsToReviewRepository.live(xa)
@@ -50,6 +53,7 @@ object Repositories {
       val retentionPolicy = retentionPolicyRepo
       val provenance      = provenanceRepo
       val privacyRequest  = privacyReqRepo
+      val events          = eventsRepo
 
       val demandsToProcess = demandsToProcessRepo
       val demandsToReview  = demandsToReviewRepo

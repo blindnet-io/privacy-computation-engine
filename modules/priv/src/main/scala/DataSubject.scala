@@ -6,7 +6,7 @@ import io.circe.generic.semiauto.*
 
 case class DataSubject(
     id: String,
-    schema: String
+    schema: Option[String] = None
 )
 
 object DataSubject {

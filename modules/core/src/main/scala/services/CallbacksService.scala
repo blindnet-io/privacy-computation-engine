@@ -19,7 +19,7 @@ import io.blindnet.pce.db.repositories.Repositories
 import api.endpoints.messages.callback.*
 import io.blindnet.pce.util.extension.*
 import cats.effect.std.UUIDGen
-import io.blindnet.pce.services.util.failBadRequest
+import io.blindnet.pce.services.util.*
 import org.typelevel.log4cats.*
 import org.typelevel.log4cats.slf4j.*
 

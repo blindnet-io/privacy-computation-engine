@@ -5,6 +5,7 @@ import cats.*
 import cats.data.*
 import cats.implicits.*
 import io.blindnet.pce.model.error.*
+import cats.effect.IO
 
 object extension {
   extension [M[_], A](m: M[Option[A]])
@@ -18,21 +19,30 @@ object extension {
   extension [M[_]: MonadThrow, A](m: M[Option[A]]) {
 
     def orNotFound(msg: String): M[A] = m.flatMap {
-      case None    => new NotFoundException(msg).raiseError
+      case None    => NotFoundException(msg).raiseError
       case Some(x) => x.pure
     }
 
     def orFail(msg: String): M[A] = m.flatMap {
-      case None    => new InternalException(msg).raiseError
+      case None    => InternalException(msg).raiseError
       case Some(x) => x.pure
     }
 
   }
 
   extension [M[_]: MonadThrow](m: M[Boolean])
-    def emptyNotFound(msg: String): M[Unit] = m.flatMap {
-      case false => new NotFoundException(msg).raiseError
+    def emptyNotFound(msg: String) = m.flatMap {
+      case false => NotFoundException(msg).raiseError
       case true  => ().pure
     }
+
+  extension (b: Boolean)
+    def emptyNotFound(msg: String) =
+      if b then IO.unit else NotFoundException(msg).raise
+
+  extension (s: String) {
+    def failBadRequest = BadRequestException(s).raise
+    def failNotFound   = NotFoundException(s).raise
+  }
 
 }
