@@ -22,15 +22,14 @@ import sttp.tapir.generic.auto.*
 import java.time.Instant
 import sttp.tapir.generic.Configuration
 
-// TODO: privacy scope
-case class PrivacyScopeRestriction()
+case class PrivacyScopeRestriction(dc: DataCategory, pc: ProcessingCategory, pp: Purpose)
 case class ConsentRestriction(id: UUID)
 case class DateRangeRestriction(from: Option[Instant], to: Option[Instant])
 case class ProvenanceRestriction(term: ProvenanceTerms, target: Option[Target])
 case class DataReferenceRestriction(ref: List[String])
 
 case class Restrictions(
-    privacyScope: Option[PrivacyScopeRestriction],
+    privacyScope: Option[List[PrivacyScopeRestriction]],
     consent: Option[ConsentRestriction],
     dateRange: Option[DateRangeRestriction],
     provenance: Option[ProvenanceRestriction],
@@ -46,8 +45,12 @@ object Restrictions {
 
   def toPrivRestrictions(r: Restrictions): List[Restriction] =
     List(
-      // TODO: privacy scope
-      r.privacyScope.map(ps => Restriction.PrivacyScope(PrivacyScope.empty)),
+      r.privacyScope.map(
+        ps =>
+          Restriction.PrivacyScope(
+            PrivacyScope(ps.map(p => PrivacyScopeTriple(p.dc, p.pc, p.pp)).toSet)
+          )
+      ),
       r.consent.map(c => Restriction.Consent(c.id)),
       r.dateRange.map(dr => Restriction.DateRange(dr.from, dr.to)),
       r.provenance.map(p => Restriction.Provenance(p.term, p.target)),

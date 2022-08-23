@@ -33,26 +33,57 @@ class PrivacyRequestRepositoryLive(xa: Transactor[IO]) extends PrivacyRequestRep
         values (${d.id}, ${pr.id}, ${d.action.encode}::action_terms, ${d.message}, ${d.language})
       """.update.run
 
-    def storeRestriction(id: UUID, dId: UUID, r: Restriction) = {
+    def storeRestriction(id: UUID, dId: UUID, r: Restriction) =
+      r match {
+        case r: Restriction.PrivacyScope => {
+          val insertRestriction =
+            sql"""
+              insert into demand_restrictions (id, did, type, cid, from_date, to_date, provenance_term, target_term, data_reference)
+              values ($id, $dId, 'PRIVACY_SCOPE', null, null, null, null, null, null)
+            """
 
-      val values = r match {
-        case r: Restriction.PrivacyScope  =>
-          fr"($id, $dId, 'PRIVACY_SCOPE', null, null, null, null, null, null)"
-        case r: Restriction.Consent       =>
-          fr"($id, $dId, 'CONSENT', ${r.consentId}, null, null, null, null, null)"
-        case r: Restriction.DateRange     =>
-          fr"($id, $dId, 'DATE_RANGE', null, ${r.from}, ${r.to}, null, null, null)"
-        case r: Restriction.Provenance    =>
-          fr"""($id, $dId, 'PROVENANCE', null, null, null, ${r.term.encode}::provenance_terms,
-          ${r.target.map(_.encode)}::target_terms, null)"""
-        case r: Restriction.DataReference =>
-          fr"($id, $dId, 'DATA_REFERENCE', null, null, null, null, null, ${r.dataReferences})"
+          val insertRScope =
+            fr"""
+              insert into demand_restriction_scope
+                select $id, s.id
+                from "scope" s
+                join data_categories dc ON dc.id = s.dcid
+                join processing_categories pc ON pc.id = s.pcid
+                join processing_purposes pp ON pp.id = s.ppid
+                where
+            """ ++ Fragments.or(
+              r.scope.triples
+                .map(
+                  t =>
+                    fr"dc.term = ${t.dataCategory.term} and" ++
+                      fr"pc.term = ${t.processingCategory.term} and" ++
+                      fr"pp.term = ${t.purpose.term}"
+                )
+                .toList*
+            )
+
+          (insertRestriction.update.run *> insertRScope.update.run)
+        }
+
+        case _ => {
+          val values = r match {
+            case r: Restriction.Consent       =>
+              fr"($id, $dId, 'CONSENT', ${r.consentId}, null, null, null, null, null)"
+            case r: Restriction.DateRange     =>
+              fr"($id, $dId, 'DATE_RANGE', null, ${r.from}, ${r.to}, null, null, null)"
+            case r: Restriction.Provenance    =>
+              fr"""($id, $dId, 'PROVENANCE', null, null, null, ${r.term.encode}::provenance_terms,
+              ${r.target.map(_.encode)}::target_terms, null)"""
+            case r: Restriction.DataReference =>
+              fr"($id, $dId, 'DATA_REFERENCE', null, null, null, null, null, ${r.dataReferences})"
+            case _                            => fr"()"
+          }
+
+          (fr"""
+            insert into demand_restrictions (id, did, type, cid, from_date, to_date, provenance_term, target_term, data_reference)
+            values""" ++ values).update.run
+        }
       }
-
-      (fr"""
-        insert into demand_restrictions (id, did, type, cid, from_date, to_date, provenance_term, target_term, data_reference)
-        values""" ++ values).update.run
-    }
 
     // TODO: this is business logic. move it to service and handle transaction (Resource)
     def storeResponse(d: Demand, id: UUID) =
