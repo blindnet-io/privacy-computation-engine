@@ -20,6 +20,8 @@ import db.repositories.Repositories
 import io.blindnet.pce.api.endpoints.messages.privacyrequest.DateRangeRestriction.apply
 import io.blindnet.pce.model.DemandToRespond
 import io.blindnet.pce.model.PCEApp
+import io.blindnet.pce.priv.PrivacyScope
+import io.blindnet.pce.priv.PrivacyScopeTriple
 
 class RequestProcessor(
     repos: Repositories
@@ -87,7 +89,23 @@ class RequestProcessor(
             timeline <- repos.events.getTimeline(pr.appId, ds)
             eps = timeline.eligiblePrivacyScope(Some(pr.timestamp))
 
-            psRec = d.getPSR.map(ps => eps intersection ps).getOrElse(eps)
+            psr = d.getPSR.getOrElse(PrivacyScope.empty)
+            psRec <-
+              if psr.isEmpty then IO(eps)
+              else
+                for {
+                  selectors <- repos.privacyScope.getSelectors(pr.appId, active = true)
+                  triples = psr.triples.flatMap(
+                    triple =>
+                      for {
+                        dc <- DataCategory.getSubTerms(triple.dataCategory, selectors)
+                        pc <- ProcessingCategory.getSubTerms(triple.processingCategory)
+                        pp <- Purpose.getSubTerms(triple.purpose)
+                      } yield PrivacyScopeTriple(dc, pc, pp)
+                  )
+                  scope   = PrivacyScope(triples) intersection eps
+                } yield scope
+
             drRec = d.getDateRangeR.getOrElse((None, None))
             pRec  = d.getProvenanceR.map(_._1)
             // TODO: data reference restriction

@@ -15,7 +15,6 @@ import priv.privacyrequest.*
 import io.blindnet.pce.util.extension.*
 import priv.*
 import priv.terms.*
-import io.blindnet.pce.api.endpoints.messages.privacyrequest.Restrictions
 
 class PrivacyRequestRepositoryLive(xa: Transactor[IO]) extends PrivacyRequestRepository {
 

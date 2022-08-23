@@ -20,6 +20,7 @@ case class PrivacyScope(
   def difference(other: PrivacyScope) =
     this.copy(triples diff other.triples)
 
+  def isEmpty = triples.isEmpty
 }
 
 object PrivacyScope {

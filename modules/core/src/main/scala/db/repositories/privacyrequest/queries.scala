@@ -68,15 +68,20 @@ private object queries {
       .query[Demand]
       .to[List]
 
-  def getDemandRestrictions(dId: UUID) = {
+  def getDemandRestrictions(dId: UUID) =
     sql"""
-      select type, cid, from_date, to_date, provenance_term, target_term, data_reference
-      from demand_restrictions
+      select dr.type, dr.cid, dr.from_date, dr.to_date, dr.provenance_term, dr.target_term, dr.data_reference, array_agg(dc.term) as dc, array_agg(pc.term) as pc, array_agg(pp.term) as pp
+      from demand_restrictions dr
+        left join demand_restriction_scope drs on drs.drid = dr.id
+        left join "scope" s on s.id = drs.scid
+        left join data_categories dc on dc.id = s.dcid 
+        left join processing_categories pc on pc.id = s.pcid 
+        left join processing_purposes pp on pp.id = s.ppid 
       where did = $dId
+      group by dr.type, dr.cid, dr.from_date, dr.to_date, dr.provenance_term, dr.target_term, dr.data_reference
     """
       .query[Restriction]
       .to[List]
-  }
 
   def getPrivacyRequest(reqId: UUID) =
     sql"""
