@@ -8,22 +8,12 @@ import io.circe.generic.semiauto.*
 import io.circe.syntax.*
 import io.blindnet.pce.util.parsing.*
 
-import io.circe.{ Decoder, Encoder }
+enum DataRequestAction {
+  case GET, DELETE
+}
 
-object DataRequestActions extends Enumeration {
-  type DataRequestAction = Value
-
-  val Get, Delete = Value
-
-  private val byLowerName = DataRequestActions.values.map(e => (e.toString.toLowerCase, e)).toMap
-  implicit val decoder: Decoder[DataRequestActions.DataRequestAction] =
-    Decoder.decodeString.emap[DataRequestActions.DataRequestAction](
-      k => byLowerName.get(k.toLowerCase).toRight("illegal DataRequestAction value")
-    )
-
-  implicit val encoder: Encoder[DataRequestActions.DataRequestAction] =
-    Encoder.encodeString.contramap(_.toString.toLowerCase)
-
+object DataRequestAction {
+  given Encoder[DataRequestAction] = Encoder.encodeString.contramap(_.toString.toLowerCase)
 }
 
 case class DataQueryPayload(
@@ -36,9 +26,10 @@ case class DataQueryPayload(
 )
 
 case class DataRequestPayload(
+    //  app_id: String,
     request_id: String,
     query: DataQueryPayload,
-    action: DataRequestActions.DataRequestAction,
+    action: DataRequestAction,
     callback: String
 )
 
