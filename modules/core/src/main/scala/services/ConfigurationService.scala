@@ -73,16 +73,8 @@ class ConfigurationService(
     for {
       id        <- UUIDGen.randomUUID[IO]
       selectors <- repos.privacyScope.getSelectors(appId, active = true)
-      triples = req.scope.flatMap(
-        triple =>
-          for {
-            dc <- DataCategory.getSubTerms(triple.dc, selectors)
-            pc <- ProcessingCategory.getSubTerms(triple.pc)
-            pp <- Purpose.getSubTerms(triple.pp)
-          } yield PrivacyScopeTriple(dc, pc, pp)
-      )
-      scope   = PrivacyScope(triples)
-      lb      = LegalBase(id, req.lbType, scope, req.name, req.description, true)
+      scope = req.getPrivPrivacyScope.zoomIn(selectors)
+      lb    = LegalBase(id, req.lbType, scope, req.name, req.description, true)
       // TODO: handling error
       _ <- repos.legalBase.add(appId, lb).start
     } yield id.toString
@@ -101,7 +93,7 @@ class ConfigurationService(
       rps <- req.flatTraverse {
         r =>
           DataCategory
-            .getSubTerms(r.dataCategory, selectors)
+            .getMostGranular(r.dataCategory, selectors)
             .toList
             .traverse(
               dc =>
@@ -134,7 +126,7 @@ class ConfigurationService(
       ps <- req.flatTraverse {
         r =>
           DataCategory
-            .getSubTerms(r.dataCategory, selectors)
+            .getMostGranular(r.dataCategory, selectors)
             .toList
             .traverse(
               dc =>

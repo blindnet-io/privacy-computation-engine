@@ -18,13 +18,14 @@ object Purpose {
       "Unknown purpose of processing"
     )
 
-  def getSubTerms(dc: Purpose): Set[Purpose] = {
-    def getSubTerms0(term: String): List[String] =
+  def getMostGranular(dc: Purpose): Set[Purpose] = {
+    def getMostGranular0(term: String): List[String] =
       val n = terms.filter(t => t.startsWith(s"$term."))
-      if n.length == 0 then List(term) else n.flatMap(t => getSubTerms0(t))
+      if n.length == 0 then List(term) else n.flatMap(t => getMostGranular0(t))
 
     val res =
-      if dc.term == "*" then terms.tail.flatMap(t => getSubTerms0(t)) else getSubTerms0(dc.term)
+      if dc.term == "*" then terms.tail.flatMap(t => getMostGranular0(t))
+      else getMostGranular0(dc.term)
 
     res.toSet.map(Purpose(_))
   }

@@ -16,15 +16,19 @@ object DataCategory {
       "Unknown data category"
     )
 
-  def getSubTerms(dc: DataCategory, selectors: List[DataCategory]): Set[DataCategory] = {
+  def getMostGranular(
+      dc: DataCategory,
+      selectors: List[DataCategory] = List.empty
+  ): Set[DataCategory] = {
     val allterms = terms ++ selectors.map(_.term)
 
-    def getSubTerms0(term: String): List[String] =
+    def getMostGranular0(term: String): List[String] =
       val n = allterms.filter(t => t.startsWith(s"$term."))
-      if n.length == 0 then List(term) else n.flatMap(t => getSubTerms0(t))
+      if n.length == 0 then List(term) else n.flatMap(t => getMostGranular0(t))
 
     val res =
-      if dc.term == "*" then allterms.tail.flatMap(t => getSubTerms0(t)) else getSubTerms0(dc.term)
+      if dc.term == "*" then allterms.tail.flatMap(t => getMostGranular0(t))
+      else getMostGranular0(dc.term)
 
     res.toSet.map(DataCategory(_))
   }

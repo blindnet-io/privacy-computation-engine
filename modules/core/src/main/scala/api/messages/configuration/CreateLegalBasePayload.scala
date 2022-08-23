@@ -33,7 +33,11 @@ case class CreateLegalBasePayload(
     name: Option[String],
     description: Option[String],
     scope: Set[ScopePayload]
-)
+) {
+  def getPrivPrivacyScope =
+    PrivacyScope(scope.map(s => PrivacyScopeTriple(s.dc, s.pc, s.pp)))
+
+}
 
 object CreateLegalBasePayload {
   given Decoder[CreateLegalBasePayload] = unSnakeCaseIfy(

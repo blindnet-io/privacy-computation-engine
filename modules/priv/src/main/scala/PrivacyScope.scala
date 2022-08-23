@@ -6,6 +6,7 @@ import io.circe.generic.semiauto.*
 import sttp.tapir.Schema
 import cats.Show
 import cats.implicits.*
+import io.blindnet.pce.priv.terms.*
 
 // TODO: optimize methods
 case class PrivacyScope(
@@ -21,6 +22,20 @@ case class PrivacyScope(
     this.copy(triples diff other.triples)
 
   def isEmpty = triples.isEmpty
+
+  def zoomIn(selectors: List[DataCategory] = List.empty) = {
+    val newTriples = triples.flatMap(
+      triple =>
+        for {
+          dc <- DataCategory.getMostGranular(triple.dataCategory, selectors)
+          pc <- ProcessingCategory.getMostGranular(triple.processingCategory)
+          pp <- Purpose.getMostGranular(triple.purpose)
+        } yield PrivacyScopeTriple(dc, pc, pp)
+    )
+    PrivacyScope(newTriples)
+  }
+
+  def zoomOut() = ???
 }
 
 object PrivacyScope {

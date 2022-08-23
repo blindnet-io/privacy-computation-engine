@@ -93,18 +93,10 @@ class RequestProcessor(
             psRec <-
               if psr.isEmpty then IO(eps)
               else
-                for {
-                  selectors <- repos.privacyScope.getSelectors(pr.appId, active = true)
-                  triples = psr.triples.flatMap(
-                    triple =>
-                      for {
-                        dc <- DataCategory.getSubTerms(triple.dataCategory, selectors)
-                        pc <- ProcessingCategory.getSubTerms(triple.processingCategory)
-                        pp <- Purpose.getSubTerms(triple.purpose)
-                      } yield PrivacyScopeTriple(dc, pc, pp)
-                  )
-                  scope   = PrivacyScope(triples) intersection eps
-                } yield scope
+                repos.privacyScope
+                  .getSelectors(pr.appId, active = true)
+                  .map(psr.zoomIn)
+                  .map(ps => ps intersection eps)
 
             drRec = d.getDateRangeR.getOrElse((None, None))
             pRec  = d.getProvenanceR.map(_._1)
