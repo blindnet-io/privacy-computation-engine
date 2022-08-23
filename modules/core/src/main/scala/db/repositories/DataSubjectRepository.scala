@@ -16,16 +16,24 @@ import priv.*
 import priv.terms.*
 
 trait DataSubjectRepository {
-  def isKnown(appId: UUID, userIds: NonEmptyList[DataSubject]): IO[Boolean]
+  def get(appId: UUID, userIds: NonEmptyList[DataSubject]): IO[Option[DataSubject]]
+
+  def exist(appId: UUID, id: String): IO[Boolean]
 }
 
 object DataSubjectRepository {
   def live(xa: Transactor[IO]): DataSubjectRepository =
     new DataSubjectRepository {
 
-      def isKnown(appId: UUID, userIds: NonEmptyList[DataSubject]): IO[Boolean] =
-        (fr"select count(*) from data_subjects where appid = $appId and"
+      def get(appId: UUID, userIds: NonEmptyList[DataSubject]): IO[Option[DataSubject]] =
+        (fr"select id, schema from data_subjects where appid = $appId and"
           ++ Fragments.in(fr"id", userIds.map(_.id)))
+          .query[DataSubject]
+          .option
+          .transact(xa)
+
+      def exist(appId: UUID, id: String): IO[Boolean] =
+        sql"select count(*) from data_subjects where appid = $appId and id = $id"
           .query[Int]
           .map(_ > 0)
           .unique

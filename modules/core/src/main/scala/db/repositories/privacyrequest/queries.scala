@@ -16,13 +16,13 @@ import codecs.given
 
 private object queries {
 
-  def requestExist(reqId: UUID, appId: UUID, userId: String) =
-    sql"""
+  def requestExist(reqId: UUID, appId: UUID, userId: Option[String]) =
+    (fr"""
       select exists (
         select 1 from privacy_requests pr
-        where id = $reqId and appid = $appId and dsid = $userId
-      )
-    """
+        where id = $reqId and appid = $appId and
+    """ ++ userId.map(id => fr"dsid = $id").getOrElse(fr"dsid is null")
+      ++ fr")")
       .query[Boolean]
       .unique
 
@@ -205,6 +205,6 @@ private object queries {
       where d.id = $dId
     """
       .query[DataSubject]
-      .to[List]
+      .option
 
 }

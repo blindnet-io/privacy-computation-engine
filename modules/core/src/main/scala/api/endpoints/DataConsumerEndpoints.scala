@@ -25,8 +25,7 @@ class DataConsumerEndpoints(
 
   val base = baseEndpoint.in("consumer-interface").tag("Data consumer interface")
 
-  val appId  = UUID.fromString("6f083c15-4ada-4671-a6d1-c671bc9105dc")
-  val userId = "fdfc95a6-8fd8-4581-91f7-b3d236a6a10e"
+  val appId = UUID.fromString("6f083c15-4ada-4671-a6d1-c671bc9105dc")
 
   // TODO: add filtering
   val getPendingDemands =

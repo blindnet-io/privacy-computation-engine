@@ -55,7 +55,7 @@ class PrivacyRequestEndpoints(
       .out(jsonBody[List[PrivacyResponsePayload]])
       .errorOut(statusCode(StatusCode.UnprocessableEntity))
       .errorOut(statusCode(StatusCode.NotFound))
-      .serverLogicSuccess(reqId => reqService.getResponse(reqId, appId, userId))
+      .serverLogicSuccess(reqId => reqService.getResponse(reqId, appId, Some(userId)))
 
   val endpoints = List(createPrivacyRequest, getRequestHistory, getReqStatus)
 

@@ -43,10 +43,10 @@ private object codecs {
       }
 
   given Read[PrivacyRequest] =
-    Read[(UUID, UUID, String, Instant, Target, Option[String])]
+    Read[(UUID, UUID, Option[String], Instant, Target, Option[String])]
       .map {
         case (id, appId, dsid, t, trg, email) =>
-          val ds = List(DataSubject(dsid, None))
+          val ds = dsid.map(DataSubject(_))
           PrivacyRequest(id, appId, t, trg, email, ds, List.empty)
       }
 

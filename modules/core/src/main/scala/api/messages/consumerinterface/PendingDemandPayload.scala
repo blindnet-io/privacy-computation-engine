@@ -20,7 +20,7 @@ case class PendingDemandPayload(
     id: UUID,
     date: Instant,
     action: Action,
-    dataSubject: List[DataSubject]
+    dataSubject: Option[DataSubject]
 )
 
 object PendingDemandPayload {

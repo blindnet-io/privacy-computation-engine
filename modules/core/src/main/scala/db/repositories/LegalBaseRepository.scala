@@ -16,7 +16,7 @@ import priv.terms.*
 trait LegalBaseRepository {
   def get(appId: UUID, scope: Boolean = true): IO[List[LegalBase]]
 
-  def get(appId: UUID, userIds: List[DataSubject]): IO[List[LegalBase]]
+  def get(appId: UUID, ds: DataSubject): IO[List[LegalBase]]
 
   def get(appId: UUID, lbId: UUID, scope: Boolean): IO[Option[LegalBase]]
 
@@ -82,7 +82,7 @@ object LegalBaseRepository {
         res.to[List].transact(xa)
       }
 
-      def get(appId: UUID, userIds: List[DataSubject]): IO[List[LegalBase]] = ???
+      def get(appId: UUID, ds: DataSubject): IO[List[LegalBase]] = ???
 
       def get(appId: UUID, lbId: UUID, scope: Boolean): IO[Option[LegalBase]] = {
         val qNoPS =

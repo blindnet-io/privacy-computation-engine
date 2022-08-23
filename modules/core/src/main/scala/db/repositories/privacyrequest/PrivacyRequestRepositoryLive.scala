@@ -118,7 +118,7 @@ class PrivacyRequestRepositoryLive(xa: Transactor[IO]) extends PrivacyRequestRep
     store.transact(xa).void
   }
 
-  def requestExist(reqId: UUID, appId: UUID, userId: String): IO[Boolean] =
+  def requestExist(reqId: UUID, appId: UUID, userId: Option[String]): IO[Boolean] =
     queries.requestExist(reqId, appId, userId).transact(xa)
 
   def demandExist(appId: UUID, dId: UUID): IO[Boolean] =
@@ -179,8 +179,5 @@ class PrivacyRequestRepositoryLive(xa: Transactor[IO]) extends PrivacyRequestRep
 
   def getAllUserRequestIds(appId: UUID, userId: String): IO[List[UUID]] =
     queries.getAllUserRequestIds(appId, userId).transact(xa)
-
-  def getDataSubject(dId: UUID): IO[List[DataSubject]] =
-    queries.getDataSubject(dId).transact(xa)
 
 }

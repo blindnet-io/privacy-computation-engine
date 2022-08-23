@@ -18,7 +18,7 @@ import java.time.Instant
 import priv.TimelineEvent.*
 
 trait EventsRepository {
-  def getTimeline(appId: UUID, userIds: NonEmptyList[DataSubject]): IO[Timeline]
+  def getTimeline(appId: UUID, ds: DataSubject): IO[Timeline]
 
   def addConsentGiven(cId: UUID, ds: DataSubject, date: Instant): IO[Unit]
 

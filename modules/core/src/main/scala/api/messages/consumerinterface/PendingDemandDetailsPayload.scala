@@ -20,7 +20,7 @@ case class PendingDemandDetailsPayload(
     id: UUID,
     date: Instant,
     action: Action,
-    dataSubject: List[DataSubject],
+    dataSubject: Option[DataSubject],
     recommendation: Option[Recommendation]
 )
 

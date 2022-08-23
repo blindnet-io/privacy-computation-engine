@@ -15,7 +15,7 @@ case class PrivacyRequest(
     timestamp: Instant,
     target: Target,
     email: Option[String],
-    dataSubject: List[DataSubject],
+    dataSubject: Option[DataSubject],
     demands: List[Demand]
 )
 
@@ -28,7 +28,7 @@ object PrivacyRequest {
       (acc, cur) => {
         val needsDs =
           if pr.dataSubject.isEmpty && actionsRequiringSubjectId.contains(cur.action)
-          then "Data subject not specified".invalid
+          then "Data subject not specified or unknown".invalid
           else cur.valid
 
         (Demand.validate(cur) product needsDs.toValidatedNel).fold(

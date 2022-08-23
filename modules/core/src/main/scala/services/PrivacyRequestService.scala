@@ -38,14 +38,6 @@ class PrivacyRequestService(
         if invalid.length == 0 then IO.unit
         else invalid.foldLeft("")((acc, cur) => acc + s"${cur._1.mkString_("\n")}").failBadRequest
 
-      _ <- NonEmptyList
-        .fromList(req.dataSubject)
-        .fold(IO.unit)(
-          repos.dataSubject
-            .isKnown(req.appId, _)
-            .flatMap(if _ then IO.unit else "Unknown data subject".failBadRequest)
-        )
-
     } yield ()
 
   }
@@ -54,19 +46,22 @@ class PrivacyRequestService(
     for {
       reqId     <- UUIDGen.randomUUID[IO]
       demandIds <- UUIDGen.randomUUID[IO].replicateA(req.demands.length)
-      timestamp <- Clock[IO].realTimeInstant
-
       demands = req.demands.zip(demandIds).map {
         case (d, id) => PrivacyRequestDemand.toPrivDemand(id, reqId, d)
       }
 
+      timestamp <- Clock[IO].realTimeInstant
+      ds        <- NonEmptyList.fromList(req.dataSubject) match {
+        case None             => IO(None)
+        case Some(identities) => repos.dataSubject.get(appId, identities)
+      }
       pr = PrivacyRequest(
         reqId,
         appId,
         timestamp,
         req.target.getOrElse(Target.System),
         req.email,
-        req.dataSubject,
+        ds,
         demands
       )
 
@@ -118,12 +113,12 @@ class PrivacyRequestService(
 
     } yield RequestHistoryPayload(history)
 
-  private def verifyReqExists(requestId: UUID, appId: UUID, userId: String) =
+  private def verifyReqExists(requestId: UUID, appId: UUID, userId: Option[String]) =
     repos.privacyRequest
       .requestExist(requestId, appId, userId)
       .flatMap(if _ then IO.unit else "Request not found".failNotFound)
 
-  def getResponse(requestId: UUID, appId: UUID, userId: String) =
+  def getResponse(requestId: UUID, appId: UUID, userId: Option[String]) =
     for {
       _         <- verifyReqExists(requestId, appId, userId)
       responses <- repos.privacyRequest.getResponsesForRequest(requestId)

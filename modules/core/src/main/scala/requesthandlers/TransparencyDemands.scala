@@ -40,13 +40,13 @@ class TransparencyDemands(
   def getAnswer(
       demand: Demand,
       appId: UUID,
-      userIds: List[DataSubject]
+      ds: Option[DataSubject]
   ): IO[Json] = {
     demand.action match {
-      case Transparency          => processTransparency(appId, userIds).json
+      case Transparency          => processTransparency(appId, ds).json
       case TDataCategories       => psRepo.getDataCategories(appId).json
       case TDPO                  => getDpo(appId).json
-      case TKnown                => getUserKnown(appId, userIds).json
+      case TKnown                => getUserKnown(appId, ds).json
       case TLegalBases           => lbRepo.get(appId, scope = false).json
       case TOrganization         => getOrganization(appId).json
       case TPolicy               => getPrivacyPolicy(appId).json
@@ -62,12 +62,12 @@ class TransparencyDemands(
 
   private def processTransparency(
       appId: UUID,
-      userIds: List[DataSubject]
+      ds: Option[DataSubject]
   ): IO[Map[Action, Json]] = {
     val all = List(
       psRepo.getDataCategories(appId).json.map((TDataCategories, _)),
       getDpo(appId).json.map((TDPO, _)),
-      getUserKnown(appId, userIds).json.map((TKnown, _)),
+      getUserKnown(appId, ds).json.map((TKnown, _)),
       lbRepo.get(appId, scope = false).json.map((TLegalBases, _)),
       getOrganization(appId).json.map((TOrganization, _)),
       getPrivacyPolicy(appId).json.map((TPolicy, _)),
@@ -100,11 +100,11 @@ class TransparencyDemands(
       .failIfNotFound
       .map(_.privacyPolicyLink)
 
-  private def getUserKnown(appId: UUID, userIds: List[DataSubject]): IO[BooleanTerms] =
-    NonEmptyList.fromList(userIds) match {
-      case None          => IO(BooleanTerms.No)
-      case Some(userIds) =>
-        dsRepo.isKnown(appId, userIds).map(r => if r then BooleanTerms.Yes else BooleanTerms.No)
+  private def getUserKnown(appId: UUID, ds: Option[DataSubject]): IO[BooleanTerms] =
+    ds match {
+      case None     => IO(BooleanTerms.No)
+      case Some(ds) =>
+        dsRepo.exist(appId, ds.id).map(r => if r then BooleanTerms.Yes else BooleanTerms.No)
     }
 
   private def getWhere(appId: UUID): IO[List[String]] =

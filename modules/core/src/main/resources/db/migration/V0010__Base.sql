@@ -161,7 +161,7 @@ create table legal_bases_scope (
 create table data_subjects (
   id varchar primary key,
   appid uuid not null,
-  schema varchar not null,
+  schema varchar,
   constraint app_fk
     foreign key (appid)
     references apps(id)

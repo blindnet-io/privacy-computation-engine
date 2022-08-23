@@ -24,7 +24,7 @@ trait StorageInterface {
       callbackId: UUID,
       appId: UUID,
       demandId: UUID,
-      subject: List[DataSubject],
+      subject: DataSubject,
       rec: Recommendation
   ): IO[Unit]
 
@@ -39,7 +39,7 @@ object StorageInterface {
           callbackId: UUID,
           appId: UUID,
           demandId: UUID,
-          subject: List[DataSubject],
+          subject: DataSubject,
           rec: Recommendation
       ): IO[Unit] = {
 
@@ -47,8 +47,8 @@ object StorageInterface {
           request_id = demandId.toString(),
           DataQueryPayload(
             // selectors = rec.dataCategories.map(_.term).toList,
-            selectors = List("NAME"),
-            subjects = subject.map(_.id),
+            selectors = List("NAME", "IMAGE"),
+            subjects = List(subject.id),
             provenance = rec.provenance.map(_.encode),
             target = None,
             after = rec.dateFrom,

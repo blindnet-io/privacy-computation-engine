@@ -14,7 +14,7 @@ trait PrivacyRequestRepository {
 
   def store(pr: PrivacyRequest): IO[Unit]
 
-  def requestExist(reqId: UUID, appId: UUID, userId: String): IO[Boolean]
+  def requestExist(reqId: UUID, appId: UUID, userId: Option[String]): IO[Boolean]
 
   def demandExist(appid: UUID, dId: UUID): IO[Boolean]
 
@@ -43,8 +43,6 @@ trait PrivacyRequestRepository {
   def getRecommendation(dId: UUID): IO[Option[Recommendation]]
 
   def getAllUserRequestIds(appId: UUID, userId: String): IO[List[UUID]]
-
-  def getDataSubject(dId: UUID): IO[List[DataSubject]]
 
 }
 
