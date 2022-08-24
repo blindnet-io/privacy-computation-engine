@@ -34,6 +34,9 @@ class EventsRepositoryLive(xa: Transactor[IO]) extends EventsRepository {
   def addConsentGiven(cId: UUID, ds: DataSubject, date: Instant): IO[Unit] =
     queries.addConsentGiven(cId, ds, date).transact(xa).void
 
+  def addConsentRevoked(cId: UUID, ds: DataSubject, date: Instant): IO[Unit] =
+    queries.addConsentRevoked(cId, ds, date).transact(xa).void
+
   def addLegalBaseEvent(lbId: UUID, ds: DataSubject, e: EventTerms, date: Instant): IO[Unit] =
     queries.addLegalBaseEvent(lbId, ds, e, date).transact(xa).void
 

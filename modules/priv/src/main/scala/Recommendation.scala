@@ -26,7 +26,7 @@ case class Recommendation(
 
 object Recommendation {
 
-  def grantTransparency(id: UUID, dId: UUID) =
+  def grant(id: UUID, dId: UUID) =
     Recommendation(id, dId, Some(Status.Granted))
 
   def rejectBadRestrictions(id: UUID, dId: UUID) =

@@ -70,6 +70,12 @@ object queries {
       values (gen_random_uuid(), $cId, ${ds.id}, $date)
     """.update.run
 
+  def addConsentRevoked(cId: UUID, ds: DataSubject, date: Instant) =
+    sql"""
+      insert into consent_revoked_events (id, lbid, dsid, date)
+      values (gen_random_uuid(), $cId, ${ds.id}, $date)
+    """.update.run
+
   def addLegalBaseEvent(lbId: UUID, ds: DataSubject, e: EventTerms, date: Instant) =
     sql"""
       insert into legal_base_events (id, lbid, dsid, event, date)

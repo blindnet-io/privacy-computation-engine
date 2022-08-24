@@ -66,6 +66,9 @@ class ResponseCalculator(
           case Delete =>
             createResponseDelete(pr, dtr, d, resp)
 
+          case RevokeConsent =>
+            createResponseRevokeConsent(pr, d, resp)
+
           case _ => IO.raiseError(new NotImplementedError)
         }
       // ignore already processed request
@@ -194,6 +197,35 @@ class ResponseCalculator(
           case None =>
             // format: off
             IO.pure(PrivacyResponse(newRespId, resp.responseId, d.id, timestamp, d.action, Status.Denied, r.motive))
+        }
+
+      _ <- repos.privacyRequest.storeNewResponse(newResp)
+    } yield ()
+
+  private def createResponseRevokeConsent(
+      pr: PrivacyRequest,
+      d: Demand,
+      resp: PrivacyResponse
+  ): IO[Unit] =
+    for {
+      r <- repos.privacyRequest.getRecommendation(d.id).map(_.get)
+
+      consentId = d.restrictions.head.asInstanceOf[Restriction.Consent].consentId
+
+      id        <- UUIDGen.randomUUID[IO]
+      timestamp <- Clock[IO].realTimeInstant
+
+      newResp <-
+        r.status match {
+          case Some(Status.Granted) | None =>
+            for {
+              _ <- repos.events.addConsentRevoked(consentId, pr.dataSubject.get, pr.timestamp)
+              // format: off
+              newResp = PrivacyResponse(id, resp.responseId, d.id, timestamp, d.action, Status.Granted)
+            } yield newResp
+            
+          case Some(s) =>
+            IO.pure(PrivacyResponse(id, resp.responseId, d.id, timestamp, d.action, s, r.motive))
         }
 
       _ <- repos.privacyRequest.storeNewResponse(newResp)

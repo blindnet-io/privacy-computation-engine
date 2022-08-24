@@ -87,6 +87,9 @@ class RequestRecommender(
       case Delete =>
         processDeleteDemand(app, pr, d, resp)
 
+      case RevokeConsent =>
+        processRevokeConsentDemand(app, pr, d, resp)
+
       case _ => IO.raiseError(new NotImplementedError)
     }
 
@@ -102,7 +105,7 @@ class RequestRecommender(
         case None =>
           for {
             id <- UUIDGen[IO].randomUUID
-            r = Recommendation.grantTransparency(id, d.id)
+            r = Recommendation.grant(id, d.id)
             _ <- repos.privacyRequest.storeRecommendation(r)
           } yield ()
         case _    => IO.unit
@@ -191,6 +194,30 @@ class RequestRecommender(
       }
       _      <-
         if app.autoResolve.delete
+        then repos.demandsToRespond.add(List(DemandToRespond(d.id)))
+        else repos.demandsToReview.add(List(d.id))
+    } yield ()
+
+  private def processRevokeConsentDemand(
+      app: PCEApp,
+      pr: PrivacyRequest,
+      d: Demand,
+      resp: PrivacyResponse
+  ) =
+    for {
+      recOpt <- repos.privacyRequest.getRecommendation(d.id)
+      _      <- recOpt match {
+        case None =>
+          for {
+            // TODO: validate restriction
+            id <- UUIDGen[IO].randomUUID
+            r = Recommendation.grant(id, d.id)
+            _ <- repos.privacyRequest.storeRecommendation(r)
+          } yield ()
+        case _    => IO.unit
+      }
+      _      <-
+        if app.autoResolve.consents
         then repos.demandsToRespond.add(List(DemandToRespond(d.id)))
         else repos.demandsToReview.add(List(d.id))
     } yield ()
