@@ -93,8 +93,8 @@ class PrivacyRequestRepositoryLive(xa: Transactor[IO]) extends PrivacyRequestRep
 
     def storeResponseEvent(d: Demand, id: UUID, prId: UUID) =
       sql"""
-        insert into privacy_response_events (id, prid, date, status, message, lang)
-        values ($id, $prId, ${pr.timestamp}, ${Status.UnderReview.encode}::status_terms, null, null)
+        insert into privacy_response_events (id, prid, date, status, motive, message, lang)
+        values ($id, $prId, ${pr.timestamp}, ${Status.UnderReview.encode}::status_terms, null, null, null)
       """.update.run
 
     val store = for {

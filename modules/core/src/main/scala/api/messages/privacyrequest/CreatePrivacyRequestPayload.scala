@@ -4,6 +4,7 @@ package api.endpoints.messages.privacyrequest
 import java.util.UUID
 
 import cats.effect.*
+import cats.implicits.*
 import priv.*
 import priv.privacyrequest.*
 import priv.terms.*
@@ -81,8 +82,8 @@ object PrivacyRequestDemand {
       d.action,
       d.message,
       d.language,
-      d.data.getOrElse(List.empty),
-      d.restrictions.map(Restrictions.toPrivRestrictions).getOrElse(List.empty)
+      d.data.orEmpty,
+      d.restrictions.map(Restrictions.toPrivRestrictions).orEmpty
     )
   }
 

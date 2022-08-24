@@ -22,6 +22,7 @@ private object codecs {
   given Read[PrivacyResponse] =
     // format: off 
     Read[(UUID, UUID, UUID, Instant, Action, Status, Option[Motive], Option[String], Option[String], Option[String], Option[String], Option[String])]
+    // format: on
       .map {
         case (id, prid, did, t, a, s, mot, answer, msg, lang, system, data) =>
           val answ = answer.flatMap(a => parse(a).toOption)

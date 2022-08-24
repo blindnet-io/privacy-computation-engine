@@ -21,7 +21,7 @@ private object queries {
       select exists (
         select 1 from privacy_requests pr
         where id = $reqId and appid = $appId and
-    """ ++ userId.map(id => fr"dsid = $id").getOrElse(fr"dsid is null")
+    """ ++ userId.map(id => fr"(dsid is null or dsid = $id)").getOrElse(fr"dsid is null")
       ++ fr")")
       .query[Boolean]
       .unique
@@ -161,10 +161,11 @@ private object queries {
 
   def storeNewResponse(r: PrivacyResponse) =
     sql"""
-      insert into privacy_response_events (id, prid, date, status, message, lang, answer)
+      insert into privacy_response_events (id, prid, date, status, motive, message, lang, answer)
       values (
         ${r.id}, ${r.responseId}, ${r.timestamp}, ${r.status.encode}::status_terms,
-        ${r.message}, ${r.lang}, ${r.answer.map(_.toString)}
+        ${r.motive.map(_.encode)}::motive_terms, ${r.message}, ${r.lang},
+        ${r.answer.map(_.toString)}
       )
     """.update.run
 
