@@ -7,6 +7,7 @@ import sttp.tapir.Schema
 import cats.Show
 import cats.implicits.*
 import io.blindnet.pce.priv.terms.*
+import cats.kernel.Monoid
 
 // TODO: optimize methods
 case class PrivacyScope(
@@ -40,6 +41,9 @@ case class PrivacyScope(
 
 object PrivacyScope {
   def empty = PrivacyScope(Set.empty)
+
+  given Monoid[PrivacyScope] =
+    Monoid.instance(empty, (ps1, ps2) => ps1 union ps2)
 
   given Show[PrivacyScope] =
     Show.show(_.triples.grouped(3).map(g => g.map(t => show"$t").mkString(" ")).mkString("\n"))
