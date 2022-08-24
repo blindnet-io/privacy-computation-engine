@@ -14,8 +14,8 @@ object RequestHandlers {
   ): IO[Unit] = {
 
     for {
-      _ <- RequestProcessor.run(repos).start
-      _ <- RequestResponder.run(repos, storage).start
+      _ <- RequestRecommender.run(repos).start
+      _ <- ResponseCalculator.run(repos, storage).start
     } yield ()
   }
 

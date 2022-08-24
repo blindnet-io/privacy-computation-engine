@@ -17,13 +17,14 @@ import io.blindnet.pce.util.extension.*
 import org.typelevel.log4cats.*
 import org.typelevel.log4cats.slf4j.*
 import db.repositories.Repositories
-import io.blindnet.pce.api.endpoints.messages.privacyrequest.DateRangeRestriction.apply
+import io.blindnet.pce.api.endpoints.messages.privacyrequest.DateRangeRestriction
 import io.blindnet.pce.model.DemandToRespond
 import io.blindnet.pce.model.PCEApp
 import io.blindnet.pce.priv.PrivacyScope
 import io.blindnet.pce.priv.PrivacyScopeTriple
 
-class RequestProcessor(
+// TODO: refactor
+class RequestRecommender(
     repos: Repositories
 ) {
 
@@ -55,37 +56,99 @@ class RequestProcessor(
       resp: PrivacyResponse
   ): IO[Unit] =
     resp.status match {
+
       case UnderReview =>
-        d.action match {
-          case a if a == Transparency || a.isChildOf(Transparency) =>
-            if app.autoResolve.transparency
-            then repos.demandsToRespond.add(List(DemandToRespond(d.id)))
-            else repos.demandsToReview.add(List(d.id))
+        if d.hasValidRestrictions then processDemandAction(app, pr, d, resp)
+        else
+          for {
+            id <- UUIDGen[IO].randomUUID
+            r = Recommendation.rejectBadRestrictions(id, d.id)
+            _ <- repos.privacyRequest.storeRecommendation(r)
+            _ <- repos.demandsToRespond.add(List(DemandToRespond(d.id)))
+          } yield ()
 
-          case Access =>
-            for {
-              _ <- createRecommendation(pr, d)
-              _ <-
-                if app.autoResolve.access
-                then repos.demandsToRespond.add(List(DemandToRespond(d.id)))
-                else repos.demandsToReview.add(List(d.id))
-            } yield ()
-
-          case _ => IO.raiseError(new NotImplementedError)
-        }
       // ignore already processed request
       case _           => IO.unit
     }
 
-  private def createRecommendation(pr: PrivacyRequest, d: Demand): IO[Unit] =
+  private def processDemandAction(
+      app: PCEApp,
+      pr: PrivacyRequest,
+      d: Demand,
+      resp: PrivacyResponse
+  ) =
+    d.action match {
+      case a if a == Transparency || a.isChildOf(Transparency) =>
+        processTransparencyDemand(app, pr, d, resp)
+
+      case Access =>
+        processAccessDemand(app, pr, d, resp)
+
+      case _ => IO.raiseError(new NotImplementedError)
+    }
+
+  private def processTransparencyDemand(
+      app: PCEApp,
+      pr: PrivacyRequest,
+      d: Demand,
+      resp: PrivacyResponse
+  ) = {
     for {
       recOpt <- repos.privacyRequest.getRecommendation(d.id)
-      rec    <- recOpt match {
-        case Some(r) => IO.pure(r)
-        case None    => {
+      _      <- recOpt match {
+        case None =>
           for {
             id <- UUIDGen[IO].randomUUID
-            ds = pr.dataSubject.get
+            r = Recommendation.grantTransparency(id, d.id)
+            _ <- repos.privacyRequest.storeRecommendation(r)
+          } yield ()
+        case _    => IO.unit
+      }
+      _      <-
+        if app.autoResolve.transparency
+        then repos.demandsToRespond.add(List(DemandToRespond(d.id)))
+        else repos.demandsToReview.add(List(d.id))
+    } yield ()
+  }
+
+  private def processAccessDemand(
+      app: PCEApp,
+      pr: PrivacyRequest,
+      d: Demand,
+      resp: PrivacyResponse
+  ) = {
+    for {
+      recOpt <- repos.privacyRequest.getRecommendation(d.id)
+      _      <- recOpt match {
+        case None =>
+          for {
+            r <- createRecommendation(pr, d)
+            _ <- repos.privacyRequest.storeRecommendation(r)
+          } yield ()
+        case _    => IO.unit
+      }
+      _      <-
+        if app.autoResolve.access
+        then repos.demandsToRespond.add(List(DemandToRespond(d.id)))
+        else repos.demandsToReview.add(List(d.id))
+    } yield ()
+  }
+
+  private def createRecommendation(pr: PrivacyRequest, d: Demand): IO[Recommendation] =
+    for {
+      id <- UUIDGen[IO].randomUUID
+      ds     = pr.dataSubject
+      pDsIds = pr.providedDsIds
+
+      r <- (ds, pDsIds) match {
+        case (None, Nil) =>
+          IO(Recommendation.rejectIdentityNotProvided(id, d.id))
+
+        case (None, _) =>
+          IO(Recommendation.rejectUnknownIdentity(id, d.id))
+
+        case (Some(ds), _) =>
+          for {
             timeline <- repos.events.getTimeline(pr.appId, ds)
             eps = timeline.eligiblePrivacyScope(Some(pr.timestamp))
 
@@ -104,20 +167,18 @@ class RequestProcessor(
 
             dcs = psRec.triples.map(_.dataCategory)
 
-            r = Recommendation(id, d.id, dcs, drRec._1, drRec._2, pRec)
-            _ <- repos.privacyRequest.storeRecommendation(r)
+            r = Recommendation(id, d.id, Some(Status.Granted), None, dcs, drRec._1, drRec._2, pRec)
           } yield r
-        }
       }
-    } yield ()
+    } yield r
 
 }
 
-object RequestProcessor {
+object RequestRecommender {
   val logger: Logger[IO] = Slf4jLogger.getLogger[IO]
 
   def run(repos: Repositories): IO[Unit] = {
-    val reqProc = new RequestProcessor(repos)
+    val reqProc = new RequestRecommender(repos)
 
     def loop(): IO[Unit] =
       for {

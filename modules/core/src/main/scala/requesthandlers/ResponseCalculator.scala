@@ -20,7 +20,8 @@ import db.repositories.Repositories
 import io.blindnet.pce.services.external.StorageInterface
 import io.blindnet.pce.model.DemandToRespond
 
-class RequestResponder(
+// TODO: refactor
+class ResponseCalculator(
     repos: Repositories,
     storage: StorageInterface
 ) {
@@ -53,7 +54,6 @@ class RequestResponder(
       d: Demand,
       resp: PrivacyResponse
   ): IO[Unit] =
-    // TODO: get setting about which action to respond and which needs review
     resp.status match {
       case UnderReview =>
         d.action match {
@@ -69,25 +69,30 @@ class RequestResponder(
       case _           => IO.unit
     }
 
+  // TODO: .get
   private def createResponseTransparency(
       pr: PrivacyRequest,
       d: Demand,
       resp: PrivacyResponse
   ): IO[Unit] =
     for {
-      answer    <- transparency.getAnswer(d, pr.appId, pr.dataSubject)
+      r <- repos.privacyRequest.getRecommendation(d.id).map(_.get)
+
       id        <- UUIDGen.randomUUID[IO]
       timestamp <- Clock[IO].realTimeInstant
 
-      newResp = PrivacyResponse(
-        id,
-        resp.responseId,
-        resp.demandId,
-        timestamp,
-        resp.action,
-        Status.Granted,
-        answer = Some(answer)
-      )
+      newResp <-
+        r.status match {
+          case Some(Status.Granted) | None =>
+            for {
+              answer <- transparency.getAnswer(d, pr.appId, pr.dataSubject)
+              // format: off
+              newResp = PrivacyResponse(id, resp.responseId, d.id, timestamp, d.action, Status.Granted, answer = Some(answer))
+            } yield newResp
+            
+          case Some(s) =>
+            IO.pure(PrivacyResponse(id, resp.responseId, d.id, timestamp, d.action, s, r.motive))
+        }
 
       _ <- repos.privacyRequest.storeNewResponse(newResp)
     } yield ()
@@ -100,41 +105,55 @@ class RequestResponder(
       resp: PrivacyResponse
   ): IO[Unit] =
     for {
-      rec <- repos.privacyRequest.getRecommendation(d.id).map(_.get)
+      r <- repos.privacyRequest.getRecommendation(d.id).map(_.get)
 
       newRespId <- UUIDGen.randomUUID[IO]
-
-      cbId <- UUIDGen.randomUUID[IO]
-      _    <- repos.callbacks.set(cbId, pr.appId, newRespId)
-      // TODO
-      // _    <- storage.requestAccessLink(cbId, pr.appId, d.id, pr.dataSubject.get, rec).attempt
-      _    <- storage.requestAccessLink(cbId, pr.appId, d.id, pr.dataSubject.get, rec)
-
       timestamp <- Clock[IO].realTimeInstant
 
-      msg  = dtr.data.hcursor.downField("msg").as[String].toOption
-      lang = dtr.data.hcursor.downField("lang").as[String].toOption
+      newResp <-
+        r.status match {
+          case Some(Status.Granted) =>
+            for {
+              cbId <- UUIDGen.randomUUID[IO]
+              _    <- repos.callbacks.set(cbId, pr.appId, newRespId)
+              // TODO
+              // _    <- storage.requestAccessLink(cbId, pr.appId, d.id, pr.dataSubject.get, r).attempt
+              _    <- storage.requestAccessLink(cbId, pr.appId, d.id, pr.dataSubject.get, r)
 
-      newResp = PrivacyResponse(
-        newRespId,
-        resp.responseId,
-        d.id,
-        timestamp,
-        d.action,
-        Status.Granted,
-        message = msg,
-        lang = lang
-      )
+              msg  = dtr.data.hcursor.downField("msg").as[String].toOption
+              lang = dtr.data.hcursor.downField("lang").as[String].toOption
+
+              newResp = PrivacyResponse(
+                newRespId,
+                resp.responseId,
+                d.id,
+                timestamp,
+                d.action,
+                Status.Granted,
+                message = msg,
+                lang = lang
+              )
+            } yield newResp
+
+          case Some(s) =>
+            // format: off
+            IO.pure(PrivacyResponse(newRespId, resp.responseId, d.id, timestamp, d.action, s, r.motive))
+
+          case None =>
+            // format: off
+            IO.pure(PrivacyResponse(newRespId, resp.responseId, d.id, timestamp, d.action, Status.Denied, r.motive))
+        }
+
       _ <- repos.privacyRequest.storeNewResponse(newResp)
     } yield ()
 
 }
 
-object RequestResponder {
+object ResponseCalculator {
   val logger: Logger[IO] = Slf4jLogger.getLogger[IO]
 
   def run(repos: Repositories, storage: StorageInterface): IO[Unit] = {
-    val reqProc = new RequestResponder(repos, storage)
+    val reqProc = new ResponseCalculator(repos, storage)
 
     def loop(): IO[Unit] =
       for {
