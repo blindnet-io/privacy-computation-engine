@@ -5,7 +5,7 @@ create table apps (
 );
 
 create table dac (
-  appid uuid not null,
+  appid unique uuid not null,
   uri varchar,
   constraint app_fk
     foreign key (appid)
@@ -14,7 +14,7 @@ create table dac (
 );
 
 create table automatic_responses_config (
-  appid uuid not null,
+  appid uuid unique not null,
   auto_transparency boolean not null,
   auto_consents boolean not null,
   auto_access boolean not null,
