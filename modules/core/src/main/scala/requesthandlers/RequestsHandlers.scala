@@ -3,6 +3,8 @@ package requesthandlers
 
 import cats.effect.*
 import cats.effect.std.*
+import requesthandlers.recommender.*
+import requesthandlers.calculator.*
 import db.repositories.Repositories
 import services.external.StorageInterface
 

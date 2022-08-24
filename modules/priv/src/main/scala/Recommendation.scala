@@ -29,7 +29,7 @@ object Recommendation {
   def grant(id: UUID, dId: UUID) =
     Recommendation(id, dId, Some(Status.Granted))
 
-  def rejectBadRestrictions(id: UUID, dId: UUID) =
+  def rejectReqUnsupported(id: UUID, dId: UUID) =
     Recommendation(id, dId, Some(Status.Denied), Some(Motive.RequestUnsupported))
 
   def rejectIdentityNotProvided(id: UUID, dId: UUID) =

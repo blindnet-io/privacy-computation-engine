@@ -1,5 +1,5 @@
 package io.blindnet.pce
-package requesthandlers
+package requesthandlers.calculator
 
 import java.time.Instant
 import java.util.UUID
@@ -16,19 +16,20 @@ import priv.privacyrequest.*
 import priv.*
 import priv.terms.*
 import model.error.*
+import cats.effect.std.UUIDGen
 
-class TransparencyDemands(
-    repositories: Repositories
+class TransparencyCalculator(
+    repos: Repositories
 ) {
 
   import Action.*
 
-  val giRepo = repositories.generalInfo
-  val psRepo = repositories.privacyScope
-  val lbRepo = repositories.legalBase
-  val rpRepo = repositories.retentionPolicy
-  val prRepo = repositories.provenance
-  val dsRepo = repositories.dataSubject
+  val giRepo = repos.generalInfo
+  val psRepo = repos.privacyScope
+  val lbRepo = repos.legalBase
+  val rpRepo = repos.retentionPolicy
+  val prRepo = repos.provenance
+  val dsRepo = repos.dataSubject
 
   extension [T](io: IO[Option[T]])
     def failIfNotFound = io.orNotFound("Requested app could not be found")
@@ -37,12 +38,31 @@ class TransparencyDemands(
     def json =
       io.map(_.asJson)
 
-  def getAnswer(
-      demand: Demand,
-      appId: UUID,
-      ds: Option[DataSubject]
-  ): IO[Json] = {
-    demand.action match {
+  def createResponse(
+      pr: PrivacyRequest,
+      d: Demand,
+      rId: UUID,
+      r: Recommendation
+  ): IO[PrivacyResponse] =
+    for {
+      id        <- UUIDGen.randomUUID[IO]
+      timestamp <- Clock[IO].realTimeInstant
+      newResp   <-
+        r.status match {
+          case Some(Status.Granted) | None =>
+            for {
+              answer <- getAnswer(d, pr.appId, pr.dataSubject)
+              // format: off
+              newResp = PrivacyResponse(id, rId, d.id, timestamp, d.action, Status.Granted, answer = Some(answer))
+              // format: on
+            } yield newResp
+
+          case Some(s) => IO.pure(PrivacyResponse(id, rId, d.id, timestamp, d.action, s, r.motive))
+        }
+    } yield newResp
+
+  private def getAnswer(d: Demand, appId: UUID, ds: Option[DataSubject]): IO[Json] =
+    d.action match {
       case Transparency          => processTransparency(appId, ds).json
       case TDataCategories       => psRepo.getDataCategories(appId).json
       case TDPO                  => getDpo(appId).json
@@ -58,7 +78,6 @@ class TransparencyDemands(
       case TWho                  => getWho(appId).json
       case _                     => IO.raiseError(new NotImplementedError)
     }
-  }
 
   private def processTransparency(
       appId: UUID,

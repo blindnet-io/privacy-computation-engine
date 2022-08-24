@@ -21,7 +21,7 @@ import org.typelevel.log4cats.slf4j.*
 
 // TODO: refactor
 trait StorageInterface {
-  def requestAccessLink(
+  def requestAccess(
       callbackId: UUID,
       appId: UUID,
       demandId: UUID,
@@ -44,7 +44,7 @@ object StorageInterface {
 
   def live(c: Client[IO], repos: Repositories, conf: Config) =
     new StorageInterface {
-      def requestAccessLink(
+      def requestAccess(
           callbackId: UUID,
           appId: UUID,
           demandId: UUID,
