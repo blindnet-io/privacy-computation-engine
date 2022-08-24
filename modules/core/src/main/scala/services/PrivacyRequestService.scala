@@ -27,7 +27,7 @@ class PrivacyRequestService(
     repos: Repositories
 ) {
 
-  private def validateRequest(req: PrivacyRequest) = {
+  private def validateRequest(appId: UUID, req: PrivacyRequest) = {
     for {
       _ <-
         if req.demands.map(_.action).toSet.size == req.demands.size then IO.unit
@@ -38,6 +38,24 @@ class PrivacyRequestService(
       _ <-
         if invalid.length == 0 then IO.unit
         else invalid.foldLeft("")((acc, cur) => acc + s"${cur._1.mkString_("\n")}").failBadRequest
+
+      validConsentIds <-
+        req.demands.traverse(
+          d =>
+            d.restrictions.find(r => r.isInstanceOf[Restriction.Consent]) match {
+              case Some(r) =>
+                val cId = r.asInstanceOf[Restriction.Consent].consentId
+                for {
+                  lbOpt <- repos.legalBase.get(appId, cId, false)
+                  isConsent = lbOpt.map(_.isConsent).getOrElse(false)
+                } yield isConsent
+              case None    => IO(true)
+            }
+        )
+
+      _ <-
+        if validConsentIds.exists(_ == false) then "Invalid consent id provided".failBadRequest
+        else IO.unit
 
     } yield ()
 
@@ -67,7 +85,7 @@ class PrivacyRequestService(
         demands
       )
 
-      _ <- validateRequest(pr)
+      _ <- validateRequest(appId, pr)
 
       _ <- (repos.privacyRequest.store(pr) *>
         repos.demandsToProcess.add(demands.map(_.id))).start
