@@ -6,6 +6,7 @@ import java.util.UUID
 
 import cats.data.{ NonEmptyList, * }
 import cats.effect.*
+import cats.effect.implicits.*
 import cats.effect.kernel.Clock
 import cats.effect.std.*
 import cats.implicits.*
@@ -62,26 +63,28 @@ class PrivacyRequestService(
         req.target.getOrElse(Target.System),
         req.email,
         ds,
+        req.dataSubject.map(_.id),
         demands
       )
 
       _ <- validateRequest(pr)
-      _ <- repos.privacyRequest.store(pr)
-      _ <- repos.demandsToProcess.add(demands.map(_.id))
+
+      _ <- (repos.privacyRequest.store(pr) *>
+        repos.demandsToProcess.add(demands.map(_.id))).start
 
     } yield PrivacyRequestCreatedPayload(reqId)
   }
 
   def getRequestHistory(appId: UUID, userId: String) =
     for {
+      _      <- IO.unit
       reqIds <- repos.privacyRequest.getAllUserRequestIds(appId, userId)
       // TODO: this can be optimized in the db
       resps  <- reqIds.parTraverse(
         id =>
-          for {
-            req   <- repos.privacyRequest.getRequest(id)
-            resps <- repos.privacyRequest.getResponsesForRequest(id)
-          } yield req -> resps
+          val getReq  = repos.privacyRequest.getRequest(id)
+          val getResp = repos.privacyRequest.getResponsesForRequest(id)
+          (getReq both getResp).map { case (req, resps) => req -> resps }
       )
 
       history = resps.flatMap(
