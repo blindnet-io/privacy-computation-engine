@@ -37,7 +37,7 @@ object Main extends IOApp {
 
       services = Services.make(repositories, conf)
 
-      _ <- Resource.eval(RequestHandlers.run(repositories, storage).start)
+      _ <- Resource.eval(RequestHandlers.run(repositories, storage)).start
 
       app = AppRouter.make(services)
       server <- Server.make(app.httpApp, conf.api)

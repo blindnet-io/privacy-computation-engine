@@ -63,6 +63,9 @@ class ResponseCalculator(
           case Access =>
             createResponseAccess(pr, dtr, d, resp)
 
+          case Delete =>
+            createResponseDelete(pr, dtr, d, resp)
+
           case _ => IO.raiseError(new NotImplementedError)
         }
       // ignore already processed request
@@ -119,6 +122,55 @@ class ResponseCalculator(
               // TODO
               // _    <- storage.requestAccessLink(cbId, pr.appId, d.id, pr.dataSubject.get, r).attempt
               _    <- storage.requestAccessLink(cbId, pr.appId, d.id, pr.dataSubject.get, r)
+
+              msg  = dtr.data.hcursor.downField("msg").as[String].toOption
+              lang = dtr.data.hcursor.downField("lang").as[String].toOption
+
+              newResp = PrivacyResponse(
+                newRespId,
+                resp.responseId,
+                d.id,
+                timestamp,
+                d.action,
+                Status.Granted,
+                message = msg,
+                lang = lang
+              )
+            } yield newResp
+
+          case Some(s) =>
+            // format: off
+            IO.pure(PrivacyResponse(newRespId, resp.responseId, d.id, timestamp, d.action, s, r.motive))
+
+          case None =>
+            // format: off
+            IO.pure(PrivacyResponse(newRespId, resp.responseId, d.id, timestamp, d.action, Status.Denied, r.motive))
+        }
+
+      _ <- repos.privacyRequest.storeNewResponse(newResp)
+    } yield ()
+
+  private def createResponseDelete(
+      pr: PrivacyRequest,
+      dtr: DemandToRespond,
+      d: Demand,
+      resp: PrivacyResponse
+  ): IO[Unit] =
+    for {
+      r <- repos.privacyRequest.getRecommendation(d.id).map(_.get)
+
+      newRespId <- UUIDGen.randomUUID[IO]
+      timestamp <- Clock[IO].realTimeInstant
+
+      newResp <-
+        r.status match {
+          case Some(Status.Granted) =>
+            for {
+              cbId <- UUIDGen.randomUUID[IO]
+              _    <- repos.callbacks.set(cbId, pr.appId, newRespId)
+              // TODO
+              // _    <- storage.requestDeletion(cbId, pr.appId, d.id, pr.dataSubject.get, r).attempt
+              _    <- storage.requestDeletion(cbId, pr.appId, d.id, pr.dataSubject.get, r)
 
               msg  = dtr.data.hcursor.downField("msg").as[String].toOption
               lang = dtr.data.hcursor.downField("lang").as[String].toOption

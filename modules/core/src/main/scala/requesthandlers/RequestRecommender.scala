@@ -84,6 +84,9 @@ class RequestRecommender(
       case Access =>
         processAccessDemand(app, pr, d, resp)
 
+      case Delete =>
+        processDeleteDemand(app, pr, d, resp)
+
       case _ => IO.raiseError(new NotImplementedError)
     }
 
@@ -92,7 +95,7 @@ class RequestRecommender(
       pr: PrivacyRequest,
       d: Demand,
       resp: PrivacyResponse
-  ) = {
+  ) =
     for {
       recOpt <- repos.privacyRequest.getRecommendation(d.id)
       _      <- recOpt match {
@@ -109,14 +112,13 @@ class RequestRecommender(
         then repos.demandsToRespond.add(List(DemandToRespond(d.id)))
         else repos.demandsToReview.add(List(d.id))
     } yield ()
-  }
 
   private def processAccessDemand(
       app: PCEApp,
       pr: PrivacyRequest,
       d: Demand,
       resp: PrivacyResponse
-  ) = {
+  ) =
     for {
       recOpt <- repos.privacyRequest.getRecommendation(d.id)
       _      <- recOpt match {
@@ -132,7 +134,6 @@ class RequestRecommender(
         then repos.demandsToRespond.add(List(DemandToRespond(d.id)))
         else repos.demandsToReview.add(List(d.id))
     } yield ()
-  }
 
   private def createRecommendation(pr: PrivacyRequest, d: Demand): IO[Recommendation] =
     for {
@@ -171,6 +172,28 @@ class RequestRecommender(
           } yield r
       }
     } yield r
+
+  private def processDeleteDemand(
+      app: PCEApp,
+      pr: PrivacyRequest,
+      d: Demand,
+      resp: PrivacyResponse
+  ) =
+    for {
+      recOpt <- repos.privacyRequest.getRecommendation(d.id)
+      _      <- recOpt match {
+        case None =>
+          for {
+            r <- createRecommendation(pr, d)
+            _ <- repos.privacyRequest.storeRecommendation(r)
+          } yield ()
+        case _    => IO.unit
+      }
+      _      <-
+        if app.autoResolve.delete
+        then repos.demandsToRespond.add(List(DemandToRespond(d.id)))
+        else repos.demandsToReview.add(List(d.id))
+    } yield ()
 
 }
 
