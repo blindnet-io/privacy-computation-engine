@@ -85,7 +85,7 @@ private object queries {
 
   def getPrivacyRequest(reqId: UUID) =
     sql"""
-      select id, appid, dsid, date, target, email
+      select id, appid, dsid, provided_dsids, date, target, email
       from privacy_requests
       where id = $reqId
     """
@@ -94,7 +94,7 @@ private object queries {
 
   def getPrivacyRequestFromDemand(dId: UUID) =
     sql"""
-      select id, appid, dsid, date, target, email
+      select id, appid, dsid, provided_dsids, date, target, email
       from privacy_requests
       where id = (select d.prid from demands d where d.id = $dId)
     """
@@ -103,7 +103,7 @@ private object queries {
 
   def getPrivacyRequests(ids: NonEmptyList[UUID]) =
     (sql"""
-      select id, appid, dsid, date, target, email
+      select id, appid, dsid, provided_dsids, date, target, email
       from privacy_requests
       where
     """
@@ -115,7 +115,7 @@ private object queries {
     sql"""
       with query as (
         select pre.id as id, pr.id as prid, d.id as did, pre.date as date, d.action as action, pre.status as status,
-          pre.answer as answer, pre.message as message, pre.lang as lang, pr.system as system, pred.data as data,
+          pre.motive as motive, pre.answer as answer, pre.message as message, pre.lang as lang, pr.system as system, pred.data as data,
           ROW_NUMBER() OVER (PARTITION BY pr.id ORDER BY date DESC) As r
         from privacy_response_events pre
           join privacy_responses pr on pr.id = pre.prid
@@ -133,7 +133,7 @@ private object queries {
     sql"""
       with query as (
         select pre.id as id, pr.id as prid, d.id as did, pre.date as date, d.action as action, pre.status as status,
-          pre.answer as answer, pre.message as message, pre.lang as lang, pr.system as system, pred.data as data,
+          pre.motive as motive, pre.answer as answer, pre.message as message, pre.lang as lang, pr.system as system, pred.data as data,
           ROW_NUMBER() OVER (PARTITION BY pr.id ORDER BY date DESC) As r
         from privacy_response_events pre
           join privacy_responses pr on pr.id = pre.prid
@@ -149,7 +149,7 @@ private object queries {
   def getResponse(respId: UUID) =
     sql"""
       select pre.id as id, pr.id as prid, d.id as did, pre.date as date, d.action as action, pre.status as status,
-        pre.answer as answer, pre.message as message, pre.lang as lang, pr.system as system, pred.data as data
+        pre.motive as motive, pre.answer as answer, pre.message as message, pre.lang as lang, pr.system as system, pred.data as data
       from privacy_response_events pre
         join privacy_responses pr on pr.id = pre.prid
         join demands d on d.id = pre.did
@@ -176,16 +176,17 @@ private object queries {
 
   def storeRecommendation(r: Recommendation) =
     sql"""
-      insert into demand_recommendations (id, did, data_categories, date_from, date_to, provenance)
+      insert into demand_recommendations (id, did, status, motive, data_categories, date_from, date_to, provenance)
       values (
-        ${r.id}, ${r.dId}, ${r.dataCategories.map(_.term).toList},
+        ${r.id}, ${r.dId}, ${r.status.map(_.encode)}::status_terms,
+        ${r.motive.map(_.encode)}::motive_terms, ${r.dataCategories.map(_.term).toList},
         ${r.dateFrom}, ${r.dateTo}, ${r.provenance.map(_.encode)}::provenance_terms
       )
     """.update.run
 
   def getRecommendation(dId: UUID) =
     sql"""
-      select id, did, data_categories, date_from, date_to, provenance
+      select id, did, status, motive, data_categories, date_from, date_to, provenance
       from demand_recommendations
       where did = $dId
     """

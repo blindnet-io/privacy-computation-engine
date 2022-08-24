@@ -21,9 +21,9 @@ class PrivacyRequestRepositoryLive(xa: Transactor[IO]) extends PrivacyRequestRep
   def store(pr: PrivacyRequest): IO[Unit] = {
     def storePR =
       sql"""
-        insert into privacy_requests (id, appid, dsid, date, target, email)
-        values (${pr.id}, ${pr.appId}, ${pr.dataSubject.headOption.map(_.id)}, ${pr.timestamp},
-        ${pr.target.encode}::target_terms, ${pr.email})
+        insert into privacy_requests (id, appid, dsid, provided_dsids, date, target, email)
+        values (${pr.id}, ${pr.appId}, ${pr.dataSubject.map(_.id)}, ${pr.providedDsIds},
+        ${pr.timestamp}, ${pr.target.encode}::target_terms, ${pr.email})
       """.update.run
 
     def storeDemand(d: Demand) =

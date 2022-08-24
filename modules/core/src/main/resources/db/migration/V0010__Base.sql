@@ -189,6 +189,7 @@ create table privacy_requests (
   id uuid primary key,
   appid uuid not null,
   dsid varchar,
+  provided_dsids varchar[],
   date timestamp not null,
   target target_terms not null,
   email varchar,
@@ -251,9 +252,15 @@ create table demand_restriction_scope (
     on delete cascade
 );
 
+create type motive_terms as enum ('IDENTITY-UNCONFIRMED', 'LANGUAGE-UNSUPPORTED', 'VALID-REASONS', 'IMPOSSIBLE', 'NO-SUCH-DATA', 'REQUEST-UNSUPPORTED', 'USER-UNKNOWN', 'OTHER-MOTIVE');
+
+create type status_terms as enum ('GRANTED', 'DENIED', 'PARTIALLY-GRANTED', 'UNDER-REVIEW', 'CANCELED');
+
 create table demand_recommendations (
   id uuid primary key,
   did uuid not null,
+  status status_terms,
+  motive motive_terms,
   data_categories varchar[],
   date_from timestamp,
   date_to timestamp,
@@ -265,8 +272,6 @@ create table demand_recommendations (
 );
 
 -- PRIVACY RESPONSE
-
-create type status_terms as enum ('GRANTED', 'DENIED', 'PARTIALLY-GRANTED', 'UNDER-REVIEW', 'CANCELED');
 
 -- per demand
 create table privacy_responses (
@@ -289,6 +294,7 @@ create table privacy_response_events (
   prid uuid not null,
   date timestamp not null,
   status status_terms not null,
+  motive motive_terms,
   message varchar,
   lang varchar,
   answer varchar,

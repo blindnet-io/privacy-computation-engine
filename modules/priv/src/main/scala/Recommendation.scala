@@ -16,13 +16,28 @@ import sttp.tapir.generic.auto.*
 case class Recommendation(
     id: UUID,
     dId: UUID,
-    dataCategories: Set[DataCategory],
-    dateFrom: Option[Instant],
-    dateTo: Option[Instant],
-    provenance: Option[ProvenanceTerms]
+    status: Option[Status],
+    motive: Option[Motive] = None,
+    dataCategories: Set[DataCategory] = Set.empty,
+    dateFrom: Option[Instant] = None,
+    dateTo: Option[Instant] = None,
+    provenance: Option[ProvenanceTerms] = None
 )
 
 object Recommendation {
+
+  def grantTransparency(id: UUID, dId: UUID) =
+    Recommendation(id, dId, Some(Status.Granted))
+
+  def rejectBadRestrictions(id: UUID, dId: UUID) =
+    Recommendation(id, dId, Some(Status.Denied), Some(Motive.RequestUnsupported))
+
+  def rejectIdentityNotProvided(id: UUID, dId: UUID) =
+    Recommendation(id, dId, Some(Status.Denied), Some(Motive.IdentityUnconfirmed))
+
+  def rejectUnknownIdentity(id: UUID, dId: UUID) =
+    Recommendation(id, dId, Some(Status.Denied), Some(Motive.UserUnknown))
+
   given Decoder[Recommendation] = unSnakeCaseIfy(deriveDecoder[Recommendation])
   given Encoder[Recommendation] = snakeCaseIfy(deriveEncoder[Recommendation])
 

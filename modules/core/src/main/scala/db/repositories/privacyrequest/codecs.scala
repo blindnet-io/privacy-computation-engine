@@ -20,34 +20,21 @@ import priv.terms.*
 private object codecs {
 
   given Read[PrivacyResponse] =
-    Read[
-      (
-          UUID,
-          UUID,
-          UUID,
-          Instant,
-          Action,
-          Status,
-          Option[String],
-          Option[String],
-          Option[String],
-          Option[String],
-          Option[String]
-      )
-    ]
+    // format: off 
+    Read[(UUID, UUID, UUID, Instant, Action, Status, Option[Motive], Option[String], Option[String], Option[String], Option[String], Option[String])]
       .map {
-        case (id, prid, did, t, a, s, answer, msg, lang, system, data) =>
+        case (id, prid, did, t, a, s, mot, answer, msg, lang, system, data) =>
           val answ = answer.flatMap(a => parse(a).toOption)
           val incl = List.empty
-          PrivacyResponse(id, prid, did, t, a, s, answ, msg, lang, system, incl, data)
+          PrivacyResponse(id, prid, did, t, a, s, mot, answ, msg, lang, system, incl, data)
       }
 
   given Read[PrivacyRequest] =
-    Read[(UUID, UUID, Option[String], Instant, Target, Option[String])]
+    Read[(UUID, UUID, Option[String], List[String], Instant, Target, Option[String])]
       .map {
-        case (id, appId, dsid, t, trg, email) =>
+        case (id, appId, dsid, pDsIds, t, trg, email) =>
           val ds = dsid.map(DataSubject(_))
-          PrivacyRequest(id, appId, t, trg, email, ds, List.empty)
+          PrivacyRequest(id, appId, t, trg, email, ds, pDsIds, List.empty)
       }
 
   given Get[Set[DataCategory]] = Get[List[String]].map(_.map(DataCategory(_)).toSet)
