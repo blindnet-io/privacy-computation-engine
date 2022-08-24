@@ -5,7 +5,7 @@ create table apps (
 );
 
 create table dac (
-  appid unique uuid not null,
+  appid uuid unique not null,
   uri varchar,
   constraint app_fk
     foreign key (appid)
