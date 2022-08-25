@@ -60,7 +60,7 @@ object StorageInterface {
             selectors = List("CONTACT.EMAIL", "NAME", "OTHER-DATA.PROOF"),
             subjects = List("john.doe@example.com"),
             provenance = rec.provenance.map(_.encode),
-            target = None,
+            target = rec.target.map(_.encode),
             after = rec.dateFrom,
             until = rec.dateTo
           ),
@@ -96,7 +96,7 @@ object StorageInterface {
             selectors = rec.dataCategories.map(_.term).toList,
             subjects = List(subject.id),
             provenance = rec.provenance.map(_.encode),
-            target = None,
+            target = rec.target.map(_.encode),
             after = rec.dateFrom,
             until = rec.dateTo
           ),

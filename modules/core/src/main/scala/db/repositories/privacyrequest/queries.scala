@@ -177,17 +177,18 @@ private object queries {
 
   def storeRecommendation(r: Recommendation) =
     sql"""
-      insert into demand_recommendations (id, did, status, motive, data_categories, date_from, date_to, provenance)
+      insert into demand_recommendations (id, did, status, motive, data_categories, date_from, date_to, provenance, target)
       values (
         ${r.id}, ${r.dId}, ${r.status.map(_.encode)}::status_terms,
         ${r.motive.map(_.encode)}::motive_terms, ${r.dataCategories.map(_.term).toList},
-        ${r.dateFrom}, ${r.dateTo}, ${r.provenance.map(_.encode)}::provenance_terms
+        ${r.dateFrom}, ${r.dateTo}, ${r.provenance.map(_.encode)}::provenance_terms,
+        ${r.target.map(_.encode)}::target_terms
       )
     """.update.run
 
   def getRecommendation(dId: UUID) =
     sql"""
-      select id, did, status, motive, data_categories, date_from, date_to, provenance
+      select id, did, status, motive, data_categories, date_from, date_to, provenance, target
       from demand_recommendations
       where did = $dId
     """
