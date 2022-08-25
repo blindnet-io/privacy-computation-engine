@@ -43,14 +43,14 @@ class ResponseCalculator(
         case UnderReview =>
           // TODO: rollback if fails
           for {
-            d    <- repos.privacyRequest.getDemand(dtr.dId, true).map(_.get)
-            pr   <- repos.privacyRequest.getRequest(d).map(_.get)
-            r    <- repos.privacyRequest.getRecommendation(d.id).map(_.get)
-            resp <- createResponse(pr, dtr, d, resp, r)
-            _    <- repos.privacyRequest.storeNewResponse(resp)
-            _    <- if (resp.status == Granted) then storeEvent(pr, d) else IO.unit
-            // _    <- callStorage(pr.appId, resp.id, d, pr.dataSubject, r)
-            _    <- callStorage(pr.appId, resp.id, d, pr.dataSubject, r).attempt
+            d       <- repos.privacyRequest.getDemand(dtr.dId, true).map(_.get)
+            pr      <- repos.privacyRequest.getRequest(d).map(_.get)
+            r       <- repos.privacyRequest.getRecommendation(d.id).map(_.get)
+            newResp <- createResponse(pr, dtr, d, resp, r)
+            _       <- repos.privacyRequest.storeNewResponse(newResp)
+            _       <- if (newResp.status == Granted) then storeEvent(pr, d) else IO.unit
+            _       <- callStorage(pr.appId, resp.id, d, pr.dataSubject, r)
+            // _       <- callStorage(pr.appId, newResp.id, d, pr.dataSubject, r).attempt
           } yield ()
         case _           => logger.info(s"Demand ${dtr.dId} not UNDER-REVIEW")
       }
@@ -65,7 +65,7 @@ class ResponseCalculator(
   ): IO[PrivacyResponse] =
     d.action match {
       case a if a == Transparency || a.isChildOf(Transparency) =>
-        transparency.createResponse(pr, d, resp.id, r)
+        transparency.createResponse(pr, d, resp.responseId, r)
 
       case Access =>
         general.createResponse(pr, dtr, d, resp, r)
