@@ -265,6 +265,7 @@ create table demand_recommendations (
   date_from timestamp,
   date_to timestamp,
   provenance provenance_terms,
+  target target_terms,
   constraint demand_fk
     foreign key (did)
     references demands(id)

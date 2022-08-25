@@ -21,7 +21,8 @@ case class Recommendation(
     dataCategories: Set[DataCategory] = Set.empty,
     dateFrom: Option[Instant] = None,
     dateTo: Option[Instant] = None,
-    provenance: Option[ProvenanceTerms] = None
+    provenance: Option[ProvenanceTerms] = None,
+    target: Option[Target] = None
 )
 
 object Recommendation {

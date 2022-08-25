@@ -162,12 +162,13 @@ class RequestRecommender(
             .map(psr.zoomIn)
             .map(ps => ps intersection eps)
 
-      drRec = d.getDateRangeR.getOrElse((None, None))
-      pRec  = d.getProvenanceR.map(_._1)
+      (from, to) = d.getDateRangeR.getOrElse((None, None))
+      pRec       = d.getProvenanceR.map(_._1).filter(_ != ProvenanceTerms.All)
+      tRec       = d.getProvenanceR.flatMap(_._2)
       // TODO: data reference restriction
 
       dcs = psRec.triples.map(_.dataCategory)
-      r   = Recommendation(_, d.id, Some(Status.Granted), None, dcs, drRec._1, drRec._2, pRec)
+      r   = Recommendation(_, d.id, Some(Status.Granted), None, dcs, from, to, pRec, tRec)
     } yield r
 
   private def getRecRevoke(pr: PrivacyRequest, d: Demand) =
