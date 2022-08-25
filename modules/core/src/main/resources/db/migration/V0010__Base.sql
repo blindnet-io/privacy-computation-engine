@@ -94,8 +94,8 @@ create table scope (
     on delete cascade
 );
 
-create type target_terms as enum ('ORGANIZATION', 'PARTNERS', 'SYSTEM', 'PARTNERS.DOWNWARD', 'PARTNERS.UPWARD');
-create type provenance_terms as enum ('DERIVED', 'TRANSFERRED', 'USER', 'USER.DATA-SUBJECT');
+create type target_terms as enum ('*', 'ORGANIZATION', 'PARTNERS', 'SYSTEM', 'PARTNERS.DOWNWARD', 'PARTNERS.UPWARD');
+create type provenance_terms as enum ('*', 'DERIVED', 'TRANSFERRED', 'USER', 'USER.DATA-SUBJECT');
 
 create table provenances (
   id uuid primary key,
