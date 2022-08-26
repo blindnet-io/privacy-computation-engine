@@ -16,6 +16,7 @@ import sttp.tapir.server.http4s.*
 import services.*
 import api.endpoints.messages.privacyrequest.*
 import api.endpoints.BaseEndpoint.*
+import priv.privacyrequest.{ RequestId as PrivReqId }
 
 class PrivacyRequestEndpoints(
     reqService: PrivacyRequestService
@@ -52,7 +53,7 @@ class PrivacyRequestEndpoints(
       .out(jsonBody[List[PrivacyResponsePayload]])
       .errorOut(statusCode(StatusCode.UnprocessableEntity))
       .errorOut(statusCode(StatusCode.NotFound))
-      .serverLogicSuccess(reqId => reqService.getResponse(reqId, appId, Some(userId)))
+      .serverLogicSuccess(reqId => reqService.getResponse(PrivReqId(reqId), appId, Some(userId)))
 
   val endpoints = List(createPrivacyRequest, getRequestHistory, getReqStatus)
 

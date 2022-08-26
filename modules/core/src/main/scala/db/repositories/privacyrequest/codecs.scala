@@ -21,6 +21,7 @@ private object codecs {
 
   given Meta[ResponseId]      = Meta[UUID].timap(ResponseId.apply)(x => x.value)
   given Meta[ResponseEventId] = Meta[UUID].timap(ResponseEventId.apply)(x => x.value)
+  given Meta[RequestId]       = Meta[UUID].timap(RequestId.apply)(x => x.value)
 
   given Read[PrivacyResponse] =
     // format: off 
@@ -35,7 +36,7 @@ private object codecs {
     // format: on
 
   given Read[PrivacyRequest] =
-    Read[(UUID, UUID, Option[String], List[String], Instant, Target, Option[String])]
+    Read[(RequestId, UUID, Option[String], List[String], Instant, Target, Option[String])]
       .map {
         case (id, appId, dsid, pDsIds, t, trg, email) =>
           val ds = dsid.map(DataSubject(_))
@@ -45,7 +46,7 @@ private object codecs {
   given Get[Set[DataCategory]] = Get[List[String]].map(_.map(DataCategory(_)).toSet)
 
   given Read[Demand] =
-    Read[(UUID, UUID, Action, Option[String], Option[String])]
+    Read[(UUID, RequestId, Action, Option[String], Option[String])]
       .map { case (id, rid, a, m, l) => Demand(id, rid, a, m, l, List.empty, List.empty) }
 
 }

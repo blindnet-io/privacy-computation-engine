@@ -64,7 +64,7 @@ class PrivacyRequestService(
 
   def createPrivacyRequest(req: CreatePrivacyRequestPayload, appId: UUID) = {
     for {
-      reqId     <- UUIDGen.randomUUID[IO]
+      reqId     <- UUIDGen.randomUUID[IO].map(RequestId.apply)
       demandIds <- UUIDGen.randomUUID[IO].replicateA(req.demands.length)
       demands = req.demands.zip(demandIds).map {
         case (d, id) => PrivacyRequestDemand.toPrivDemand(id, reqId, d)
@@ -92,7 +92,7 @@ class PrivacyRequestService(
       cs        <- demands.traverse(d => CommandCreateRecommendation.create(d.id))
       _         <- repos.commands.addCreateRec(cs)
 
-    } yield PrivacyRequestCreatedPayload(reqId)
+    } yield PrivacyRequestCreatedPayload(reqId.value)
   }
 
   def getRequestHistory(appId: UUID, userId: String) =
@@ -129,19 +129,19 @@ class PrivacyRequestService(
                 else if (underReview + canceled == l) then PrStatus.InProcessing
                 else PrStatus.PartiallyCompleted
 
-              PrItem(req.id, req.timestamp, req.demands.length, status)
+              PrItem(req.id.value, req.timestamp, req.demands.length, status)
             }
           )
       )
 
     } yield RequestHistoryPayload(history)
 
-  private def verifyReqExists(requestId: UUID, appId: UUID, userId: Option[String]) =
+  private def verifyReqExists(requestId: RequestId, appId: UUID, userId: Option[String]) =
     repos.privacyRequest
       .requestExist(requestId, appId, userId)
       .flatMap(if _ then IO.unit else "Request not found".failNotFound)
 
-  def getResponse(requestId: UUID, appId: UUID, userId: Option[String]) =
+  def getResponse(requestId: RequestId, appId: UUID, userId: Option[String]) =
     for {
       _             <- verifyReqExists(requestId, appId, userId)
       privResponses <- repos.privacyRequest.getResponsesForRequest(requestId)

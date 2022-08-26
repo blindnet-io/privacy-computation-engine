@@ -16,7 +16,7 @@ import codecs.given
 
 private object queries {
 
-  def requestExist(reqId: UUID, appId: UUID, userId: Option[String]) =
+  def requestExist(reqId: RequestId, appId: UUID, userId: Option[String]) =
     (fr"""
       select exists (
         select 1 from privacy_requests pr
@@ -58,7 +58,7 @@ private object queries {
       .query[Demand]
       .to[List]
 
-  def getRequestDemands(reqId: UUID) =
+  def getRequestDemands(reqId: RequestId) =
     sql"""
       select d.id, pr.id, action, message, lang
       from demands d
@@ -83,7 +83,7 @@ private object queries {
       .query[Restriction]
       .to[List]
 
-  def getPrivacyRequest(reqId: UUID) =
+  def getPrivacyRequest(reqId: RequestId) =
     sql"""
       select id, appid, dsid, provided_dsids, date, target, email
       from privacy_requests
@@ -101,7 +101,7 @@ private object queries {
       .query[PrivacyRequest]
       .option
 
-  def getPrivacyRequests(ids: NonEmptyList[UUID]) =
+  def getPrivacyRequests(ids: NonEmptyList[RequestId]) =
     (sql"""
       select id, appid, dsid, provided_dsids, date, target, email
       from privacy_requests
@@ -111,7 +111,7 @@ private object queries {
       .query[PrivacyRequest]
       .to[List]
 
-  def getAllDemandResponses(reqId: UUID) =
+  def getAllDemandResponses(reqId: RequestId) =
     sql"""
       with query as (
         select pr.id as prid, pre.id as id, d.id as did, pr.parent as parent, pre.date as date, pr.action as action, pre.status as status,
@@ -201,7 +201,7 @@ private object queries {
       from privacy_requests pr
       where pr.dsid = $userId and pr.appid = $appId
     """
-      .query[UUID]
+      .query[RequestId]
       .to[List]
 
   def getDataSubject(dId: UUID) =

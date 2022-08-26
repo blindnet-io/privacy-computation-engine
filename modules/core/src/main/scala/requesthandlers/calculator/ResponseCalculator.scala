@@ -53,7 +53,7 @@ class ResponseCalculator(
           _       <- repos.privacyRequest.storeNewResponse(newResp)
           _       <- if (newResp.status == Granted) then storeEvent(pr, d) else IO.unit
           _       <- callStorage(pr.appId, newResp.eventId, d, pr.dataSubject, r)
-          // _       <- callStorage(pr.appId, newResp.id, d, pr.dataSubject, r).attempt
+          // _       <- callStorage(pr.appId, newResp.eventId, d, pr.dataSubject, r).attempt
         } yield ()
       case _           => logger.info(s"Response ${resp.id} not UNDER-REVIEW")
     }

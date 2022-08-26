@@ -14,21 +14,21 @@ trait PrivacyRequestRepository {
 
   def store(pr: PrivacyRequest, responses: List[PrivacyResponse]): IO[Unit]
 
-  def requestExist(reqId: UUID, appId: UUID, userId: Option[String]): IO[Boolean]
+  def requestExist(reqId: RequestId, appId: UUID, userId: Option[String]): IO[Boolean]
 
   def demandExist(appid: UUID, dId: UUID): IO[Boolean]
 
-  def getRequest(reqId: UUID, withDemands: Boolean = true): IO[Option[PrivacyRequest]]
+  def getRequest(reqId: RequestId, withDemands: Boolean = true): IO[Option[PrivacyRequest]]
 
   def getRequest(d: Demand): IO[Option[PrivacyRequest]]
 
-  def getRequests(reqIds: NonEmptyList[UUID]): IO[List[PrivacyRequest]]
+  def getRequests(reqIds: NonEmptyList[RequestId]): IO[List[PrivacyRequest]]
 
   def getDemand(dId: UUID, withRestrictions: Boolean = true): IO[Option[Demand]]
 
   def getDemands(dIds: NonEmptyList[UUID]): IO[List[Demand]]
 
-  def getResponsesForRequest(reqId: UUID): IO[List[PrivacyResponse]]
+  def getResponsesForRequest(reqId: RequestId): IO[List[PrivacyResponse]]
 
   def getResponse(respId: UUID): IO[Option[PrivacyResponse]]
 
@@ -42,7 +42,7 @@ trait PrivacyRequestRepository {
 
   def getRecommendation(dId: UUID): IO[Option[Recommendation]]
 
-  def getAllUserRequestIds(appId: UUID, userId: String): IO[List[UUID]]
+  def getAllUserRequestIds(appId: UUID, userId: String): IO[List[RequestId]]
 
 }
 

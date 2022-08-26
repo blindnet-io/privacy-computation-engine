@@ -9,8 +9,14 @@ import cats.data.*
 import cats.implicits.*
 import terms.*
 
+opaque type RequestId = UUID
+object RequestId:
+  def apply(uuid: UUID): RequestId          = uuid
+  extension (id: RequestId) def value: UUID = id
+  given Ordering[RequestId]                 = Ordering.fromLessThan(_ < _)
+
 case class PrivacyRequest(
-    id: UUID,
+    id: RequestId,
     appId: UUID,
     timestamp: Instant,
     target: Target,

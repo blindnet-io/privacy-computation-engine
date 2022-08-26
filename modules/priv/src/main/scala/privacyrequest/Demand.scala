@@ -10,7 +10,7 @@ import terms.*
 
 case class Demand(
     id: UUID,
-    reqId: UUID,
+    reqId: RequestId,
     action: Action,
     message: Option[String],
     // TODO: parse https://datatracker.ietf.org/doc/rfc5646/

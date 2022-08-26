@@ -119,13 +119,13 @@ class PrivacyRequestRepositoryLive(xa: Transactor[IO]) extends PrivacyRequestRep
     store.transact(xa).void
   }
 
-  def requestExist(reqId: UUID, appId: UUID, userId: Option[String]): IO[Boolean] =
+  def requestExist(reqId: RequestId, appId: UUID, userId: Option[String]): IO[Boolean] =
     queries.requestExist(reqId, appId, userId).transact(xa)
 
   def demandExist(appId: UUID, dId: UUID): IO[Boolean] =
     queries.demandExist(appId, dId).transact(xa)
 
-  def getRequest(reqId: UUID, withDemands: Boolean): IO[Option[PrivacyRequest]] = {
+  def getRequest(reqId: RequestId, withDemands: Boolean): IO[Option[PrivacyRequest]] = {
     val withD =
       for {
         pr <- queries.getPrivacyRequest(reqId).toOptionT
@@ -139,7 +139,7 @@ class PrivacyRequestRepositoryLive(xa: Transactor[IO]) extends PrivacyRequestRep
   def getRequest(d: Demand): IO[Option[PrivacyRequest]] =
     queries.getPrivacyRequestFromDemand(d.id).transact(xa)
 
-  def getRequests(reqIds: NonEmptyList[UUID]): IO[List[PrivacyRequest]] =
+  def getRequests(reqIds: NonEmptyList[RequestId]): IO[List[PrivacyRequest]] =
     queries.getPrivacyRequests(reqIds).transact(xa)
 
   def getDemand(dId: UUID, withRestrictions: Boolean = true): IO[Option[Demand]] = {
@@ -157,7 +157,7 @@ class PrivacyRequestRepositoryLive(xa: Transactor[IO]) extends PrivacyRequestRep
   def getDemands(dIds: NonEmptyList[UUID]): IO[List[Demand]] =
     queries.getDemands(dIds).transact(xa)
 
-  def getResponsesForRequest(reqId: UUID): IO[List[PrivacyResponse]] =
+  def getResponsesForRequest(reqId: RequestId): IO[List[PrivacyResponse]] =
     queries.getAllDemandResponses(reqId).transact(xa)
 
   def getResponse(respId: UUID): IO[Option[PrivacyResponse]] =
@@ -179,7 +179,7 @@ class PrivacyRequestRepositoryLive(xa: Transactor[IO]) extends PrivacyRequestRep
   def getRecommendation(dId: UUID): IO[Option[Recommendation]] =
     queries.getRecommendation(dId).transact(xa)
 
-  def getAllUserRequestIds(appId: UUID, userId: String): IO[List[UUID]] =
+  def getAllUserRequestIds(appId: UUID, userId: String): IO[List[RequestId]] =
     queries.getAllUserRequestIds(appId, userId).transact(xa)
 
 }
