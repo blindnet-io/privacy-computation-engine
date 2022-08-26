@@ -18,9 +18,8 @@ trait Repositories {
   val privacyRequest: PrivacyRequestRepository
   val events: EventsRepository
 
-  val demandsToProcess: DemandsToProcessRepository
+  val commands: CommandsRepository
   val demandsToReview: DemandsToReviewRepository
-  val demandsToRespond: DemandsToRespondRepository
 
   val callbacks: CallbacksRepository
 }
@@ -38,9 +37,8 @@ object Repositories {
     val privacyReqRepo      = PrivacyRequestRepository.live(xa)
     val eventsRepo          = EventsRepository.live(xa)
 
-    val demandsToProcessRepo = DemandsToProcessRepository.live(xa)
-    val demandsToReviewRepo  = DemandsToReviewRepository.live(xa)
-    val demandsToRespondRepo = DemandsToRespondRepository.live(xa)
+    val commandsRepo        = CommandsRepository.live(xa)
+    val demandsToReviewRepo = DemandsToReviewRepository.live(xa)
 
     for {
       callbacksRepo <- CallbacksRepository.live()
@@ -55,9 +53,8 @@ object Repositories {
       val privacyRequest  = privacyReqRepo
       val events          = eventsRepo
 
-      val demandsToProcess = demandsToProcessRepo
-      val demandsToReview  = demandsToReviewRepo
-      val demandsToRespond = demandsToRespondRepo
+      val commands        = commandsRepo
+      val demandsToReview = demandsToReviewRepo
 
       val callbacks = callbacksRepo
     }

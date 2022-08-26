@@ -22,7 +22,7 @@ import model.error.*
 import priv.DataSubject
 import priv.privacyrequest.{ Demand, PrivacyRequest, * }
 import priv.terms.*
-import io.blindnet.pce.model.DemandToRespond
+import io.blindnet.pce.model.*
 
 class DataConsumerInterfaceService(
     repos: Repositories
@@ -57,7 +57,7 @@ class DataConsumerInterfaceService(
   def approveDemand(appId: UUID, req: ApproveDemandPayload) =
     for {
       _ <- repos.demandsToReview.remove(NonEmptyList.of(req.id))
-      d = DemandToRespond(
+      d <- CommandCreateResponse.create(
         req.id,
         // TODO: refactor
         Json.obj(
@@ -65,7 +65,7 @@ class DataConsumerInterfaceService(
           "lang" -> req.lang.map(_.asJson).getOrElse(Json.Null)
         )
       )
-      _ <- repos.demandsToRespond.add(List(d))
+      _ <- repos.commands.addCreateResp(List(d))
     } yield ()
 
 }

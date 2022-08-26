@@ -16,9 +16,9 @@ import priv.privacyrequest.*
 import priv.*
 import priv.terms.*
 import model.error.*
-import io.blindnet.pce.model.DemandToRespond
 import cats.effect.std.UUIDGen
 import io.blindnet.pce.services.external.StorageInterface
+import io.blindnet.pce.model.*
 
 class GeneralCalculator(
     repos: Repositories,
@@ -29,7 +29,7 @@ class GeneralCalculator(
 
   def createResponse(
       pr: PrivacyRequest,
-      dtr: DemandToRespond,
+      ccr: CommandCreateResponse,
       d: Demand,
       resp: PrivacyResponse,
       r: Recommendation
@@ -40,7 +40,7 @@ class GeneralCalculator(
       newResp   <-
         r.status match {
           case Some(Status.Granted) =>
-            createGrantedResponse(resp.responseId, pr.appId, d, dtr, pr.dataSubject.get, r)
+            createGrantedResponse(resp.responseId, pr.appId, d, ccr, pr.dataSubject.get, r)
 
           case Some(s) =>
             // format: off
@@ -58,7 +58,7 @@ class GeneralCalculator(
       respId: UUID,
       appId: UUID,
       d: Demand,
-      dtr: DemandToRespond,
+      ccr: CommandCreateResponse,
       ds: DataSubject,
       r: Recommendation
   ) =
@@ -66,8 +66,8 @@ class GeneralCalculator(
       newRespId <- UUIDGen.randomUUID[IO]
       timestamp <- Clock[IO].realTimeInstant
 
-      msg  = dtr.data.hcursor.downField("msg").as[String].toOption
-      lang = dtr.data.hcursor.downField("lang").as[String].toOption
+      msg  = ccr.data.hcursor.downField("msg").as[String].toOption
+      lang = ccr.data.hcursor.downField("lang").as[String].toOption
 
       newResp = PrivacyResponse(
         newRespId,

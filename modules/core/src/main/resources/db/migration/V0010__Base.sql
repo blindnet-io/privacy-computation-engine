@@ -323,17 +323,22 @@ create table pending_demands_to_review (
     on delete cascade
 );
 
-create table pending_demands_to_process (
-  did uuid unique not null,
+create table commands_create_recommendation (
+  id uuid primary key,
+  did uuid not null,
+  date timestamp not null,
+  data jsonb,
   constraint demand_fk
     foreign key (did)
     references demands(id)
     on delete cascade
 );
 
-create table pending_demands_to_respond (
-  did uuid unique not null,
-  data varchar not null,
+create table commands_create_response (
+  id uuid primary key,
+  did uuid not null,
+  date timestamp not null,
+  data jsonb,
   constraint demand_fk
     foreign key (did)
     references demands(id)

@@ -18,10 +18,8 @@ import org.typelevel.log4cats.*
 import org.typelevel.log4cats.slf4j.*
 import db.repositories.Repositories
 import io.blindnet.pce.api.endpoints.messages.privacyrequest.DateRangeRestriction
-import io.blindnet.pce.model.DemandToRespond
-import io.blindnet.pce.model.PCEApp
-import io.blindnet.pce.priv.PrivacyScope
-import io.blindnet.pce.priv.PrivacyScopeTriple
+import io.blindnet.pce.model.*
+import io.blindnet.pce.priv.*
 
 object Validations {
   import priv.terms.Action.*
@@ -102,19 +100,19 @@ class RequestRecommender(
 
   val logger: Logger[IO] = Slf4jLogger.getLogger[IO]
 
-  private def processDemand(dId: UUID): IO[Unit] =
+  private def processDemand(c: CommandCreateRecommendation): IO[Unit] =
     for {
       // TODO .get
-      resp <- repos.privacyRequest.getDemandResponse(dId).map(_.get)
+      resp <- repos.privacyRequest.getDemandResponse(c.dId).map(_.get)
       _    <- resp.status match {
         case UnderReview =>
           for {
-            d   <- repos.privacyRequest.getDemand(dId, true).map(_.get)
+            d   <- repos.privacyRequest.getDemand(c.dId, true).map(_.get)
             pr  <- repos.privacyRequest.getRequest(d).map(_.get)
             app <- repos.app.get(pr.appId).map(_.get)
             _   <- validateDemand(app, pr, d)
           } yield ()
-        case _           => logger.info(s"Demand $dId not UNDER-REVIEW")
+        case _           => logger.info(s"Demand ${c.dId} not UNDER-REVIEW")
       }
     } yield ()
 
@@ -125,7 +123,9 @@ class RequestRecommender(
     Validations
       .validate(pr, d)
       .fold(
-        rf => storeRecommendation(rf) *> repos.demandsToRespond.add(List(DemandToRespond(d.id))),
+        rf =>
+          storeRecommendation(rf) >>
+            CommandCreateResponse.create(d.id) map (c => List(c)) >>= repos.commands.addCreateResp,
         _ => handleRecommendation(app, pr, d)
       )
 
@@ -195,7 +195,8 @@ class RequestRecommender(
         case _                                                   => false
       }
 
-    if auto then repos.demandsToRespond.add(List(DemandToRespond(d.id)))
+    if auto then
+      CommandCreateResponse.create(d.id) map (c => List(c)) >>= repos.commands.addCreateResp
     else repos.demandsToReview.add(List(d.id))
 
 }
@@ -208,21 +209,22 @@ object RequestRecommender {
 
     def loop(): IO[Unit] =
       for {
-        ids <- repos.demandsToProcess.get()
-        _   <- ids.parTraverse_(
-          id => {
-            val p = for {
-              _ <- logger.info(s"Processing new demand $id")
-              _ <- repos.demandsToProcess.remove(NonEmptyList.one(id))
-              _ <- reqProc.processDemand(id)
-              _ <- logger.info(s"Demand $id processed")
+        cs <- repos.commands.getCreateRec(10)
+        _  <- cs.parTraverse_(
+          c => {
+            val dId = c.dId
+            val p   = for {
+              _ <- logger.info(s"Creating recommendation for demand $dId")
+              _ <- reqProc.processDemand(c)
+              _ <- logger.info(s"Recommendation for demand $dId created")
             } yield ()
 
             p.handleErrorWith(
               e =>
                 logger
-                  .error(e)(s"Error processing demand $id - ${e.getMessage}")
-                  .flatMap(_ => repos.demandsToProcess.add(List(id)))
+                  .error(e)(s"Error processing demand $dId - ${e.getMessage}")
+                  .flatMap(_ => IO.sleep(5.second))
+                  .flatMap(_ => repos.commands.addCreateRec(List(c)))
             )
           }
         )

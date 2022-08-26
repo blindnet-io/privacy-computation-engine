@@ -22,6 +22,7 @@ import priv.DataSubject
 import priv.privacyrequest.{ Demand, PrivacyRequest, * }
 import priv.terms.*
 import util.*
+import io.blindnet.pce.model.*
 
 class PrivacyRequestService(
     repos: Repositories
@@ -87,8 +88,9 @@ class PrivacyRequestService(
 
       _ <- validateRequest(appId, pr)
 
-      _ <- (repos.privacyRequest.store(pr) *>
-        repos.demandsToProcess.add(demands.map(_.id))).start
+      _  <- repos.privacyRequest.store(pr)
+      cs <- demands.traverse(d => CommandCreateRecommendation.create(d.id))
+      _  <- repos.commands.addCreateRec(cs)
 
     } yield PrivacyRequestCreatedPayload(reqId)
   }

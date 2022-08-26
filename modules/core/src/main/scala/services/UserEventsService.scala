@@ -22,7 +22,6 @@ import model.error.*
 import priv.DataSubject
 import priv.privacyrequest.{ Demand, PrivacyRequest, * }
 import priv.terms.*
-import io.blindnet.pce.model.DemandToRespond
 import io.blindnet.pce.util.extension.*
 import util.*
 import priv.LegalBase

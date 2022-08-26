@@ -18,8 +18,8 @@ import org.typelevel.log4cats.*
 import org.typelevel.log4cats.slf4j.*
 import db.repositories.Repositories
 import io.blindnet.pce.services.external.StorageInterface
-import io.blindnet.pce.model.DemandToRespond
 import io.blindnet.pce.priv.DataSubject
+import io.blindnet.pce.model.*
 
 // TODO: refactor
 class ResponseCalculator(
@@ -35,30 +35,30 @@ class ResponseCalculator(
   val transparency = TransparencyCalculator(repos)
   val general      = GeneralCalculator(repos, storage)
 
-  private def createResponse(dtr: DemandToRespond): IO[Unit] =
+  private def createResponse(ccr: CommandCreateResponse): IO[Unit] =
     for {
       // TODO .get
-      resp <- repos.privacyRequest.getDemandResponse(dtr.dId).map(_.get)
+      resp <- repos.privacyRequest.getDemandResponse(ccr.dId).map(_.get)
       _    <- resp.status match {
         case UnderReview =>
           // TODO: rollback if fails
           for {
-            d       <- repos.privacyRequest.getDemand(dtr.dId, true).map(_.get)
+            d       <- repos.privacyRequest.getDemand(ccr.dId, true).map(_.get)
             pr      <- repos.privacyRequest.getRequest(d).map(_.get)
             r       <- repos.privacyRequest.getRecommendation(d.id).map(_.get)
-            newResp <- createResponse(pr, dtr, d, resp, r)
+            newResp <- createResponse(pr, ccr, d, resp, r)
             _       <- repos.privacyRequest.storeNewResponse(newResp)
             _       <- if (newResp.status == Granted) then storeEvent(pr, d) else IO.unit
             _       <- callStorage(pr.appId, newResp.id, d, pr.dataSubject, r)
             // _       <- callStorage(pr.appId, newResp.id, d, pr.dataSubject, r).attempt
           } yield ()
-        case _           => logger.info(s"Demand ${dtr.dId} not UNDER-REVIEW")
+        case _           => logger.info(s"Demand ${ccr.dId} not UNDER-REVIEW")
       }
     } yield ()
 
   private def createResponse(
       pr: PrivacyRequest,
-      dtr: DemandToRespond,
+      ccr: CommandCreateResponse,
       d: Demand,
       resp: PrivacyResponse,
       r: Recommendation
@@ -68,13 +68,13 @@ class ResponseCalculator(
         transparency.createResponse(pr, d, resp.responseId, r)
 
       case Access =>
-        general.createResponse(pr, dtr, d, resp, r)
+        general.createResponse(pr, ccr, d, resp, r)
 
       case Delete =>
-        general.createResponse(pr, dtr, d, resp, r)
+        general.createResponse(pr, ccr, d, resp, r)
 
       case RevokeConsent =>
-        general.createResponse(pr, dtr, d, resp, r)
+        general.createResponse(pr, ccr, d, resp, r)
 
       case _ => IO.raiseError(new NotImplementedError)
     }
@@ -126,22 +126,22 @@ object ResponseCalculator {
 
     def loop(): IO[Unit] =
       for {
-        ds <- repos.demandsToRespond.get()
-        _  <- ds.parTraverse_(
-          d => {
-            val id = d.dId
-            val p  = for {
-              _ <- logger.info(s"Creating response for demand $id")
-              _ <- repos.demandsToRespond.remove(NonEmptyList.one(id))
-              _ <- reqProc.createResponse(d)
-              _ <- logger.info(s"Response for demand $id created")
+        cs <- repos.commands.getCreateResp(5)
+        _  <- cs.parTraverse_(
+          c => {
+            val dId = c.dId
+            val p   = for {
+              _ <- logger.info(s"Creating response for demand $dId")
+              _ <- reqProc.createResponse(c)
+              _ <- logger.info(s"Response for demand $dId created")
             } yield ()
 
             p.handleErrorWith(
               e =>
                 logger
-                  .error(e)(s"Error creating response for demand $id - ${e.getMessage}")
-                  .flatMap(_ => repos.demandsToRespond.add(List(d)))
+                  .error(e)(s"Error creating response for demand $dId - ${e.getMessage}")
+                  .flatMap(_ => IO.sleep(5.second))
+                  .flatMap(_ => repos.commands.addCreateResp(List(c)))
             )
           }
         )
