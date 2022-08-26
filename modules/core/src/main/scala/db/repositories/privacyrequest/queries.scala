@@ -146,19 +146,6 @@ private object queries {
       .query[PrivacyResponse]
       .to[List]
 
-  def getResponse(respId: UUID) =
-    sql"""
-      select pr.id as prid, pre.id as id, d.id as did, pr.parent as parent, pre.date as date, pr.action as action, pre.status as status,
-        pre.motive as motive, pre.answer as answer, pre.message as message, pre.lang as lang, pr.system as system, pred.data as data
-      from privacy_response_events pre
-        join privacy_responses pr on pr.id = pre.prid
-        join demands d on d.id = pre.did
-        left join privacy_response_events_data pred on pred.preid = pre.id
-      where pre.id = $respId
-    """
-      .query[PrivacyResponse]
-      .option
-
   def storeNewResponse(r: PrivacyResponse) =
     sql"""
       insert into privacy_response_events (id, prid, date, status, motive, message, lang, answer)
