@@ -44,7 +44,7 @@ class TransparencyCalculator(
       r: Recommendation
   ): IO[PrivacyResponse] =
     for {
-      id        <- UUIDGen.randomUUID[IO]
+      rEventId  <- UUIDGen.randomUUID[IO].map(ResponseEventId.apply)
       timestamp <- Clock[IO].realTimeInstant
       newResp   <-
         r.status match {
@@ -52,13 +52,13 @@ class TransparencyCalculator(
             for {
               answer <- getAnswer(resp.action, pr.appId, pr.dataSubject)
               // format: off
-              newResp = PrivacyResponse(id, resp.responseId, resp.demandId, timestamp, resp.action, Status.Granted, answer = Some(answer))
+              newResp = PrivacyResponse(resp.id, rEventId, resp.demandId, timestamp, resp.action, Status.Granted, answer = Some(answer))
               // format: on
             } yield newResp
 
           case Some(s) =>
             // format: off
-            IO.pure(PrivacyResponse(id, resp.responseId, resp.demandId, timestamp, resp.action, s, r.motive))
+            IO.pure(PrivacyResponse(resp.id, rEventId, resp.demandId, timestamp, resp.action, s, r.motive))
             // format: on
         }
     } yield newResp

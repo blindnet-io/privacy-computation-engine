@@ -120,7 +120,7 @@ class RequestRecommender(
   ): IO[Unit] =
     resp.status match {
       case UnderReview => validateDemand(app, pr, d)
-      case _           => logger.info(s"Response ${resp.responseId} not UNDER-REVIEW")
+      case _           => logger.info(s"Response ${resp.id} not UNDER-REVIEW")
     }
 
   def storeRecommendation(f: UUID => Recommendation) =

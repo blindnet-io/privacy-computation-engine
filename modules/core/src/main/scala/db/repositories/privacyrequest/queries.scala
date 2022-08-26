@@ -114,7 +114,7 @@ private object queries {
   def getAllDemandResponses(reqId: UUID) =
     sql"""
       with query as (
-        select pre.id as id, pr.id as prid, d.id as did, pr.parent as parent, pre.date as date, pr.action as action, pre.status as status,
+        select pr.id as prid, pre.id as id, d.id as did, pr.parent as parent, pre.date as date, pr.action as action, pre.status as status,
           pre.motive as motive, pre.answer as answer, pre.message as message, pre.lang as lang, pr.system as system, pred.data as data,
           ROW_NUMBER() OVER (PARTITION BY pr.id ORDER BY date DESC) As r
         from privacy_response_events pre
@@ -132,7 +132,7 @@ private object queries {
     // TODO: duplicate code
     sql"""
       with query as (
-        select pre.id as id, pr.id as prid, d.id as did, pr.parent as parent, pre.date as date, pr.action as action, pre.status as status,
+        select pr.id as prid, pre.id as id, d.id as did, pr.parent as parent, pre.date as date, pr.action as action, pre.status as status,
           pre.motive as motive, pre.answer as answer, pre.message as message, pre.lang as lang, pr.system as system, pred.data as data,
           ROW_NUMBER() OVER (PARTITION BY pr.id ORDER BY date DESC) As r
         from privacy_response_events pre
@@ -148,7 +148,7 @@ private object queries {
 
   def getResponse(respId: UUID) =
     sql"""
-      select pre.id as id, pr.id as prid, d.id as did, pr.parent as parent, pre.date as date, pr.action as action, pre.status as status,
+      select pr.id as prid, pre.id as id, d.id as did, pr.parent as parent, pre.date as date, pr.action as action, pre.status as status,
         pre.motive as motive, pre.answer as answer, pre.message as message, pre.lang as lang, pr.system as system, pred.data as data
       from privacy_response_events pre
         join privacy_responses pr on pr.id = pre.prid
@@ -163,13 +163,13 @@ private object queries {
     sql"""
       insert into privacy_response_events (id, prid, date, status, motive, message, lang, answer)
       values (
-        ${r.id}, ${r.responseId}, ${r.timestamp}, ${r.status.encode}::status_terms,
+        ${r.eventId}, ${r.id}, ${r.timestamp}, ${r.status.encode}::status_terms,
         ${r.motive.map(_.encode)}::motive_terms, ${r.message}, ${r.lang},
         ${r.answer.map(_.toString)}
       )
     """.update.run
 
-  def storeResponseData(preId: UUID, data: Option[String]) =
+  def storeResponseData(preId: ResponseEventId, data: Option[String]) =
     sql"""
       insert into privacy_response_events_data (preid, data)
       values ($preId, $data)

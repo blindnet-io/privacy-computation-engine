@@ -36,7 +36,7 @@ trait PrivacyRequestRepository {
 
   def storeNewResponse(r: PrivacyResponse): IO[Unit]
 
-  def storeResponseData(preId: UUID, data: Option[String]): IO[Unit]
+  def storeResponseData(preId: ResponseEventId, data: Option[String]): IO[Unit]
 
   def storeRecommendation(r: Recommendation): IO[Unit]
 

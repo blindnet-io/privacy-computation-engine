@@ -35,27 +35,27 @@ class GeneralCalculator(
       r: Recommendation
   ): IO[PrivacyResponse] =
     for {
-      newRespId <- UUIDGen.randomUUID[IO]
+      rEventId  <- UUIDGen.randomUUID[IO].map(ResponseEventId.apply)
       timestamp <- Clock[IO].realTimeInstant
       newResp   <-
         r.status match {
           case Some(Status.Granted) =>
-            createGrantedResponse(resp.responseId, pr.appId, d, ccr, pr.dataSubject.get, r)
+            createGrantedResponse(resp.id, pr.appId, d, ccr, pr.dataSubject.get, r)
 
           case Some(s) =>
             // format: off
-            IO.pure(PrivacyResponse(newRespId, resp.responseId, d.id, timestamp, d.action, s, r.motive))
+            IO.pure(PrivacyResponse(resp.id, rEventId, d.id, timestamp, d.action, s, r.motive))
             // format: on
 
           case None =>
             // format: off
-            IO.pure(PrivacyResponse(newRespId, resp.responseId, d.id, timestamp, d.action, Status.Denied, r.motive))
+            IO.pure(PrivacyResponse(resp.id, rEventId, d.id, timestamp, d.action, Status.Denied, r.motive))
             // format: on
         }
     } yield newResp
 
   def createGrantedResponse(
-      respId: UUID,
+      respId: ResponseId,
       appId: UUID,
       d: Demand,
       ccr: CommandCreateResponse,
@@ -63,15 +63,15 @@ class GeneralCalculator(
       r: Recommendation
   ) =
     for {
-      newRespId <- UUIDGen.randomUUID[IO]
+      rEventId  <- UUIDGen.randomUUID[IO].map(ResponseEventId.apply)
       timestamp <- Clock[IO].realTimeInstant
 
       msg  = ccr.data.hcursor.downField("msg").as[String].toOption
       lang = ccr.data.hcursor.downField("lang").as[String].toOption
 
       newResp = PrivacyResponse(
-        newRespId,
         respId,
+        rEventId,
         d.id,
         timestamp,
         d.action,

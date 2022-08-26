@@ -15,6 +15,7 @@ import priv.privacyrequest.*
 import io.blindnet.pce.util.extension.*
 import priv.*
 import priv.terms.*
+import codecs.given
 
 class PrivacyRequestRepositoryLive(xa: Transactor[IO]) extends PrivacyRequestRepository {
 
@@ -87,13 +88,13 @@ class PrivacyRequestRepositoryLive(xa: Transactor[IO]) extends PrivacyRequestRep
     def storeResponse(r: PrivacyResponse) =
       sql"""
         insert into privacy_responses (id, did, parent, action)
-        values (${r.responseId}, ${r.demandId}, ${r.parent}, ${r.action.encode}::action_terms)
+        values (${r.id}, ${r.demandId}, ${r.parent}, ${r.action.encode}::action_terms)
       """.update.run
 
     def storeResponseEvent(r: PrivacyResponse) =
       sql"""
         insert into privacy_response_events (id, prid, date, status)
-        values (${r.id}, ${r.responseId}, ${pr.timestamp}, ${r.status.encode}::status_terms)
+        values (${r.eventId}, ${r.id}, ${pr.timestamp}, ${r.status.encode}::status_terms)
       """.update.run
 
     val store = for {
@@ -169,7 +170,7 @@ class PrivacyRequestRepositoryLive(xa: Transactor[IO]) extends PrivacyRequestRep
   def storeNewResponse(r: PrivacyResponse): IO[Unit] =
     queries.storeNewResponse(r).transact(xa).void
 
-  def storeResponseData(preId: UUID, data: Option[String]): IO[Unit] =
+  def storeResponseData(preId: ResponseEventId, data: Option[String]): IO[Unit] =
     queries.storeResponseData(preId, data).transact(xa).void
 
   def storeRecommendation(r: Recommendation): IO[Unit] =

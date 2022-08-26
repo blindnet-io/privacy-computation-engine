@@ -19,15 +19,18 @@ import priv.terms.*
 
 private object codecs {
 
+  given Meta[ResponseId]      = Meta[UUID].timap(ResponseId.apply)(x => x.value)
+  given Meta[ResponseEventId] = Meta[UUID].timap(ResponseEventId.apply)(x => x.value)
+
   given Read[PrivacyResponse] =
     // format: off 
-    Read[(UUID, UUID, UUID, Option[UUID], Instant, Action, Status, Option[Motive], Option[String],
+    Read[(ResponseId, ResponseEventId, UUID, Option[ResponseId], Instant, Action, Status, Option[Motive], Option[String],
       Option[String], Option[String], Option[String], Option[String])]
       .map {
-        case (id, prid, did, parent, t, a, s, mot, answer, msg, lang, system, data) =>
+        case (id, evid, did, parent, t, a, s, mot, answer, msg, lang, system, data) =>
           val answ = answer.flatMap(a => parse(a).toOption)
           val incl = List.empty
-          PrivacyResponse(id, prid, did, t, a, s, mot, answ, msg, lang, system, parent, incl, data)
+          PrivacyResponse(id, evid, did, t, a, s, mot, answ, msg, lang, system, parent, incl, data)
       }
     // format: on
 

@@ -52,10 +52,10 @@ class ResponseCalculator(
           newResp <- createResponse(pr, ccr, d, resp, r)
           _       <- repos.privacyRequest.storeNewResponse(newResp)
           _       <- if (newResp.status == Granted) then storeEvent(pr, d) else IO.unit
-          _       <- callStorage(pr.appId, newResp.id, d, pr.dataSubject, r)
+          _       <- callStorage(pr.appId, newResp.eventId, d, pr.dataSubject, r)
           // _       <- callStorage(pr.appId, newResp.id, d, pr.dataSubject, r).attempt
         } yield ()
-      case _           => logger.info(s"Response ${resp.responseId} not UNDER-REVIEW")
+      case _           => logger.info(s"Response ${resp.id} not UNDER-REVIEW")
     }
 
   private def createResponse(
@@ -97,7 +97,7 @@ class ResponseCalculator(
 
   private def callStorage(
       appId: UUID,
-      rId: UUID,
+      rEventId: ResponseEventId,
       d: Demand,
       ds: Option[DataSubject],
       r: Recommendation
@@ -106,13 +106,13 @@ class ResponseCalculator(
       case (Access, Some(ds)) =>
         for {
           cbId <- UUIDGen.randomUUID[IO]
-          _    <- repos.callbacks.set(cbId, appId, rId)
+          _    <- repos.callbacks.set(cbId, appId, rEventId)
           _    <- storage.requestAccess(cbId, appId, d.id, ds, r)
         } yield ()
       case (Delete, Some(ds)) =>
         for {
           cbId <- UUIDGen.randomUUID[IO]
-          _    <- repos.callbacks.set(cbId, appId, rId)
+          _    <- repos.callbacks.set(cbId, appId, rEventId)
           _    <- storage.requestDeletion(cbId, appId, d.id, ds, r)
         } yield ()
       case _                  => IO.unit
