@@ -12,6 +12,7 @@ import scala.util.Random
 import io.blindnet.pce.priv.terms.ProcessingCategory
 import io.blindnet.pce.priv.terms.Purpose
 import java.time.temporal.ChronoUnit
+import java.util.UUID
 
 class TimelineSpec extends UnitSpec {
 
@@ -20,6 +21,8 @@ class TimelineSpec extends UnitSpec {
     extension [T](l: List[T]) def sample = l(Random.nextInt(l.length))
 
     extension (i: Instant) def -(n: Int) = i.minus(1, ChronoUnit.DAYS)
+
+    def uuid = java.util.UUID.randomUUID
 
     def scope(t: (String, String, String)*) = PrivacyScope(
       t.toSet.map(tt => PrivacyScopeTriple.unsafe(tt._1, tt._2, tt._3))
@@ -48,7 +51,7 @@ class TimelineSpec extends UnitSpec {
     val emptyS = PrivacyScope.empty
 
     def lbEvent(
-        id: String,
+        id: UUID,
         typ: EventTerms,
         lb: LegalBaseTerms,
         s: PrivacyScope,
@@ -56,28 +59,28 @@ class TimelineSpec extends UnitSpec {
     ) =
       TimelineEvent.LegalBase(id, typ, lb, t, s)
 
-    def cgEvent(id: String, s: PrivacyScope, t: Instant = now) =
+    def cgEvent(id: UUID, s: PrivacyScope, t: Instant = now) =
       TimelineEvent.ConsentGiven(id, t, s)
 
-    def crEvent(id: String, t: Instant = now) =
+    def crEvent(id: UUID, t: Instant = now) =
       TimelineEvent.ConsentRevoked(id, t)
 
-    def startServiceContract(id: String, s: PrivacyScope, t: Instant = now) =
+    def startServiceContract(id: UUID, s: PrivacyScope, t: Instant = now) =
       lbEvent(id, EventTerms.ServiceStart, LegalBaseTerms.Contract, s, t)
 
-    def endServiceContract(id: String, t: Instant = now) =
+    def endServiceContract(id: UUID, t: Instant = now) =
       lbEvent(id, EventTerms.ServiceEnd, LegalBaseTerms.Contract, PrivacyScope.empty, t)
 
-    def startServiceNecessary(id: String, s: PrivacyScope, t: Instant = now) =
+    def startServiceNecessary(id: UUID, s: PrivacyScope, t: Instant = now) =
       lbEvent(id, EventTerms.ServiceStart, LegalBaseTerms.Necessary, s, t)
 
-    def endServiceNecessary(id: String, t: Instant = now) =
+    def endServiceNecessary(id: UUID, t: Instant = now) =
       lbEvent(id, EventTerms.ServiceEnd, LegalBaseTerms.Necessary, PrivacyScope.empty, t)
 
-    def startServiceLegit(id: String, s: PrivacyScope, t: Instant = now) =
+    def startServiceLegit(id: UUID, s: PrivacyScope, t: Instant = now) =
       lbEvent(id, EventTerms.ServiceStart, LegalBaseTerms.LegitimateInterest, s, t)
 
-    def endServiceLegit(id: String, t: Instant = now) =
+    def endServiceLegit(id: UUID, t: Instant = now) =
       lbEvent(id, EventTerms.ServiceEnd, LegalBaseTerms.LegitimateInterest, PrivacyScope.empty, t)
 
   }
@@ -93,7 +96,9 @@ class TimelineSpec extends UnitSpec {
 
     describe("should calculate a correct privacy scope") {
       it("for 2 contract start events") {
-        Timeline(startServiceContract("1", scope1), startServiceContract("1", scope2))
+        val uuid1 = uuid
+
+        Timeline(startServiceContract(uuid1, scope1), startServiceContract(uuid1, scope2))
           .eligiblePrivacyScope() shouldBe
           scope(
             ("CONTACT.EMAIL", "COLLECTION", "ADVERTISING"),
@@ -104,35 +109,44 @@ class TimelineSpec extends UnitSpec {
       }
 
       it("for start and end service events") {
-        val e1  = startServiceContract("10", randomScope(), now - 100)
-        val e2  = startServiceContract("20", randomScope(), now - 90)
-        val e3  = startServiceNecessary("30", randomScope(), now - 80)
-        val e4  = endServiceContract("10", now - 70)
-        val e5  = endServiceContract("40", now - 60)
-        val e6  = startServiceContract("40", randomScope(), now - 50)
-        val e7  = endServiceNecessary("30", now - 40)
-        val e8  = startServiceNecessary("50", randomScope(), now - 30)
-        val e9  = endServiceContract("100", now - 20)
-        val e10 = endServiceNecessary("110", now - 10)
+        val uuid1 = uuid
+        val uuid2 = uuid
+        val uuid3 = uuid
+        val uuid4 = uuid
+
+        val e1  = startServiceContract(uuid1, randomScope(), now - 100)
+        val e2  = startServiceContract(uuid2, randomScope(), now - 90)
+        val e3  = startServiceNecessary(uuid3, randomScope(), now - 80)
+        val e4  = endServiceContract(uuid1, now - 70)
+        val e5  = endServiceContract(uuid4, now - 60)
+        val e6  = startServiceContract(uuid4, randomScope(), now - 50)
+        val e7  = endServiceNecessary(uuid3, now - 40)
+        val e8  = startServiceNecessary(uuid, randomScope(), now - 30)
+        val e9  = endServiceContract(uuid, now - 20)
+        val e10 = endServiceNecessary(uuid, now - 10)
 
         Timeline(e1, e2, e3, e4, e5, e6, e7, e8, e9, e10)
           .eligiblePrivacyScope() shouldBe (e2.getScope union e6.getScope union e8.getScope)
       }
 
       it("for 1 given consent") {
-        val e1 = cgEvent("1", randomScope())
+        val e1 = cgEvent(uuid, randomScope())
         Timeline(e1).eligiblePrivacyScope() shouldBe e1.getScope
       }
 
       it("for given and revoked consents") {
-        val g1  = cgEvent("1", randomScope(), now - 100)
-        val g2  = cgEvent("2", randomScope(), now - 90)
-        val r1a = crEvent("1", now - 80)
-        val g3  = cgEvent("3", randomScope(), now - 70)
-        val r2  = crEvent("2", now - 60)
-        val r1b = crEvent("1", now - 50)
-        val r4  = crEvent("4", now - 40)
-        val g4  = cgEvent("4", randomScope(), now - 30)
+        val uuid1 = uuid
+        val uuid2 = uuid
+        val uuid3 = uuid
+
+        val g1  = cgEvent(uuid1, randomScope(), now - 100)
+        val g2  = cgEvent(uuid2, randomScope(), now - 90)
+        val r1a = crEvent(uuid1, now - 80)
+        val g3  = cgEvent(uuid, randomScope(), now - 70)
+        val r2  = crEvent(uuid2, now - 60)
+        val r1b = crEvent(uuid1, now - 50)
+        val r4  = crEvent(uuid3, now - 40)
+        val g4  = cgEvent(uuid3, randomScope(), now - 30)
 
         Timeline(g1, g2, r1a, g3, r2, r1b, r4, g4).eligiblePrivacyScope() shouldBe
           (g3.getScope union g4.getScope)
