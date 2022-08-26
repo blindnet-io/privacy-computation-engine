@@ -31,7 +31,7 @@ lazy val priv = (project in file("modules/priv"))
       dependencies.main.circeGeneric,
       dependencies.main.tapir,
       dependencies.main.doobie,
-      dependencies.main.doobiePostres,
+      dependencies.main.doobiePostgres,
       dependencies.test.scalatest,
       dependencies.test.scalaCheck
     )
@@ -53,7 +53,8 @@ lazy val core = (project in file("modules/core"))
       dependencies.main.flyway,
       dependencies.main.doobie,
       dependencies.main.doobieHikari,
-      dependencies.main.doobiePostres,
+      dependencies.main.doobiePostgres,
+      dependencies.main.doobiePostgresCirce,
       dependencies.main.tapir,
       dependencies.main.tapirHttp4s,
       dependencies.main.tapirJsonCirce,

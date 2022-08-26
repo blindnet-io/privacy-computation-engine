@@ -30,9 +30,10 @@ object dependencies {
     val tapirJsonCirce = "com.softwaremill.sttp.tapir" %% "tapir-json-circe"        % tapirV
     val tapirSwagger   = "com.softwaremill.sttp.tapir" %% "tapir-swagger-ui-bundle" % tapirV
 
-    val doobie        = "org.tpolecat" %% "doobie-core"     % doobieV
-    val doobieHikari  = "org.tpolecat" %% "doobie-hikari"   % doobieV
-    val doobiePostres = "org.tpolecat" %% "doobie-postgres" % doobieV
+    val doobie              = "org.tpolecat" %% "doobie-core"           % doobieV
+    val doobieHikari        = "org.tpolecat" %% "doobie-hikari"         % doobieV
+    val doobiePostgres      = "org.tpolecat" %% "doobie-postgres"       % doobieV
+    val doobiePostgresCirce = "org.tpolecat" %% "doobie-postgres-circe" % doobieV
 
     val flyway = "org.flywaydb" % "flyway-core" % "8.5.12"
 
