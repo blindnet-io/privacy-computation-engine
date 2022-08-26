@@ -3,11 +3,12 @@ package priv
 
 import terms.*
 import java.time.Instant
+import java.util.UUID
 
 enum TimelineEvent(timestamp: Instant) {
 
   case LegalBase(
-      lbId: String,
+      lbId: UUID,
       eType: EventTerms,
       lb: LegalBaseTerms,
       timestamp: Instant,
@@ -15,13 +16,13 @@ enum TimelineEvent(timestamp: Instant) {
   ) extends TimelineEvent(timestamp)
 
   case ConsentGiven(
-      lbId: String,
+      lbId: UUID,
       timestamp: Instant,
       scope: PrivacyScope
   ) extends TimelineEvent(timestamp)
 
   case ConsentRevoked(
-      lbId: String,
+      lbId: UUID,
       timestamp: Instant
   ) extends TimelineEvent(timestamp)
 

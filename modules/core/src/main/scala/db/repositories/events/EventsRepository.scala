@@ -24,6 +24,10 @@ trait EventsRepository {
 
   def addConsentRevoked(cId: UUID, ds: DataSubject, date: Instant): IO[Unit]
 
+  def addObject(dId: UUID, ds: DataSubject, date: Instant): IO[Unit]
+
+  def addRestrict(dId: UUID, ds: DataSubject, date: Instant): IO[Unit]
+
   def addLegalBaseEvent(lbId: UUID, ds: DataSubject, e: EventTerms, date: Instant): IO[Unit]
 }
 

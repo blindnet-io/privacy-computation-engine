@@ -78,6 +78,12 @@ class ResponseCalculator(
       case RevokeConsent =>
         general.createResponse(pr, ccr, d, resp, r)
 
+      case Object =>
+        general.createResponse(pr, ccr, d, resp, r)
+
+      case Restrict =>
+        general.createResponse(pr, ccr, d, resp, r)
+
       case _ => IO.raiseError(new NotImplementedError)
     }
 
@@ -91,8 +97,12 @@ class ResponseCalculator(
           cId <- IO(d.restrictions.head.asInstanceOf[Restriction.Consent].consentId)
           _   <- repos.events.addConsentRevoked(cId, pr.dataSubject.get, pr.timestamp)
         } yield ()
-      case _             =>
-        IO.unit
+
+      case Object => repos.events.addObject(d.id, pr.dataSubject.get, pr.timestamp)
+
+      case Restrict => repos.events.addRestrict(d.id, pr.dataSubject.get, pr.timestamp)
+
+      case _ => IO.unit
     }
 
   private def callStorage(

@@ -25,7 +25,9 @@ class EventsRepositoryLive(xa: Transactor[IO]) extends EventsRepository {
         lbEvents <- queries.getLegalBaseEvents(appId, ds)
         cgEvents <- queries.getConsentGivenEvents(appId, ds)
         crEvents <- queries.getConsentRevokedEvents(appId, ds)
-        allEvents = (lbEvents ++ cgEvents ++ crEvents).sortBy(_.getTimestamp)
+        oEvents  <- queries.getObjectEvents(appId, ds)
+        rEvents  <- queries.getRestrictEvents(appId, ds)
+        allEvents = (lbEvents ++ cgEvents ++ crEvents ++ oEvents ++ rEvents).sortBy(_.getTimestamp)
       } yield Timeline(allEvents)
 
     res.transact(xa)
@@ -36,6 +38,12 @@ class EventsRepositoryLive(xa: Transactor[IO]) extends EventsRepository {
 
   def addConsentRevoked(cId: UUID, ds: DataSubject, date: Instant): IO[Unit] =
     queries.addConsentRevoked(cId, ds, date).transact(xa).void
+
+  def addObject(dId: UUID, ds: DataSubject, date: Instant): IO[Unit] =
+    queries.addObject(dId, ds, date).transact(xa).void
+
+  def addRestrict(dId: UUID, ds: DataSubject, date: Instant): IO[Unit] =
+    queries.addRestrict(dId, ds, date).transact(xa).void
 
   def addLegalBaseEvent(lbId: UUID, ds: DataSubject, e: EventTerms, date: Instant): IO[Unit] =
     queries.addLegalBaseEvent(lbId, ds, e, date).transact(xa).void

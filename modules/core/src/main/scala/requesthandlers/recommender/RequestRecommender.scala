@@ -107,7 +107,7 @@ class RequestRecommender(
       app       <- repos.app.get(pr.appId).map(_.get)
       responses <- repos.privacyRequest.getDemandResponses(c.dId)
       _         <- responses.traverse(r => processResponse(app, pr, d, c, r))
-      _         <- storeDemandForNextStep(app, d)
+      _         <- complete(app, d)
     } yield ()
 
   // TODO .get
@@ -151,6 +151,7 @@ class RequestRecommender(
       case a if a == Transparency || a.isChildOf(Transparency) => IO(Recommendation.grant(_, d.id))
       case Access | Delete                                     => getRec(pr, d)
       case RevokeConsent                                       => getRecRevoke(pr, d)
+      case Object | Restrict                                   => IO(Recommendation.grant(_, d.id))
       case _ => IO.raiseError(new NotImplementedError)
     }
 
@@ -191,13 +192,14 @@ class RequestRecommender(
       )
       .handleError(_ => Recommendation.rejectReqUnsupported(_, d.id))
 
-  private def storeDemandForNextStep(app: PCEApp, d: Demand) =
+  private def complete(app: PCEApp, d: Demand) =
     val auto: Boolean =
       d.action match {
         case a if a == Transparency || a.isChildOf(Transparency) => app.autoResolve.transparency
         case Access                                              => app.autoResolve.access
         case Delete                                              => app.autoResolve.delete
         case RevokeConsent                                       => app.autoResolve.consents
+        case Object | Restrict                                   => app.autoResolve.consents
         case _                                                   => false
       }
 

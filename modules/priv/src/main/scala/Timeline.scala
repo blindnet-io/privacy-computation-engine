@@ -2,6 +2,7 @@ package io.blindnet.pce
 package priv
 
 import java.time.Instant
+import java.util.UUID
 
 case class Timeline(
     events: List[TimelineEvent]
@@ -22,7 +23,7 @@ case class Timeline(
     def addEvent(ev: TimelineEvent, acc: Acc) =
       acc.copy(events = ev :: acc.events)
 
-    def removeEvent(id: String, acc: Acc) =
+    def removeEvent(id: UUID, acc: Acc) =
       acc.copy(events = acc.events.filterNot {
         case ev: LegalBase if ev.lbId == id    => true
         case ev: ConsentGiven if ev.lbId == id => true
