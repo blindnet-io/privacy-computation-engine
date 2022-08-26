@@ -27,7 +27,7 @@ case class PrivacyResponsePayload(
     answer: Option[Json],
     message: Option[String],
     lang: Option[String],
-    includes: List[String], // TODO: recursive type
+    includes: List[Json], // TODO: recursive type
     data: Option[String]
 )
 
@@ -48,8 +48,7 @@ object PrivacyResponsePayload {
       pr.answer,
       pr.message,
       pr.lang,
-      // pr.includes.map(PrivacyResponsePayload.fromPrivPrivacyResponse),
-      pr.includes.map(_ => ""),
+      pr.includes.map(r => PrivacyResponsePayload.fromPrivPrivacyResponse(r).asJson),
       pr.data
     )
   }

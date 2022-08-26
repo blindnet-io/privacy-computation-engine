@@ -21,14 +21,15 @@ private object codecs {
 
   given Read[PrivacyResponse] =
     // format: off 
-    Read[(UUID, UUID, UUID, Instant, Action, Status, Option[Motive], Option[String], Option[String], Option[String], Option[String], Option[String])]
-    // format: on
+    Read[(UUID, UUID, UUID, Option[UUID], Instant, Action, Status, Option[Motive], Option[String],
+      Option[String], Option[String], Option[String], Option[String])]
       .map {
-        case (id, prid, did, t, a, s, mot, answer, msg, lang, system, data) =>
+        case (id, prid, did, parent, t, a, s, mot, answer, msg, lang, system, data) =>
           val answ = answer.flatMap(a => parse(a).toOption)
           val incl = List.empty
-          PrivacyResponse(id, prid, did, t, a, s, mot, answ, msg, lang, system, incl, data)
+          PrivacyResponse(id, prid, did, t, a, s, mot, answ, msg, lang, system, parent, incl, data)
       }
+    // format: on
 
   given Read[PrivacyRequest] =
     Read[(UUID, UUID, Option[String], List[String], Instant, Target, Option[String])]

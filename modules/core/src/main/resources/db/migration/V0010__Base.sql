@@ -279,6 +279,7 @@ create table privacy_responses (
   id uuid primary key,
   did uuid not null,
   parent uuid, -- included in
+  action action_terms not null,
   system varchar,
   constraint demand_fk
     foreign key (did)

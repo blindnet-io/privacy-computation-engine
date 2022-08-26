@@ -39,9 +39,8 @@ class TransparencyCalculator(
       io.map(_.asJson)
 
   def createResponse(
+      resp: PrivacyResponse,
       pr: PrivacyRequest,
-      d: Demand,
-      rId: UUID,
       r: Recommendation
   ): IO[PrivacyResponse] =
     for {
@@ -51,19 +50,22 @@ class TransparencyCalculator(
         r.status match {
           case Some(Status.Granted) | None =>
             for {
-              answer <- getAnswer(d, pr.appId, pr.dataSubject)
+              answer <- getAnswer(resp.action, pr.appId, pr.dataSubject)
               // format: off
-              newResp = PrivacyResponse(id, rId, d.id, timestamp, d.action, Status.Granted, answer = Some(answer))
+              newResp = PrivacyResponse(id, resp.responseId, resp.demandId, timestamp, resp.action, Status.Granted, answer = Some(answer))
               // format: on
             } yield newResp
 
-          case Some(s) => IO.pure(PrivacyResponse(id, rId, d.id, timestamp, d.action, s, r.motive))
+          case Some(s) =>
+            // format: off
+            IO.pure(PrivacyResponse(id, resp.responseId, resp.demandId, timestamp, resp.action, s, r.motive))
+            // format: on
         }
     } yield newResp
 
-  private def getAnswer(d: Demand, appId: UUID, ds: Option[DataSubject]): IO[Json] =
-    d.action match {
-      case Transparency          => processTransparency(appId, ds).json
+  private def getAnswer(a: Action, appId: UUID, ds: Option[DataSubject]): IO[Json] =
+    a match {
+      case Transparency          => IO(true.asJson)
       case TDataCategories       => psRepo.getDataCategories(appId).json
       case TDPO                  => getDpo(appId).json
       case TKnown                => getUserKnown(appId, ds).json
@@ -78,28 +80,6 @@ class TransparencyCalculator(
       case TWho                  => getWho(appId).json
       case _                     => IO.raiseError(new NotImplementedError)
     }
-
-  private def processTransparency(
-      appId: UUID,
-      ds: Option[DataSubject]
-  ): IO[Map[Action, Json]] = {
-    val all = List(
-      psRepo.getDataCategories(appId).json.map((TDataCategories, _)),
-      getDpo(appId).json.map((TDPO, _)),
-      getUserKnown(appId, ds).json.map((TKnown, _)),
-      lbRepo.get(appId, scope = false).json.map((TLegalBases, _)),
-      getOrganization(appId).json.map((TOrganization, _)),
-      getPrivacyPolicy(appId).json.map((TPolicy, _)),
-      psRepo.getProcessingCategories(appId).json.map((TProcessingCategories, _)),
-      prRepo.get(appId).json.map((TProvenance, _)),
-      psRepo.getPurposes(appId).json.map((TPurpose, _)),
-      rpRepo.get(appId).json.map((TRetention, _)),
-      getWhere(appId).json.map((TWhere, _)),
-      getWho(appId).json.map((TWho, _))
-    ).parSequence
-
-    all.map(_.toMap)
-  }
 
   private def getDpo(appId: UUID): IO[String] =
     giRepo

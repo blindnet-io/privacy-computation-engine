@@ -85,12 +85,12 @@ class PrivacyRequestService(
         req.dataSubject.map(_.id),
         demands
       )
+      _         <- validateRequest(appId, pr)
 
-      _ <- validateRequest(appId, pr)
-
-      _  <- repos.privacyRequest.store(pr)
-      cs <- demands.traverse(d => CommandCreateRecommendation.create(d.id))
-      _  <- repos.commands.addCreateRec(cs)
+      responses <- PrivacyResponse.fromPrivacyRequest[IO](pr)
+      _         <- repos.privacyRequest.store(pr, responses)
+      cs        <- demands.traverse(d => CommandCreateRecommendation.create(d.id))
+      _         <- repos.commands.addCreateRec(cs)
 
     } yield PrivacyRequestCreatedPayload(reqId)
   }
@@ -143,9 +143,11 @@ class PrivacyRequestService(
 
   def getResponse(requestId: UUID, appId: UUID, userId: Option[String]) =
     for {
-      _         <- verifyReqExists(requestId, appId, userId)
-      responses <- repos.privacyRequest.getResponsesForRequest(requestId)
-      resp = responses.map(PrivacyResponsePayload.fromPrivPrivacyResponse)
+      _             <- verifyReqExists(requestId, appId, userId)
+      privResponses <- repos.privacyRequest.getResponsesForRequest(requestId)
+      resp = PrivacyResponse
+        .group(privResponses)
+        .map(PrivacyResponsePayload.fromPrivPrivacyResponse)
     } yield resp
 
 }

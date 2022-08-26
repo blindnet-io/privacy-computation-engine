@@ -37,24 +37,26 @@ class ResponseCalculator(
 
   private def createResponse(ccr: CommandCreateResponse): IO[Unit] =
     for {
-      // TODO .get
-      resp <- repos.privacyRequest.getDemandResponse(ccr.dId).map(_.get)
-      _    <- resp.status match {
-        case UnderReview =>
-          // TODO: rollback if fails
-          for {
-            d       <- repos.privacyRequest.getDemand(ccr.dId, true).map(_.get)
-            pr      <- repos.privacyRequest.getRequest(d).map(_.get)
-            r       <- repos.privacyRequest.getRecommendation(d.id).map(_.get)
-            newResp <- createResponse(pr, ccr, d, resp, r)
-            _       <- repos.privacyRequest.storeNewResponse(newResp)
-            _       <- if (newResp.status == Granted) then storeEvent(pr, d) else IO.unit
-            _       <- callStorage(pr.appId, newResp.id, d, pr.dataSubject, r)
-            // _       <- callStorage(pr.appId, newResp.id, d, pr.dataSubject, r).attempt
-          } yield ()
-        case _           => logger.info(s"Demand ${ccr.dId} not UNDER-REVIEW")
-      }
+      responses <- repos.privacyRequest.getDemandResponses(ccr.dId)
+      _         <- responses.traverse(r => processResponse(ccr, r))
     } yield ()
+
+  private def processResponse(ccr: CommandCreateResponse, resp: PrivacyResponse): IO[Unit] =
+    resp.status match {
+      case UnderReview =>
+        // TODO: rollback if fails
+        for {
+          d       <- repos.privacyRequest.getDemand(ccr.dId, true).map(_.get)
+          pr      <- repos.privacyRequest.getRequest(d).map(_.get)
+          r       <- repos.privacyRequest.getRecommendation(d.id).map(_.get)
+          newResp <- createResponse(pr, ccr, d, resp, r)
+          _       <- repos.privacyRequest.storeNewResponse(newResp)
+          _       <- if (newResp.status == Granted) then storeEvent(pr, d) else IO.unit
+          _       <- callStorage(pr.appId, newResp.id, d, pr.dataSubject, r)
+          // _       <- callStorage(pr.appId, newResp.id, d, pr.dataSubject, r).attempt
+        } yield ()
+      case _           => logger.info(s"Response ${resp.responseId} not UNDER-REVIEW")
+    }
 
   private def createResponse(
       pr: PrivacyRequest,
@@ -63,9 +65,9 @@ class ResponseCalculator(
       resp: PrivacyResponse,
       r: Recommendation
   ): IO[PrivacyResponse] =
-    d.action match {
+    resp.action match {
       case a if a == Transparency || a.isChildOf(Transparency) =>
-        transparency.createResponse(pr, d, resp.responseId, r)
+        transparency.createResponse(resp, pr, r)
 
       case Access =>
         general.createResponse(pr, ccr, d, resp, r)
@@ -140,8 +142,8 @@ object ResponseCalculator {
               e =>
                 logger
                   .error(e)(s"Error creating response for demand $dId - ${e.getMessage}")
-                  .flatMap(_ => IO.sleep(5.second))
-                  .flatMap(_ => repos.commands.addCreateResp(List(c)))
+                // .flatMap(_ => IO.sleep(5.second))
+                // .flatMap(_ => repos.commands.addCreateResp(List(c)))
             )
           }
         )

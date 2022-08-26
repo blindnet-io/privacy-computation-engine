@@ -18,7 +18,7 @@ import priv.terms.*
 
 class PrivacyRequestRepositoryLive(xa: Transactor[IO]) extends PrivacyRequestRepository {
 
-  def store(pr: PrivacyRequest): IO[Unit] = {
+  def store(pr: PrivacyRequest, responses: List[PrivacyResponse]): IO[Unit] = {
     def storePR =
       sql"""
         insert into privacy_requests (id, appid, dsid, provided_dsids, date, target, email)
@@ -84,36 +84,37 @@ class PrivacyRequestRepositoryLive(xa: Transactor[IO]) extends PrivacyRequestRep
         }
       }
 
-    // TODO: this is business logic. move it to service and handle transaction (Resource)
-    def storeResponse(d: Demand, id: UUID) =
+    def storeResponse(r: PrivacyResponse) =
       sql"""
-        insert into privacy_responses (id, did)
-        values ($id, ${d.id})
+        insert into privacy_responses (id, did, parent, action)
+        values (${r.responseId}, ${r.demandId}, ${r.parent}, ${r.action.encode}::action_terms)
       """.update.run
 
-    def storeResponseEvent(d: Demand, id: UUID, prId: UUID) =
+    def storeResponseEvent(r: PrivacyResponse) =
       sql"""
-        insert into privacy_response_events (id, prid, date, status, motive, message, lang)
-        values ($id, $prId, ${pr.timestamp}, ${Status.UnderReview.encode}::status_terms, null, null, null)
+        insert into privacy_response_events (id, prid, date, status)
+        values (${r.id}, ${r.responseId}, ${pr.timestamp}, ${r.status.encode}::status_terms)
       """.update.run
 
     val store = for {
-      r1 <- storePR
-      r2 <- pr.demands.traverse(
+      _  <- storePR
+      _  <- pr.demands.traverse(
         d =>
           for {
             r2a <- storeDemand(d)
             _   <- d.restrictions.traverse(r => storeRestriction(UUID.randomUUID(), d.id, r))
-            // TODO: where to generate IDs?
-            id1 = UUID.randomUUID()
-            id2 = UUID.randomUUID()
-            r2b <- storeResponse(d, id1)
-            r2c <- storeResponseEvent(d, id2, id1)
-          } yield r2a + r2b + r2c
+          } yield ()
       )
-    } yield r1 + r2.combineAll
+      r3 <- responses.traverse(
+        r => {
+          def store(r: PrivacyResponse) =
+            storeResponse(r) >> storeResponseEvent(r)
 
-    // TODO: ensure inserted
+          store(r) >> r.includes.traverse(store)
+        }
+      )
+    } yield ()
+
     store.transact(xa).void
   }
 
@@ -161,8 +162,9 @@ class PrivacyRequestRepositoryLive(xa: Transactor[IO]) extends PrivacyRequestRep
   def getResponse(respId: UUID): IO[Option[PrivacyResponse]] =
     queries.getResponse(respId).transact(xa)
 
-  def getDemandResponse(dId: UUID): IO[Option[PrivacyResponse]] =
-    queries.getDemandResponse(dId).transact(xa)
+  def getDemandResponses(dId: UUID): IO[List[PrivacyResponse]] = {
+    queries.getDemandResponses(dId).transact(xa)
+  }
 
   def storeNewResponse(r: PrivacyResponse): IO[Unit] =
     queries.storeNewResponse(r).transact(xa).void

@@ -114,7 +114,7 @@ private object queries {
   def getAllDemandResponses(reqId: UUID) =
     sql"""
       with query as (
-        select pre.id as id, pr.id as prid, d.id as did, pre.date as date, d.action as action, pre.status as status,
+        select pre.id as id, pr.id as prid, d.id as did, pr.parent as parent, pre.date as date, pr.action as action, pre.status as status,
           pre.motive as motive, pre.answer as answer, pre.message as message, pre.lang as lang, pr.system as system, pred.data as data,
           ROW_NUMBER() OVER (PARTITION BY pr.id ORDER BY date DESC) As r
         from privacy_response_events pre
@@ -128,11 +128,11 @@ private object queries {
       .query[PrivacyResponse]
       .to[List]
 
-  def getDemandResponse(dId: UUID) =
+  def getDemandResponses(dId: UUID) =
     // TODO: duplicate code
     sql"""
       with query as (
-        select pre.id as id, pr.id as prid, d.id as did, pre.date as date, d.action as action, pre.status as status,
+        select pre.id as id, pr.id as prid, d.id as did, pr.parent as parent, pre.date as date, pr.action as action, pre.status as status,
           pre.motive as motive, pre.answer as answer, pre.message as message, pre.lang as lang, pr.system as system, pred.data as data,
           ROW_NUMBER() OVER (PARTITION BY pr.id ORDER BY date DESC) As r
         from privacy_response_events pre
@@ -144,11 +144,11 @@ private object queries {
       select * from query where r = 1;
     """
       .query[PrivacyResponse]
-      .option
+      .to[List]
 
   def getResponse(respId: UUID) =
     sql"""
-      select pre.id as id, pr.id as prid, d.id as did, pre.date as date, d.action as action, pre.status as status,
+      select pre.id as id, pr.id as prid, d.id as did, pr.parent as parent, pre.date as date, pr.action as action, pre.status as status,
         pre.motive as motive, pre.answer as answer, pre.message as message, pre.lang as lang, pr.system as system, pred.data as data
       from privacy_response_events pre
         join privacy_responses pr on pr.id = pre.prid

@@ -12,7 +12,7 @@ import priv.terms.*
 
 trait PrivacyRequestRepository {
 
-  def store(pr: PrivacyRequest): IO[Unit]
+  def store(pr: PrivacyRequest, responses: List[PrivacyResponse]): IO[Unit]
 
   def requestExist(reqId: UUID, appId: UUID, userId: Option[String]): IO[Boolean]
 
@@ -32,7 +32,7 @@ trait PrivacyRequestRepository {
 
   def getResponse(respId: UUID): IO[Option[PrivacyResponse]]
 
-  def getDemandResponse(dId: UUID): IO[Option[PrivacyResponse]]
+  def getDemandResponses(dId: UUID): IO[List[PrivacyResponse]]
 
   def storeNewResponse(r: PrivacyResponse): IO[Unit]
 

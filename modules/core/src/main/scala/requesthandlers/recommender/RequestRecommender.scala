@@ -100,21 +100,28 @@ class RequestRecommender(
 
   val logger: Logger[IO] = Slf4jLogger.getLogger[IO]
 
-  private def processDemand(c: CommandCreateRecommendation): IO[Unit] =
+  def processDemand(c: CommandCreateRecommendation): IO[Unit] =
     for {
-      // TODO .get
-      resp <- repos.privacyRequest.getDemandResponse(c.dId).map(_.get)
-      _    <- resp.status match {
-        case UnderReview =>
-          for {
-            d   <- repos.privacyRequest.getDemand(c.dId, true).map(_.get)
-            pr  <- repos.privacyRequest.getRequest(d).map(_.get)
-            app <- repos.app.get(pr.appId).map(_.get)
-            _   <- validateDemand(app, pr, d)
-          } yield ()
-        case _           => logger.info(s"Demand ${c.dId} not UNDER-REVIEW")
-      }
+      d         <- repos.privacyRequest.getDemand(c.dId, true).map(_.get)
+      pr        <- repos.privacyRequest.getRequest(d).map(_.get)
+      app       <- repos.app.get(pr.appId).map(_.get)
+      responses <- repos.privacyRequest.getDemandResponses(c.dId)
+      _         <- responses.traverse(r => processResponse(app, pr, d, c, r))
+      _         <- storeDemandForNextStep(app, d)
     } yield ()
+
+  // TODO .get
+  private def processResponse(
+      app: PCEApp,
+      pr: PrivacyRequest,
+      d: Demand,
+      c: CommandCreateRecommendation,
+      resp: PrivacyResponse
+  ): IO[Unit] =
+    resp.status match {
+      case UnderReview => validateDemand(app, pr, d)
+      case _           => logger.info(s"Response ${resp.responseId} not UNDER-REVIEW")
+    }
 
   def storeRecommendation(f: UUID => Recommendation) =
     UUIDGen[IO].randomUUID map f >>= repos.privacyRequest.storeRecommendation
@@ -137,7 +144,6 @@ class RequestRecommender(
         // recommendation exists
         case _    => IO.unit
       }
-      _      <- storeDemandForNextStep(app, d)
     } yield ()
 
   private def getRecommendation(pr: PrivacyRequest, d: Demand) =
@@ -223,8 +229,8 @@ object RequestRecommender {
               e =>
                 logger
                   .error(e)(s"Error processing demand $dId - ${e.getMessage}")
-                  .flatMap(_ => IO.sleep(5.second))
-                  .flatMap(_ => repos.commands.addCreateRec(List(c)))
+                // .flatMap(_ => IO.sleep(5.second))
+                // .flatMap(_ => repos.commands.addCreateRec(List(c)))
             )
           }
         )

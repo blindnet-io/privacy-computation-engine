@@ -32,13 +32,17 @@ enum Action(term: String, parent: Option[Action] = None) {
   case TWho        extends Action("TRANSPARENCY.WHO", Some(Transparency))
   case Other       extends Action("OTHER")
 
-  def allSubCategories(): List[Action] = {
+  def withSubCategories(): List[Action] = {
     val children = Action.values.filter(_.isChildOf(this)).toList
-    this +: children.flatMap(_.allSubCategories())
+    this +: children.flatMap(_.withSubCategories())
   }
 
-  def isChildOf(a: Action) =
-    parent.exists(_ == a)
+  def getMostGranularSubcategories(): List[Action] = {
+    val children = Action.values.filter(_.isChildOf(this)).toList
+    children.flatMap(_.withSubCategories())
+  }
+
+  def isChildOf(a: Action) = parent.exists(_ == a)
 
   def isTerm(str: String) = term == str
 
