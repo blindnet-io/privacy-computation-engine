@@ -67,7 +67,7 @@ class ResponseCalculator(
   ): IO[PrivacyResponse] =
     resp.action match {
       case a if a == Transparency || a.isChildOf(Transparency) =>
-        transparency.createResponse(resp, pr, r)
+        transparency.createResponse(resp, pr.appId, pr.timestamp, pr.dataSubject, d.restrictions, r)
 
       case Access =>
         general.createResponse(pr, ccr, d, resp, r)

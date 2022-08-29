@@ -9,6 +9,7 @@ import doobie.util.*
 import doobie.postgres.*
 import doobie.postgres.implicits.*
 import java.util.UUID
+import scala.reflect.ClassTag
 
 enum Restriction {
   case PrivacyScope(scope: PS) extends Restriction
@@ -20,6 +21,13 @@ enum Restriction {
   case Provenance(term: ProvenanceTerms, target: Option[Target]) extends Restriction
 
   case DataReference(dataReferences: List[String]) extends Restriction
+
+  def get[T <: Restriction: ClassTag]: Option[T] =
+    this match {
+      case ps: T => Some(ps)
+      case _     => None
+    }
+
 }
 
 object Restriction {
@@ -51,5 +59,7 @@ object Restriction {
       // TODO
       case _                                                    => throw new NotImplementedError()
     }
+
+  def get[T <: Restriction: ClassTag](l: List[Restriction]): List[T] = l.flatMap(_.get)
 
 }
