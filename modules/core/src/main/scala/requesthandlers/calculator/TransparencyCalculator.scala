@@ -84,7 +84,7 @@ class TransparencyCalculator(
       case TProcessingCategories => getProcessingCategories(appId, t, ds, restr).json
       case TProvenance           => getProvenances(appId, restr).json
       case TPurpose              => getPurposes(appId, t, ds, restr).json
-      case TRetention            => getRetentionPolicies(appId, restr).json
+      case TRetention            => getRetentionPolicies(appId, t, ds, restr).json
       case TWhere                => getWhere(appId).json
       case TWho                  => getWho(appId).json
       case _                     => IO.raiseError(new NotImplementedError)
@@ -204,17 +204,36 @@ class TransparencyCalculator(
         } yield fProvenances
     }
 
-  private def getRetentionPolicies(appId: UUID, restr: List[Restriction]) =
-    getRestrictionScope(restr) match {
-      case None      => rpRepo.get(appId)
-      case Some(rPS) =>
+  private def getRetentionPolicies(
+      appId: UUID,
+      t: Instant,
+      ds: Option[DataSubject],
+      restr: List[Restriction]
+  ) = {
+    val rPS = getRestrictionScope(restr)
+
+    ds match {
+      case None =>
         for {
-          selectors <- repos.privacyScope.getSelectors(appId, active = true)
-          dcs = rPS.zoomIn(selectors).triples.map(_.dataCategory)
           retentionPolicies <- rpRepo.get(appId)
-          fRetentionPolicies = retentionPolicies.filter(p => dcs.contains(p._1))
-        } yield fRetentionPolicies
+          selectors         <- repos.privacyScope.getSelectors(appId, active = true)
+          filteredRPs = rPS.fold(retentionPolicies)(
+            rps =>
+              val dcs = rps.zoomIn(selectors).triples.map(_.dataCategory)
+              retentionPolicies.filter(p => dcs.contains(p._1))
+          )
+        } yield filteredRPs
+
+      case Some(ds) =>
+        for {
+          ePS <- getEligibilePS(appId, t, ds)
+          fPS <- rPS.fold(IO(ePS))(intersect(appId, ePS, _))
+          dcs = fPS.triples.map(_.dataCategory)
+          retentionPolicies <- rpRepo.get(appId)
+          filtered = retentionPolicies.filter(p => dcs.contains(p._1))
+        } yield filtered
     }
+  }
 
   private def getDpo(appId: UUID): IO[String] =
     giRepo
