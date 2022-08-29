@@ -18,7 +18,7 @@ object DataCategory {
 
   def getMostGranular(
       dc: DataCategory,
-      selectors: List[DataCategory] = List.empty
+      selectors: Set[DataCategory] = Set.empty
   ): Set[DataCategory] = {
     val allterms = terms ++ selectors.map(_.term)
 
@@ -33,7 +33,7 @@ object DataCategory {
     res.toSet.map(DataCategory(_))
   }
 
-  def exists(dc: DataCategory, selectors: List[DataCategory]): Boolean =
+  def exists(dc: DataCategory, selectors: Set[DataCategory]): Boolean =
     terms.contains(dc.term) || selectors.contains(dc)
 
   val terms = List(

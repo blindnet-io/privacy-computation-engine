@@ -24,7 +24,7 @@ object queries {
       where lb.active and dc.active and lb.appid = $appId
     """ ++ (if selectors then fr"" else fr" and selector = false"))
       .query[DataCategory]
-      .to[List]
+      .to[Set]
 
   def getAllDataCategories(appId: UUID) =
     sql"""
@@ -32,7 +32,7 @@ object queries {
       where (active = true or active is null) and (appid = $appId or appid is null)
     """
       .query[DataCategory]
-      .to[List]
+      .to[Set]
 
   def getProcessingCategories(appId: UUID) =
     sql"""
@@ -43,7 +43,7 @@ object queries {
       where lb.active and lb.appid = $appId
     """
       .query[ProcessingCategory]
-      .to[List]
+      .to[Set]
 
   def getPurposes(appId: UUID) =
     sql"""
@@ -54,7 +54,7 @@ object queries {
       where lb.active and lb.appid = $appId
     """
       .query[Purpose]
-      .to[List]
+      .to[Set]
 
   def getSelectors(appId: UUID, active: Boolean) =
     sql"""
@@ -63,7 +63,7 @@ object queries {
       where selector = true and appid = $appId and active = $active
     """
       .query[DataCategory]
-      .to[List]
+      .to[Set]
 
   def addSelectors(appId: UUID, terms: NonEmptyList[(UUID, DataCategory)]) = {
     val sql = s"""

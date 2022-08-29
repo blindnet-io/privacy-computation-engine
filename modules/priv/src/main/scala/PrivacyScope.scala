@@ -24,7 +24,7 @@ case class PrivacyScope(
 
   def isEmpty = triples.isEmpty
 
-  def zoomIn(selectors: List[DataCategory] = List.empty) = {
+  def zoomIn(selectors: Set[DataCategory] = Set.empty) = {
     val newTriples = triples.flatMap(
       triple =>
         for {

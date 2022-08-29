@@ -151,7 +151,7 @@ class ConfigurationService(
       ps  <- repos.provenance.get(appId)
       rps <- repos.retentionPolicy.get(appId)
 
-      res = dcs.map(
+      res = dcs.toList.map(
         dc => {
           val p  = ps.getOrElse(dc, List.empty)
           val rp = rps.getOrElse(dc, List.empty)

@@ -16,15 +16,15 @@ import priv.terms.*
 import db.DbUtil
 
 trait PrivacyScopeRepository {
-  def getDataCategories(appId: UUID, selectors: Boolean = true): IO[List[DataCategory]]
+  def getDataCategories(appId: UUID, selectors: Boolean = true): IO[Set[DataCategory]]
 
-  def getAllDataCategories(appId: UUID): IO[List[DataCategory]]
+  def getAllDataCategories(appId: UUID): IO[Set[DataCategory]]
 
-  def getProcessingCategories(appId: UUID): IO[List[ProcessingCategory]]
+  def getProcessingCategories(appId: UUID): IO[Set[ProcessingCategory]]
 
-  def getPurposes(appId: UUID): IO[List[Purpose]]
+  def getPurposes(appId: UUID): IO[Set[Purpose]]
 
-  def getSelectors(appId: UUID, active: Boolean): IO[List[DataCategory]]
+  def getSelectors(appId: UUID, active: Boolean): IO[Set[DataCategory]]
 
   def addSelectors(appId: UUID, terms: NonEmptyList[(UUID, DataCategory)]): IO[Unit]
 

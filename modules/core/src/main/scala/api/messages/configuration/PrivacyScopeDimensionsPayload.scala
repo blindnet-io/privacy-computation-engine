@@ -17,9 +17,9 @@ import sttp.tapir.generic.Configuration
 import sttp.tapir.generic.auto.*
 
 case class PrivacyScopeDimensionsPayload(
-    dataCategories: List[DataCategory],
-    processingCategories: List[ProcessingCategory],
-    purposes: List[Purpose]
+    dataCategories: Set[DataCategory],
+    processingCategories: Set[ProcessingCategory],
+    purposes: Set[Purpose]
 )
 
 object PrivacyScopeDimensionsPayload {
