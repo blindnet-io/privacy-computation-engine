@@ -82,9 +82,9 @@ class TransparencyCalculator(
       case TOrganization         => getOrganization(appId).json
       case TPolicy               => getPrivacyPolicy(appId).json
       case TProcessingCategories => getProcessingCategories(appId, t, ds, restr).json
-      case TProvenance           => prRepo.get(appId).json
+      case TProvenance           => getProvenances(appId, restr).json
       case TPurpose              => getPurposes(appId, t, ds, restr).json
-      case TRetention            => rpRepo.get(appId).json
+      case TRetention            => getRetentionPolicies(appId, restr).json
       case TWhere                => getWhere(appId).json
       case TWho                  => getWho(appId).json
       case _                     => IO.raiseError(new NotImplementedError)
@@ -191,6 +191,30 @@ class TransparencyCalculator(
         } yield finalPPs
     }
   }
+
+  private def getProvenances(appId: UUID, restr: List[Restriction]) =
+    getRestrictionScope(restr) match {
+      case None      => prRepo.get(appId)
+      case Some(rPS) =>
+        for {
+          selectors <- repos.privacyScope.getSelectors(appId, active = true)
+          dcs = rPS.zoomIn(selectors).triples.map(_.dataCategory)
+          provenances <- prRepo.get(appId)
+          fProvenances = provenances.filter(p => dcs.contains(p._1))
+        } yield fProvenances
+    }
+
+  private def getRetentionPolicies(appId: UUID, restr: List[Restriction]) =
+    getRestrictionScope(restr) match {
+      case None      => rpRepo.get(appId)
+      case Some(rPS) =>
+        for {
+          selectors <- repos.privacyScope.getSelectors(appId, active = true)
+          dcs = rPS.zoomIn(selectors).triples.map(_.dataCategory)
+          retentionPolicies <- rpRepo.get(appId)
+          fRetentionPolicies = retentionPolicies.filter(p => dcs.contains(p._1))
+        } yield fRetentionPolicies
+    }
 
   private def getDpo(appId: UUID): IO[String] =
     giRepo
