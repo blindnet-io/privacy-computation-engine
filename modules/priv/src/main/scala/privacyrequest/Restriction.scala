@@ -9,7 +9,9 @@ import doobie.util.*
 import doobie.postgres.*
 import doobie.postgres.implicits.*
 import java.util.UUID
-import scala.reflect.ClassTag
+import scala.reflect.TypeTest
+
+type Tag[T] = TypeTest[Any, T]
 
 enum Restriction {
   case PrivacyScope(scope: PS) extends Restriction
@@ -22,7 +24,7 @@ enum Restriction {
 
   case DataReference(dataReferences: List[String]) extends Restriction
 
-  def get[T <: Restriction: ClassTag]: Option[T] =
+  def get[T <: Restriction: Tag]: Option[T] =
     this match {
       case ps: T => Some(ps)
       case _     => None
@@ -60,6 +62,6 @@ object Restriction {
       case _                                                    => throw new NotImplementedError()
     }
 
-  def get[T <: Restriction: ClassTag](l: List[Restriction]): List[T] = l.flatMap(_.get)
+  def get[T <: Restriction: Tag](l: List[Restriction]): List[T] = l.flatMap(_.get)
 
 }
