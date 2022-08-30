@@ -98,8 +98,10 @@ class TransparencyCalculator(
 
   private def getEligibilePS(appId: UUID, t: Instant, ds: DataSubject) =
     for {
-      timeline <- repos.events.getTimeline(appId, ds)
-      ePS = timeline.eligiblePrivacyScope(Some(t))
+      timeline    <- repos.events.getTimeline(appId, ds)
+      selectors   <- repos.privacyScope.getSelectors(appId, active = true)
+      regulations <- repos.regulations.get(appId)
+      ePS = timeline.eligiblePrivacyScope(Some(t), regulations, selectors)
     } yield ePS
 
   private def intersect(appId: UUID, eps: PrivacyScope, rps: PrivacyScope) =

@@ -158,7 +158,7 @@ object ResponseCalculator {
           }
         )
 
-        _ <- IO.sleep(1.second)
+        _ <- IO.sleep(5.second)
         _ <- loop()
       } yield ()
 

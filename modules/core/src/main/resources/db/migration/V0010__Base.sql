@@ -133,7 +133,6 @@ create table retention_policies (
     on delete cascade
 );
 
------------------
 
 -- LEGAL BASES
 
@@ -166,7 +165,57 @@ create table legal_bases_scope (
     references scope(id)
     on delete cascade
 );
------------------
+
+
+-- REGULATIONS
+
+create table regulations (
+  id uuid primary key,
+  name varchar not null,
+  description varchar
+);
+
+create table regulation_legal_base_must_include_scope (
+  rid uuid not null,
+  legal_base legal_base_terms not null,
+  scid uuid not null,
+  constraint regulation_fk
+    foreign key (rid)
+    references regulations(id)
+    on delete cascade,
+  constraint scope_fk
+    foreign key (scid)
+    references scope(id)
+    on delete cascade
+);
+
+create table regulation_legal_base_forbidden_scope (
+  rid uuid not null,
+  legal_base legal_base_terms not null,
+  scid uuid not null,
+  constraint regulation_fk
+    foreign key (rid)
+    references regulations(id)
+    on delete cascade,
+  constraint scope_fk
+    foreign key (scid)
+    references scope(id)
+    on delete cascade
+);
+
+create table app_regulations (
+  appid uuid not null,
+  rid uuid not null,
+  constraint app_fk
+    foreign key (appid)
+    references apps(id)
+    on delete cascade,
+  constraint regulation_fk
+    foreign key (rid)
+    references regulations(id)
+    on delete cascade
+);
+
 
 -- DATA SUBJECT
 
@@ -314,7 +363,7 @@ create table privacy_response_events_data (
     references privacy_response_events(id)
     on delete cascade
 );
------------------
+
 
 create table pending_demands_to_review (
   did uuid unique not null,
@@ -346,7 +395,6 @@ create table commands_create_response (
     on delete cascade
 );
 
------------------
 
 -- EVENT
 
@@ -428,60 +476,3 @@ create table restrict_events (
     references data_subjects(id)
     on delete restrict
 );
-
------------------
-
--- VIEWS
-
--- materialized view is a better performant alternative
--- in Postgresql, MV is not updated on each db change but has to be recreated with REFRESH MATERIALIZED VIEW
--- create index legal_bases_type ON legal_bases ("type");
--- create index legal_bases_id ON legal_bases (id);
--- create index legal_bases_appid ON legal_bases (appid);
--- create view legal_bases as
--- select 'CONTRACT' as type, c.subcat as subcat, c.id as id, c.appid as appid, c.name as name, c.description as description, active as c.active, array_agg(dc.term) as dc, array_agg(pc.term) as pc, array_agg(pp.term) as pp
--- from contracts c
--- 	join contracts_scope cs on cs.cid = c.id
--- 	join "scope" s on s.id = cs.scid
--- 	join data_categories dc on dc.id = s.dcid
--- 	join processing_categories pc on pc.id = s.pcid
--- 	join processing_purposes pp on pp.id = s.ppid
--- where dc.active = true
--- group by c.id
--- union
--- select 'NECESSARY' as type, nlb.subcat as subcat, nlb.id as id, nlb.appid as appid, nlb.name as name, nlb.description as description, active as c.active, array_agg(dc.term) as dc, array_agg(pc.term) as pc, array_agg(pp.term) as pp
--- from necessary_legal_bases nlb
--- 	join necessary_legal_bases_scope nlbs on nlbs.nlbid = nlb.id
--- 	join "scope" s on s.id = nlbs.scid
--- 	join data_categories dc on dc.id = s.dcid
--- 	join processing_categories pc on pc.id = s.pcid
--- 	join processing_purposes pp on pp.id = s.ppid
--- where dc.active = true
--- group by nlb.id
--- union
--- select 'LEGITIMATE-INTEREST' as type, li.subcat as subcat, li.id as id, li.appid as appid, li.name as name, li.description as description, active as c.active, array_agg(dc.term) as dc, array_agg(pc.term) as pc, array_agg(pp.term) as pp
--- from legitimate_interests li
--- 	join legitimate_interests_scope lis on lis.liid = li.id
--- 	join "scope" s on s.id = lis.scid
--- 	join data_categories dc on dc.id = s.dcid
--- 	join processing_categories pc on pc.id = s.pcid
--- 	join processing_purposes pp on pp.id = s.ppid
--- where dc.active = true
--- group by li.id
--- union
--- select 'CONSENT' as type, c2.subcat as subcat, c2.id as id, c2.appid as appid, c2.name as name, c2.description as description, active as c.active, array_agg(dc.term) as dc, array_agg(pc.term) as pc, array_agg(pp.term) as pp
--- from consents c2
--- 	join consents_scope cs2 on cs2.cid = c2.id
--- 	join "scope" s on s.id = cs2.scid
--- 	join data_categories dc on dc.id = s.dcid
--- 	join processing_categories pc on pc.id = s.pcid
--- 	join processing_purposes pp on pp.id = s.ppid
--- where dc.active = true
--- group by c2.id;
-
--- create view general_information_view as
--- select gi.id, gi.appid, gi.countries, array_agg(distinct gio."name") as organizations, array_agg(distinct array[dpo."name", dpo.contact]) as dpo, gi.data_consumer_categories, gi.access_policies, gi.privacy_policy_link, gi.data_security_information
--- from general_information gi
--- join general_information_organization gio on gio.gid = gi.id
--- join dpo on dpo.gid = gi.id
--- group by gi.id;

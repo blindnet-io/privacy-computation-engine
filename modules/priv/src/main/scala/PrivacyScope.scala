@@ -42,6 +42,9 @@ case class PrivacyScope(
 object PrivacyScope {
   def empty = PrivacyScope(Set.empty)
 
+  def unsafe(dcs: Seq[String], pcs: Seq[String], pps: Seq[String]) =
+    PrivacyScope((dcs lazyZip pcs lazyZip pps).map(PrivacyScopeTriple.unsafe).toSet)
+
   given Monoid[PrivacyScope] =
     Monoid.instance(empty, (ps1, ps2) => ps1 union ps2)
 

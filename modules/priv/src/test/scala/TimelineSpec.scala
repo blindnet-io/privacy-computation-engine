@@ -105,7 +105,7 @@ class TimelineSpec extends UnitSpec {
             ("AFFILIATION.MEMBERSHIP", "ANONYMIZATION", "ADVERTISING"),
             ("DEMOGRAPHIC.AGE", "STORING", "MEDICAL"),
             ("DEMOGRAPHIC.AGE", "COLLECTION", "TRACKING")
-          )
+          ).zoomIn()
       }
 
       it("for start and end service events") {
@@ -127,11 +127,12 @@ class TimelineSpec extends UnitSpec {
 
         Timeline(e1, e2, e3, e4, e5, e6, e7, e8, e9, e10)
           .eligiblePrivacyScope() shouldBe (e2.getScope union e6.getScope union e8.getScope)
+          .zoomIn()
       }
 
       it("for 1 given consent") {
         val e1 = cgEvent(uuid, randomScope())
-        Timeline(e1).eligiblePrivacyScope() shouldBe e1.getScope
+        Timeline(e1).eligiblePrivacyScope() shouldBe e1.getScope.zoomIn()
       }
 
       it("for given and revoked consents") {
@@ -149,8 +150,16 @@ class TimelineSpec extends UnitSpec {
         val g4  = cgEvent(uuid3, randomScope(), now - 30)
 
         Timeline(g1, g2, r1a, g3, r2, r1b, r4, g4).eligiblePrivacyScope() shouldBe
-          (g3.getScope union g4.getScope)
+          (g3.getScope union g4.getScope).zoomIn()
       }
+
+      // it("for regulations") {
+      //   val scope1 = PrivacyScope.unsafe("")
+      //   val e1     = startServiceContract(uuid1, randomScope(), now - 100)
+      //   val e2     = startServiceContract(uuid1, randomScope(), now - 90)
+      //   val e3     = startServiceNecessary(uuid3, randomScope(), now - 80)
+      //   val g4     = cgEvent(uuid1, randomScope(), now - 70)
+      // }
 
       // it("for given consents and restrict events") {
       //   val g1 = cgEvent("1", randomScope() union scope1, now - 100)
