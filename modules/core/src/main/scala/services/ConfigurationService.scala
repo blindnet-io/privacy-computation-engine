@@ -160,4 +160,25 @@ class ConfigurationService(
       )
     } yield res
 
+  def getAllRegulations() =
+    repos.regulations.getInfo().map(_.map(RegulationResponsePayload.fromRegulationInfo))
+
+  def getAppRegulations(appId: UUID) =
+    for {
+      regs <- repos.regulations.getInfo(appId)
+      resp = regs.map(RegulationResponsePayload.fromRegulationInfo)
+    } yield resp
+
+  def addRegulations(appId: UUID, req: AddRegulationsPayload) =
+    for {
+      idsNel <- req.regulationIds.distinct.toNel.orBadRequest("Add at least one regulation")
+      idsOk  <- repos.regulations.exists(idsNel).onFalseBadRequest("Unknown regulation id")
+      _      <- repos.regulations.add(appId, idsNel)
+    } yield ()
+
+  def deleteRegulation(appId: UUID, regId: UUID) =
+    for {
+      _ <- repos.regulations.delete(appId, regId)
+    } yield ()
+
 }

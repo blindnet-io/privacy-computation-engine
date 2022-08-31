@@ -17,3 +17,12 @@ case class Regulation(
 )
 
 object Regulation {}
+
+// TODO: probably merge
+case class RegulationInfo(
+    id: UUID,
+    name: String,
+    description: Option[String]
+)
+
+object RegulationInfo {}

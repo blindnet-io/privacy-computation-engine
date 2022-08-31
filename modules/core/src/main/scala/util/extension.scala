@@ -23,6 +23,11 @@ object extension {
       case Some(x) => x.pure
     }
 
+    def orBadRequest(msg: String): M[A] = m.flatMap {
+      case None    => BadRequestException(msg).raiseError
+      case Some(x) => x.pure
+    }
+
     def orFail(msg: String): M[A] = m.flatMap {
       case None    => InternalException(msg).raiseError
       case Some(x) => x.pure
@@ -30,15 +35,33 @@ object extension {
 
   }
 
-  extension [M[_]: MonadThrow](m: M[Boolean])
+  extension [M[_]: MonadThrow](m: M[Boolean]) {
     def emptyNotFound(msg: String) = m.flatMap {
       case false => NotFoundException(msg).raiseError
       case true  => ().pure
     }
 
-  extension (b: Boolean)
+    def onFalseBadRequest(msg: String) = m.flatMap {
+      case false => BadRequestException(msg).raiseError
+      case true  => ().pure
+    }
+
+  }
+
+  extension [A](o: Option[A])
+    def orBadRequest(msg: String): IO[A] = o match {
+      case None    => BadRequestException(msg).raiseError
+      case Some(x) => IO(x)
+    }
+
+  extension (b: Boolean) {
     def emptyNotFound(msg: String) =
       if b then IO.unit else NotFoundException(msg).raise
+
+    def onFalseBadRequest(msg: String) =
+      if b then IO.unit else BadRequestException(msg).raise
+
+  }
 
   extension (s: String) {
     def failBadRequest = BadRequestException(s).raise

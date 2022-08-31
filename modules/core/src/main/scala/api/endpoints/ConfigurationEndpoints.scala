@@ -127,6 +127,39 @@ class ConfigurationEndpoints(
       .out(jsonBody[List[DataCategoryResponsePayload]])
       .serverLogicSuccess(_ => configurationService.getDataCategories(appId))
 
+  def getAllRegulations =
+    base
+      .description("Get all regulations")
+      .get
+      .in("regulations")
+      .out(jsonBody[List[RegulationResponsePayload]])
+      .serverLogicSuccess(_ => configurationService.getAllRegulations())
+
+  def getAppRegulations =
+    base
+      .description("Get regulations applied to the users of the app")
+      .get
+      .in("regulations")
+      .in("app")
+      .out(jsonBody[List[RegulationResponsePayload]])
+      .serverLogicSuccess(_ => configurationService.getAppRegulations(appId))
+
+  val addRegulation =
+    base
+      .description("Assign regulation to an app")
+      .put
+      .in("regulations")
+      .in(jsonBody[AddRegulationsPayload])
+      .serverLogicSuccess(req => configurationService.addRegulations(appId, req))
+
+  val deleteRegulation =
+    base
+      .description("Delete regulation assigned to an app")
+      .delete
+      .in("regulations")
+      .in(path[UUID]("regulationId"))
+      .serverLogicSuccess(id => configurationService.deleteRegulation(appId, id))
+
   val endpoints = List(
     getGeneralInfo,
     updateGeneralInfo,
@@ -139,7 +172,11 @@ class ConfigurationEndpoints(
     deleteRetentionPolicy,
     addProvenances,
     deleteProvenance,
-    getDataCategories
+    getDataCategories,
+    getAllRegulations,
+    getAppRegulations,
+    addRegulation,
+    deleteRegulation
   )
 
 }
