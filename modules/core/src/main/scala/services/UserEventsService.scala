@@ -37,7 +37,7 @@ class UserEventsService(
     for {
       lbOpt <- repos.legalBase.get(appId, req.consentId, false)
       isConsent = lbOpt.map(_.isConsent).getOrElse(false)
-      _ <- isConsent.emptyNotFound(s"Consent ${req.consentId} not found")
+      _ <- isConsent.onFalseNotFound(s"Consent ${req.consentId} not found")
 
       _ <- repos.events.addConsentGiven(req.consentId, req.dataSubject, req.date)
     } yield ()
@@ -46,7 +46,7 @@ class UserEventsService(
     for {
       lbOpt <- repos.legalBase.get(appId, req.contractId, false)
       isContract = lbOpt.map(_.isContract).getOrElse(false)
-      _ <- isContract.emptyNotFound(s"Contract ${req.contractId} not found")
+      _ <- isContract.onFalseNotFound(s"Contract ${req.contractId} not found")
 
       _ <- repos.events.addLegalBaseEvent(req.contractId, req.dataSubject, ServiceStart, req.date)
     } yield ()
@@ -55,7 +55,7 @@ class UserEventsService(
     for {
       lbOpt <- repos.legalBase.get(appId, req.contractId, false)
       isContract = lbOpt.map(_.isContract).getOrElse(false)
-      _ <- isContract.emptyNotFound(s"Contract ${req.contractId} not found")
+      _ <- isContract.onFalseNotFound(s"Contract ${req.contractId} not found")
 
       _ <- repos.events.addLegalBaseEvent(req.contractId, req.dataSubject, ServiceEnd, req.date)
     } yield ()
@@ -65,7 +65,7 @@ class UserEventsService(
     for {
       lbOpt <- repos.legalBase.get(appId, id, false)
       isLegitimateInterest = lbOpt.map(_.isLegitimateInterest).getOrElse(false)
-      _ <- isLegitimateInterest.emptyNotFound(s"Legitimate interest $id not found")
+      _ <- isLegitimateInterest.onFalseNotFound(s"Legitimate interest $id not found")
 
       _ <- repos.events.addLegalBaseEvent(id, req.dataSubject, ServiceStart, req.date)
     } yield ()
@@ -75,7 +75,7 @@ class UserEventsService(
     for {
       lbOpt <- repos.legalBase.get(appId, id, false)
       isLegitimateInterest = lbOpt.map(_.isLegitimateInterest).getOrElse(false)
-      _ <- isLegitimateInterest.emptyNotFound(s"Legitimate interest $id not found")
+      _ <- isLegitimateInterest.onFalseNotFound(s"Legitimate interest $id not found")
 
       _ <- repos.events.addLegalBaseEvent(id, req.dataSubject, ServiceEnd, req.date)
     } yield ()

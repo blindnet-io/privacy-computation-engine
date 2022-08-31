@@ -36,7 +36,7 @@ object extension {
   }
 
   extension [M[_]: MonadThrow](m: M[Boolean]) {
-    def emptyNotFound(msg: String) = m.flatMap {
+    def onFalseNotFound(msg: String) = m.flatMap {
       case false => NotFoundException(msg).raiseError
       case true  => ().pure
     }
@@ -55,7 +55,7 @@ object extension {
     }
 
   extension (b: Boolean) {
-    def emptyNotFound(msg: String) =
+    def onFalseNotFound(msg: String) =
       if b then IO.unit else NotFoundException(msg).raise
 
     def onFalseBadRequest(msg: String) =

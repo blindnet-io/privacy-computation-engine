@@ -46,7 +46,7 @@ class DataConsumerInterfaceService(
 
   def getPendingDemandDetails(appId: UUID, dId: UUID) =
     for {
-      _ <- repos.privacyRequest.demandExist(appId, dId).emptyNotFound(s"Demand $dId not found")
+      _ <- repos.privacyRequest.demandExist(appId, dId).onFalseNotFound(s"Demand $dId not found")
       d <- repos.privacyRequest.getDemand(dId, false).orFail(s"Demand $dId not found")
       rId = d.reqId
       req <- repos.privacyRequest.getRequest(rId, false).orFail(s"Request $rId not found")

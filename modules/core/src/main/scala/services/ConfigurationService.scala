@@ -47,27 +47,20 @@ class ConfigurationService(
 
   def addSelectors(appId: UUID, req: List[CreateSelectorPayload]) =
     for {
+      _ <- req.forall(_.dataCategory.term != "*").onFalseBadRequest("Selector can't be top level")
       reqNel <- NonEmptyList.fromList(req).fold("Add at least one selector".failBadRequest)(IO(_))
-      ids    <- UUIDGen.randomUUID[IO].replicateA(reqNel.length)
-      idsNel = NonEmptyList.fromList(ids).get
-      _ <-
-        if req.exists(_.dataCategory.term == "*") then "Selector can't be top level".failBadRequest
-        else IO.unit
+      ids    <- reqNel.traverse(_ => UUIDGen.randomUUID[IO])
       selectors = reqNel.map(p => p.dataCategory.copy(term = s"${p.dataCategory.term}.${p.name}"))
-      _ <- repos.privacyScope.addSelectors(appId, idsNel zip selectors)
+      _ <- repos.privacyScope.addSelectors(appId, ids zip selectors)
     } yield ()
 
   def getLegalBases(appId: UUID) =
-    for {
-      res <- repos.legalBase.get(appId, scope = false)
-    } yield res
+    repos.legalBase.get(appId, scope = false)
 
   def getLegalBase(appId: UUID, lbId: UUID) =
-    for {
-      res <- repos.legalBase
-        .get(appId, lbId, true)
-        .orNotFound(s"Legal base with id $lbId not found")
-    } yield res
+    repos.legalBase
+      .get(appId, lbId, true)
+      .orNotFound(s"Legal base with id $lbId not found")
 
   def createLegalBase(appId: UUID, req: CreateLegalBasePayload) =
     for {
@@ -81,20 +74,19 @@ class ConfigurationService(
 
   def addRetentionPolicies(appId: UUID, req: List[CreateRetentionPolicyPayload]) =
     for {
-      _         <- if req.length == 0 then "Add at least one policy".failBadRequest else IO.unit
+      reqNel    <- req.toNel.orBadRequest("Add at least one policy")
       selectors <- repos.privacyScope.getSelectors(appId, active = true)
-      _         <-
-        if !req.forall(r => DataCategory.exists(r.dataCategory, selectors))
-        then "Unknown data category".failBadRequest
-        else IO.unit
+      _         <- reqNel
+        .forall(r => DataCategory.exists(r.dataCategory, selectors))
+        .onFalseBadRequest("Unknown data category")
 
-      ids <- UUIDGen.randomUUID[IO].replicateA(req.length)
-
-      rps <- req.flatTraverse {
+      rps <- reqNel.flatTraverse {
         r =>
           DataCategory
             .getMostGranular(r.dataCategory, selectors)
             .toList
+            .toNel
+            .get
             .traverse(
               dc =>
                 for {
@@ -103,8 +95,7 @@ class ConfigurationService(
                 } yield res
             )
       }
-      rpsNel = NonEmptyList.fromListUnsafe(rps)
-      _   <- repos.retentionPolicy.add(appId, rpsNel)
+      _   <- repos.retentionPolicy.add(appId, rps)
     } yield ()
 
   def deleteRetentionPolicy(appId: UUID, id: UUID) =
@@ -114,20 +105,19 @@ class ConfigurationService(
 
   def addProvenances(appId: UUID, req: List[CreateProvenancePayload]) =
     for {
-      _         <- if req.length == 0 then "Add at least one provenance".failBadRequest else IO.unit
+      reqNel    <- req.toNel.orBadRequest("Add at least one provenance")
       selectors <- repos.privacyScope.getSelectors(appId, active = true)
-      _         <-
-        if !req.forall(r => DataCategory.exists(r.dataCategory, selectors))
-        then "Unknown data category".failBadRequest
-        else IO.unit
+      _         <- reqNel
+        .forall(r => DataCategory.exists(r.dataCategory, selectors))
+        .onFalseBadRequest("Unknown data category")
 
-      ids <- UUIDGen.randomUUID[IO].replicateA(req.length)
-
-      ps <- req.flatTraverse {
+      ps <- reqNel.flatTraverse {
         r =>
           DataCategory
             .getMostGranular(r.dataCategory, selectors)
             .toList
+            .toNel
+            .get
             .traverse(
               dc =>
                 for {
@@ -136,8 +126,7 @@ class ConfigurationService(
                 } yield res
             )
       }
-      psNel = NonEmptyList.fromListUnsafe(ps)
-      _  <- repos.provenance.add(appId, psNel)
+      _  <- repos.provenance.add(appId, ps)
     } yield ()
 
   def deleteProvenance(appId: UUID, id: UUID) =
