@@ -11,6 +11,7 @@ import io.circe.generic.semiauto.*
 import io.circe.syntax.*
 import sttp.tapir.*
 import sttp.tapir.generic.auto.*
+import sttp.tapir.generic.Configuration
 
 case class CreateRetentionPolicyPayload(
     dataCategory: DataCategory,
@@ -20,9 +21,16 @@ case class CreateRetentionPolicyPayload(
 )
 
 object CreateRetentionPolicyPayload {
-  given Decoder[CreateRetentionPolicyPayload] = deriveDecoder[CreateRetentionPolicyPayload]
-  given Encoder[CreateRetentionPolicyPayload] = deriveEncoder[CreateRetentionPolicyPayload]
+  given Decoder[CreateRetentionPolicyPayload] = unSnakeCaseIfy(
+    deriveDecoder[CreateRetentionPolicyPayload]
+  )
 
-  given Schema[CreateRetentionPolicyPayload] = Schema.derived[CreateRetentionPolicyPayload]
+  given Encoder[CreateRetentionPolicyPayload] = snakeCaseIfy(
+    deriveEncoder[CreateRetentionPolicyPayload]
+  )
+
+  given Schema[CreateRetentionPolicyPayload] = Schema.derived[CreateRetentionPolicyPayload](using
+    Configuration.default.withSnakeCaseMemberNames
+  )
 
 }
