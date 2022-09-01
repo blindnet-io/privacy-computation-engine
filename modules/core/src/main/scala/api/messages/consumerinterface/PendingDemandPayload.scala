@@ -8,6 +8,7 @@ import cats.effect.*
 import priv.*
 import priv.privacyrequest.*
 import priv.terms.*
+import api.endpoints.messages.*
 import io.blindnet.pce.util.parsing.*
 import io.circe.*
 import io.circe.generic.semiauto.*
@@ -20,7 +21,7 @@ case class PendingDemandPayload(
     id: UUID,
     date: Instant,
     action: Action,
-    dataSubject: Option[DataSubject]
+    dataSubject: Option[DataSubjectPayload]
 )
 
 object PendingDemandPayload {
@@ -31,7 +32,12 @@ object PendingDemandPayload {
     Schema.derived[PendingDemandPayload](using Configuration.default.withSnakeCaseMemberNames)
 
   def fromPrivDemand(d: Demand, pr: PrivacyRequest) = {
-    PendingDemandPayload(d.id, pr.timestamp, d.action, pr.dataSubject)
+    PendingDemandPayload(
+      d.id,
+      pr.timestamp,
+      d.action,
+      pr.dataSubject.map(DataSubjectPayload.fromDataSubject)
+    )
   }
 
 }

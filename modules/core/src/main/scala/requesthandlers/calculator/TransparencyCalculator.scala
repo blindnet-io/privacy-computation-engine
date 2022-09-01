@@ -98,7 +98,7 @@ class TransparencyCalculator(
 
   private def getEligibilePS(appId: UUID, t: Instant, ds: DataSubject) =
     for {
-      timeline    <- repos.events.getTimeline(appId, ds)
+      timeline    <- repos.events.getTimeline(ds)
       selectors   <- repos.privacyScope.getSelectors(appId, active = true)
       regulations <- repos.regulations.get(appId)
       ePS = timeline.eligiblePrivacyScope(Some(t), regulations, selectors)

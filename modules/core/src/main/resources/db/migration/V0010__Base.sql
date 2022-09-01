@@ -223,6 +223,8 @@ create table data_subjects (
   id varchar primary key,
   appid uuid not null,
   schema varchar,
+  constraint data_subjects_pk
+    primary key (id, app),
   constraint app_fk
     foreign key (appid)
     references apps(id)
@@ -243,8 +245,8 @@ create table privacy_requests (
   target target_terms not null,
   email varchar,
   constraint data_subject_fk
-    foreign key (dsid)
-    references data_subjects(id)
+    foreign key (dsid, appid)
+    references data_subjects(id, appid)
     on delete restrict,
   constraint app_fk
     foreign key (appid)
@@ -405,6 +407,7 @@ create table legal_base_events (
   id uuid primary key,
   lbid uuid not null,
   dsid varchar not null,
+  appid uuid not null,
   event event_terms not null,
   date timestamp not null,
   constraint legal_base_fk
@@ -412,8 +415,8 @@ create table legal_base_events (
     references legal_bases(id)
     on delete cascade,
   constraint data_subject_fk
-    foreign key (dsid)
-    references data_subjects(id)
+    foreign key (dsid, appid)
+    references data_subjects(id, appid)
     on delete restrict
 );
 
@@ -421,14 +424,15 @@ create table consent_given_events (
   id uuid primary key,
   lbid uuid not null,
   dsid varchar not null,
+  appid uuid not null,
   date timestamp not null,
   constraint legal_base_fk
     foreign key (lbid)
     references legal_bases(id)
     on delete cascade,
   constraint data_subject_fk
-    foreign key (dsid)
-    references data_subjects(id)
+    foreign key (dsid, appid)
+    references data_subjects(id, appid)
     on delete restrict
 );
 
@@ -436,14 +440,15 @@ create table consent_revoked_events (
   id uuid primary key,
   lbid uuid not null,
   dsid varchar not null,
+  appid uuid not null,
   date timestamp not null,
   constraint legal_base_fk
     foreign key (lbid)
     references legal_bases(id)
     on delete cascade,
   constraint data_subject_fk
-    foreign key (dsid)
-    references data_subjects(id)
+    foreign key (dsid, appid)
+    references data_subjects(id, appid)
     on delete restrict
 );
 
@@ -451,14 +456,15 @@ create table object_events (
   id uuid primary key,
   did uuid not null,
   dsid varchar not null,
+  appid uuid not null,
   date timestamp not null,
   constraint demand_fk
     foreign key (did)
     references demands(id)
     on delete cascade,
   constraint data_subject_fk
-    foreign key (dsid)
-    references data_subjects(id)
+    foreign key (dsid, appid)
+    references data_subjects(id, appid)
     on delete restrict
 );
 
@@ -466,13 +472,14 @@ create table restrict_events (
   id uuid primary key,
   did uuid not null,
   dsid varchar not null,
+  appid uuid not null,
   date timestamp not null,
   constraint demand_fk
     foreign key (did)
     references demands(id)
     on delete cascade,
   constraint data_subject_fk
-    foreign key (dsid)
-    references data_subjects(id)
+    foreign key (dsid, appid)
+    references data_subjects(id, appid)
     on delete restrict
 );

@@ -22,6 +22,7 @@ import sttp.tapir.*
 import sttp.tapir.generic.auto.*
 import java.time.Instant
 import sttp.tapir.generic.Configuration
+import api.endpoints.messages.*
 
 case class PrivacyScopeRestriction(dc: DataCategory, pc: ProcessingCategory, pp: Purpose)
 case class ConsentRestriction(id: UUID)
@@ -93,7 +94,7 @@ case class CreatePrivacyRequestPayload(
     target: Option[Target],
     email: Option[String],
     demands: List[PrivacyRequestDemand],
-    dataSubject: List[DataSubject]
+    dataSubject: List[DataSubjectPayload]
 )
 
 object CreatePrivacyRequestPayload {

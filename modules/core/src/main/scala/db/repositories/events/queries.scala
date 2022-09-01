@@ -17,7 +17,7 @@ import java.time.Instant
 
 object queries {
 
-  def getLegalBaseEvents(appId: UUID, ds: DataSubject) =
+  def getLegalBaseEvents(ds: DataSubject) =
     sql"""
       select lb.id as lbid, lb."type" as lbtype, lbe."date" as "date", lbe."event" as "event",
       array_agg(dc.term) as dc, array_agg(pc.term) as pc, array_agg(pp.term) as pp
@@ -28,14 +28,14 @@ object queries {
         join data_categories dc on dc.id = s.dcid
         join processing_categories pc on pc.id = s.pcid
         join processing_purposes pp on pp.id = s.ppid
-      where dc.active = true and lbe.dsid = ${ds.id} and lb.appid = ${appId}
+      where dc.active = true and lbe.dsid = ${ds.id} and lbe.appid = ${ds.appId}
       group by lbe.id, lb.id, lb."type", lbe."date", lbe."event"
       order by lbe."date" asc
     """
       .query[TimelineEvent.LegalBase]
       .to[List]
 
-  def getConsentGivenEvents(appId: UUID, ds: DataSubject) =
+  def getConsentGivenEvents(ds: DataSubject) =
     sql"""
       select cge.id as id, lb.id as lbid, cge."date" as "date",
       array_agg(dc.term) as dc, array_agg(pc.term) as pc, array_agg(pp.term) as pp
@@ -46,25 +46,25 @@ object queries {
         join data_categories dc on dc.id = s.dcid
         join processing_categories pc on pc.id = s.pcid
         join processing_purposes pp on pp.id = s.ppid
-      where dc.active = true and cge.dsid = ${ds.id} and lb.appid = ${appId}
+      where dc.active = true and cge.dsid = ${ds.id} and cge.appid = ${ds.appId}
       group by cge.id, lb.id, cge."date"
       order by cge."date" asc
     """
       .query[TimelineEvent.ConsentGiven]
       .to[List]
 
-  def getConsentRevokedEvents(appId: UUID, ds: DataSubject) =
+  def getConsentRevokedEvents(ds: DataSubject) =
     sql"""
       select cre.id as id, lb.id as lbid, cre."date" as "date"
       from consent_revoked_events cre
         join legal_bases lb on lb.id = cre.lbid
-      where cre.dsid = ${ds.id} and lb.appid = ${appId}
+      where cre.dsid = ${ds.id} and cre.appid = ${ds.appId}
       order by cre."date" asc;
     """
       .query[TimelineEvent.ConsentRevoked]
       .to[List]
 
-  def getObjectEvents(appId: UUID, ds: DataSubject) =
+  def getObjectEvents(ds: DataSubject) =
     sql"""
       select oe.id as id, oe."date" as "date", array_agg(dc.term) as dc, array_agg(pc.term) as pc, array_agg(pp.term) as pp
       from object_events oe
@@ -76,14 +76,14 @@ object queries {
         join data_categories dc on dc.id = s.dcid
         join processing_categories pc on pc.id = s.pcid
         join processing_purposes pp on pp.id = s.ppid
-      where dr."type" = 'PRIVACY_SCOPE' and oe.dsid = ${ds.id} and pr.appid = ${appId}
+      where dr."type" = 'PRIVACY_SCOPE' and oe.dsid = ${ds.id} and oe.appid = ${ds.appId}
       group by oe.id, oe."date"
       order by oe."date" asc
     """
       .query[TimelineEvent.Object]
       .to[List]
 
-  def getRestrictEvents(appId: UUID, ds: DataSubject) =
+  def getRestrictEvents(ds: DataSubject) =
     sql"""
       select re.id as id, re."date" as "date", array_agg(dc.term) as dc, array_agg(pc.term) as pc, array_agg(pp.term) as pp
       from restrict_events re
@@ -95,7 +95,7 @@ object queries {
         join data_categories dc on dc.id = s.dcid
         join processing_categories pc on pc.id = s.pcid
         join processing_purposes pp on pp.id = s.ppid
-      where dr."type" = 'PRIVACY_SCOPE' and re.dsid = ${ds.id} and pr.appid = ${appId}
+      where dr."type" = 'PRIVACY_SCOPE' and re.dsid = ${ds.id} and re.appid = ${ds.appId}
       group by re.id, re."date"
       order by re."date" asc
     """
@@ -104,32 +104,32 @@ object queries {
 
   def addConsentGiven(cId: UUID, ds: DataSubject, date: Instant) =
     sql"""
-      insert into consent_given_events (id, lbid, dsid, date)
-      values (gen_random_uuid(), $cId, ${ds.id}, $date)
+      insert into consent_given_events (id, lbid, dsid, appid, date)
+      values (gen_random_uuid(), $cId, ${ds.id}, ${ds.appId}, $date)
     """.update.run
 
   def addConsentRevoked(cId: UUID, ds: DataSubject, date: Instant) =
     sql"""
-      insert into consent_revoked_events (id, lbid, dsid, date)
-      values (gen_random_uuid(), $cId, ${ds.id}, $date)
+      insert into consent_revoked_events (id, lbid, dsid, appid, date)
+      values (gen_random_uuid(), $cId, ${ds.id}, ${ds.appId}, $date)
     """.update.run
 
   def addObject(dId: UUID, ds: DataSubject, date: Instant) =
     sql"""
-      insert into object_events (id, did, dsid, date)
-      values (gen_random_uuid(), $dId, ${ds.id}, $date)
+      insert into object_events (id, did, dsid, appid, date)
+      values (gen_random_uuid(), $dId, ${ds.id}, ${ds.appId}, $date)
     """.update.run
 
   def addRestrict(dId: UUID, ds: DataSubject, date: Instant) =
     sql"""
-      insert into restrict_events (id, did, dsid, date)
-      values (gen_random_uuid(), $dId, ${ds.id}, $date)
+      insert into restrict_events (id, did, dsid, appid, date)
+      values (gen_random_uuid(), $dId, ${ds.id}, ${ds.appId}, $date)
     """.update.run
 
   def addLegalBaseEvent(lbId: UUID, ds: DataSubject, e: EventTerms, date: Instant) =
     sql"""
-      insert into legal_base_events (id, lbid, dsid, event, date)
-      values (gen_random_uuid(), $lbId, ${ds.id}, ${e.encode}::event_terms, $date)
+      insert into legal_base_events (id, lbid, dsid, appid, event, date)
+      values (gen_random_uuid(), $lbId, ${ds.id}, ${ds.appId}, ${e.encode}::event_terms, $date)
     """.update.run
 
 }

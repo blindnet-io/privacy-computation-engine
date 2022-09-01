@@ -54,9 +54,7 @@ class PrivacyRequestService(
             }
         )
 
-      _ <-
-        if validConsentIds.exists(_ == false) then "Invalid consent id provided".failBadRequest
-        else IO.unit
+      _ <- validConsentIds.forall(_ == true).onFalseBadRequest("Invalid consent id provided")
 
     } yield ()
 
@@ -71,10 +69,11 @@ class PrivacyRequestService(
       }
 
       timestamp <- Clock[IO].realTimeInstant
-      ds        <- NonEmptyList.fromList(req.dataSubject) match {
-        case None             => IO(None)
-        case Some(identities) => repos.dataSubject.get(appId, identities)
-      }
+      ds        <-
+        NonEmptyList.fromList(req.dataSubject.map(dsp => dsp.toPrivDataSubject(appId))) match {
+          case None             => IO(None)
+          case Some(identities) => repos.dataSubject.get(appId, identities)
+        }
       pr = PrivacyRequest(
         reqId,
         appId,
@@ -97,8 +96,8 @@ class PrivacyRequestService(
 
   def getRequestHistory(appId: UUID, userId: String) =
     for {
-      _      <- IO.unit
-      reqIds <- repos.privacyRequest.getAllUserRequestIds(appId, userId)
+      ds     <- IO(DataSubject(userId, appId))
+      reqIds <- repos.privacyRequest.getAllUserRequestIds(ds)
       // TODO: this can be optimized in the db
       resps  <- reqIds.parTraverse(
         id =>
@@ -139,7 +138,7 @@ class PrivacyRequestService(
   private def verifyReqExists(requestId: RequestId, appId: UUID, userId: Option[String]) =
     repos.privacyRequest
       .requestExist(requestId, appId, userId)
-      .flatMap(if _ then IO.unit else "Request not found".failNotFound)
+      .onFalseNotFound("Request not found")
 
   def getResponse(requestId: RequestId, appId: UUID, userId: Option[String]) =
     for {

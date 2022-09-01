@@ -157,7 +157,7 @@ class RequestRecommender(
 
   private def getRec(pr: PrivacyRequest, d: Demand) =
     for {
-      timeline    <- repos.events.getTimeline(pr.appId, pr.dataSubject.get)
+      timeline    <- repos.events.getTimeline(pr.dataSubject.get)
       regulations <- repos.regulations.get(pr.appId)
       eps = timeline.eligiblePrivacyScope(Some(pr.timestamp), regulations)
 

@@ -18,15 +18,14 @@ import java.time.Instant
 
 class EventsRepositoryLive(xa: Transactor[IO]) extends EventsRepository {
 
-  // TODO: add restrict and object events
-  def getTimeline(appId: UUID, ds: DataSubject): IO[Timeline] = {
+  def getTimeline(ds: DataSubject): IO[Timeline] = {
     val res =
       for {
-        lbEvents <- queries.getLegalBaseEvents(appId, ds)
-        cgEvents <- queries.getConsentGivenEvents(appId, ds)
-        crEvents <- queries.getConsentRevokedEvents(appId, ds)
-        oEvents  <- queries.getObjectEvents(appId, ds)
-        rEvents  <- queries.getRestrictEvents(appId, ds)
+        lbEvents <- queries.getLegalBaseEvents(ds)
+        cgEvents <- queries.getConsentGivenEvents(ds)
+        crEvents <- queries.getConsentRevokedEvents(ds)
+        oEvents  <- queries.getObjectEvents(ds)
+        rEvents  <- queries.getRestrictEvents(ds)
         allEvents = (lbEvents ++ cgEvents ++ crEvents ++ oEvents ++ rEvents).sortBy(_.getTimestamp)
       } yield Timeline(allEvents)
 
