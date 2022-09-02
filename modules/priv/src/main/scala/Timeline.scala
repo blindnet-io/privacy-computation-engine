@@ -117,6 +117,39 @@ case class Timeline(
     scope
   }
 
+  // TODO: repeating code
+  def activeLegalBases(timestamp: Option[Instant]): List[TimelineEvent] = {
+    import TimelineEvent.*
+    import terms.EventTerms.*
+    import terms.LegalBaseTerms.*
+
+    val withDateFilter = timestamp match {
+      case Some(t) => events.filter(_.getTimestamp.isBefore(t))
+      case None    => events
+    }
+
+    def removeEvent(id: UUID, events: List[TimelineEvent]) =
+      events.filterNot {
+        case ev: LegalBase if ev.lbId == id    => true
+        case ev: ConsentGiven if ev.lbId == id => true
+        case _                                 => false
+      }
+
+    withDateFilter.foldLeft(List.empty[TimelineEvent])(
+      (acc, event) => {
+        event match {
+          case LegalBase(_, RelationshipStart | ServiceStart, _, _, _)      =>
+            event :: acc
+          case LegalBase(id, RelationshipEnd | ServiceEnd, Necessary, _, _) =>
+            removeEvent(id, acc)
+          case ev: ConsentGiven                                             => event :: acc
+          case ev: ConsentRevoked => removeEvent(ev.lbId, acc)
+          case _                  => acc
+        }
+      }
+    )
+  }
+
 }
 
 object Timeline {
