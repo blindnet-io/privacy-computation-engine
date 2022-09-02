@@ -10,11 +10,13 @@ case class Timeline(
     events: List[TimelineEvent]
 ) {
 
-  def eligiblePrivacyScope(
+  def filteredByTime(t: Instant) = events.filter(_.getTimestamp.isBefore(t))
+
+  def compiledEvents(
       timestamp: Option[Instant] = None,
       regulations: List[Regulation] = List.empty,
       selectors: Set[DataCategory] = Set.empty
-  ): PrivacyScope = {
+  ): List[TimelineEvent] = {
 
     import TimelineEvent.*
     import terms.EventTerms.*
@@ -36,14 +38,11 @@ case class Timeline(
         case _                                 => false
       })
 
-    val withDateFilter = timestamp match {
-      case Some(t) => events.filter(_.getTimestamp.isBefore(t))
-      case None    => events
-    }
-
     // TODO: O(n^2). optimize
     val compiled =
-      withDateFilter
+      timestamp
+        .map(filteredByTime)
+        .getOrElse(events)
         .foldLeft(Acc(PrivacyScope.empty, PrivacyScope.empty, List.empty))(
           (acc, event) => {
             event match {
@@ -99,56 +98,35 @@ case class Timeline(
         .flatMap(r => r.prohibitedScope.filter(_._1 == lb).map(_._2))
         .foldLeft(PrivacyScope.empty)(_ union _)
 
-    val scope = compiled.events.foldLeft(PrivacyScope.empty)(
+    val finalEvents = compiled.events.foldLeft(List.empty[TimelineEvent])(
       (acc, cur) =>
         cur match {
 
           case ev: LegalBase if ev.lb == LegitimateInterest =>
-            acc union (ev.scope difference compiled.objectScope intersection compiled.restrictScope
-              difference forbiddenScopeRegulation(ev.lb))
+            ev.copy(scope =
+              ev.scope difference
+                compiled.objectScope intersection
+                compiled.restrictScope difference
+                forbiddenScopeRegulation(ev.lb)
+            ) :: acc
 
           case ev: LegalBase =>
-            acc union (ev.getScope difference forbiddenScopeRegulation(ev.lb))
+            ev.copy(scope = ev.scope difference forbiddenScopeRegulation(ev.lb)) :: acc
 
-          case ev => acc union cur.getScope
+          case ev => cur :: acc
         }
     )
 
-    scope
+    finalEvents
   }
 
-  // TODO: repeating code
-  def activeLegalBases(timestamp: Option[Instant]): List[TimelineEvent] = {
-    import TimelineEvent.*
-    import terms.EventTerms.*
-    import terms.LegalBaseTerms.*
-
-    val withDateFilter = timestamp match {
-      case Some(t) => events.filter(_.getTimestamp.isBefore(t))
-      case None    => events
-    }
-
-    def removeEvent(id: UUID, events: List[TimelineEvent]) =
-      events.filterNot {
-        case ev: LegalBase if ev.lbId == id    => true
-        case ev: ConsentGiven if ev.lbId == id => true
-        case _                                 => false
-      }
-
-    withDateFilter.foldLeft(List.empty[TimelineEvent])(
-      (acc, event) => {
-        event match {
-          case LegalBase(_, RelationshipStart | ServiceStart, _, _, _)      =>
-            event :: acc
-          case LegalBase(id, RelationshipEnd | ServiceEnd, Necessary, _, _) =>
-            removeEvent(id, acc)
-          case ev: ConsentGiven                                             => event :: acc
-          case ev: ConsentRevoked => removeEvent(ev.lbId, acc)
-          case _                  => acc
-        }
-      }
-    )
-  }
+  def eligiblePrivacyScope(
+      timestamp: Option[Instant] = None,
+      regulations: List[Regulation] = List.empty,
+      selectors: Set[DataCategory] = Set.empty
+  ): PrivacyScope =
+    compiledEvents(timestamp, regulations, selectors)
+      .foldLeft(PrivacyScope.empty)(_ union _.getScope)
 
 }
 

@@ -268,8 +268,7 @@ class TransparencyCalculator(
         lbRepo.get(appId, scope = false).json
         for {
           timeline <- repos.events.getTimeline(ds)
-          ev    = timeline.activeLegalBases(Some(t))
-          lbIds = ev.flatMap(_.getLbId)
+          lbIds = timeline.compiledEvents(Some(t)).flatMap(_.getLbId)
           lbs <- lbRepo.get(appId, scope = false)
           res = lbs.filter(lb => lbIds.contains(lb.id))
         } yield res
