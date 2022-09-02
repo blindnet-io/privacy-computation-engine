@@ -49,7 +49,7 @@ object DataSubjectRepository {
           .transact(xa)
 
       def get(appId: UUID, userIds: NonEmptyList[DataSubject]): IO[Option[DataSubject]] =
-        (fr"select id, schema from data_subjects where appid = $appId and"
+        (fr"select id, appid, schema from data_subjects where appid = $appId and"
           ++ Fragments.in(fr"id", userIds.map(_.id)))
           .query[DataSubject]
           .option
