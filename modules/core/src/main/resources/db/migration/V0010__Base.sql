@@ -220,7 +220,7 @@ create table app_regulations (
 -- DATA SUBJECT
 
 create table data_subjects (
-  id varchar,
+  id varchar not null,
   appid uuid not null,
   schema varchar,
   constraint data_subjects_pk
