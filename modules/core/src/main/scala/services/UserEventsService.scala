@@ -30,16 +30,23 @@ import priv.terms.EventTerms.*
 class UserEventsService(
     repos: Repositories
 ) {
-  // TODO: create user if not exists
   // TODO: repeating code, refactor
+
+  def handleUser(appId: UUID, ds: DataSubject) =
+    for {
+      userExists <- repos.dataSubject.exist(appId, ds.id)
+      _          <- if userExists then IO.unit else repos.dataSubject.insert(appId, ds)
+    } yield ()
 
   def addConsentGivenEvent(appId: UUID, req: GiveConsentPayload) =
     for {
       lbOpt <- repos.legalBase.get(appId, req.consentId, false)
       isConsent = lbOpt.map(_.isConsent).getOrElse(false)
       _ <- isConsent.onFalseNotFound(s"Consent ${req.consentId} not found")
+      ds = req.dataSubject.toPrivDataSubject(appId)
+      _ <- handleUser(appId, ds)
 
-      _ <- repos.events.addConsentGiven(req.consentId, req.dataSubject, req.date)
+      _ <- repos.events.addConsentGiven(req.consentId, ds, req.date)
     } yield ()
 
   def addStartContractEvent(appId: UUID, req: StartContractPayload) =
@@ -47,8 +54,10 @@ class UserEventsService(
       lbOpt <- repos.legalBase.get(appId, req.contractId, false)
       isContract = lbOpt.map(_.isContract).getOrElse(false)
       _ <- isContract.onFalseNotFound(s"Contract ${req.contractId} not found")
+      ds = req.dataSubject.toPrivDataSubject(appId)
+      _ <- handleUser(appId, ds)
 
-      _ <- repos.events.addLegalBaseEvent(req.contractId, req.dataSubject, ServiceStart, req.date)
+      _ <- repos.events.addLegalBaseEvent(req.contractId, ds, ServiceStart, req.date)
     } yield ()
 
   def addEndContractEvent(appId: UUID, req: EndContractPayload) =
@@ -56,8 +65,10 @@ class UserEventsService(
       lbOpt <- repos.legalBase.get(appId, req.contractId, false)
       isContract = lbOpt.map(_.isContract).getOrElse(false)
       _ <- isContract.onFalseNotFound(s"Contract ${req.contractId} not found")
+      ds = req.dataSubject.toPrivDataSubject(appId)
+      _ <- handleUser(appId, ds)
 
-      _ <- repos.events.addLegalBaseEvent(req.contractId, req.dataSubject, ServiceEnd, req.date)
+      _ <- repos.events.addLegalBaseEvent(req.contractId, ds, ServiceEnd, req.date)
     } yield ()
 
   def addStartLegitimateInterestEvent(appId: UUID, req: StartLegitimateInterestPayload) =
@@ -66,8 +77,10 @@ class UserEventsService(
       lbOpt <- repos.legalBase.get(appId, id, false)
       isLegitimateInterest = lbOpt.map(_.isLegitimateInterest).getOrElse(false)
       _ <- isLegitimateInterest.onFalseNotFound(s"Legitimate interest $id not found")
+      ds = req.dataSubject.toPrivDataSubject(appId)
+      _ <- handleUser(appId, ds)
 
-      _ <- repos.events.addLegalBaseEvent(id, req.dataSubject, ServiceStart, req.date)
+      _ <- repos.events.addLegalBaseEvent(id, ds, ServiceStart, req.date)
     } yield ()
 
   def addEndLegitimateInterestEvent(appId: UUID, req: EndLegitimateInterestPayload) =
@@ -76,8 +89,10 @@ class UserEventsService(
       lbOpt <- repos.legalBase.get(appId, id, false)
       isLegitimateInterest = lbOpt.map(_.isLegitimateInterest).getOrElse(false)
       _ <- isLegitimateInterest.onFalseNotFound(s"Legitimate interest $id not found")
+      ds = req.dataSubject.toPrivDataSubject(appId)
+      _ <- handleUser(appId, ds)
 
-      _ <- repos.events.addLegalBaseEvent(id, req.dataSubject, ServiceEnd, req.date)
+      _ <- repos.events.addLegalBaseEvent(id, ds, ServiceEnd, req.date)
     } yield ()
 
 }

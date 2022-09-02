@@ -220,11 +220,11 @@ create table app_regulations (
 -- DATA SUBJECT
 
 create table data_subjects (
-  id varchar primary key,
+  id varchar,
   appid uuid not null,
   schema varchar,
   constraint data_subjects_pk
-    primary key (id, app),
+    primary key (id, appid),
   constraint app_fk
     foreign key (appid)
     references apps(id)
