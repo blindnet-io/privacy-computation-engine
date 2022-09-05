@@ -36,6 +36,8 @@ object DataCategory {
   def exists(dc: DataCategory, selectors: Set[DataCategory]): Boolean =
     terms.contains(dc.term) || selectors.contains(dc)
 
+  val All = DataCategory("*")
+
   val terms = List(
     "*",
     "AFFILIATION",

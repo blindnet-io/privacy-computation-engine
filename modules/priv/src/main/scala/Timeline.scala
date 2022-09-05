@@ -46,19 +46,9 @@ case class Timeline(
         .foldLeft(Acc(PrivacyScope.empty, PrivacyScope.empty, List.empty))(
           (acc, event) => {
             event match {
-              case e @ LegalBase(_, RelationshipStart | ServiceStart, Necessary, _, _) =>
-                addEvent(e.copy(scope = e.scope.zoomIn(selectors)), acc)
-              case LegalBase(id, RelationshipEnd | ServiceEnd, Necessary, _, _)        =>
-                removeEvent(id, acc)
-
-              case e @ LegalBase(_, RelationshipStart | ServiceStart, Contract, _, _) =>
-                addEvent(e.copy(scope = e.scope.zoomIn(selectors)), acc)
-              case LegalBase(id, RelationshipEnd | ServiceEnd, Contract, _, _)        =>
-                removeEvent(id, acc)
-
-              case e @ LegalBase(_, RelationshipStart | ServiceStart, LegitimateInterest, _, _) =>
-                addEvent(e.copy(scope = e.scope.zoomIn(selectors)), acc)
-              case LegalBase(id, RelationshipEnd | ServiceEnd, LegitimateInterest, _, _)        =>
+              case ev @ LegalBase(_, RelationshipStart | ServiceStart, _, _, _) =>
+                addEvent(ev.copy(scope = ev.scope.zoomIn(selectors)), acc)
+              case LegalBase(id, RelationshipEnd | ServiceEnd, _, _, _)         =>
                 removeEvent(id, acc)
 
               case ev: ConsentGiven => addEvent(ev.copy(scope = ev.scope.zoomIn(selectors)), acc)
@@ -125,13 +115,15 @@ case class Timeline(
       regulations: List[Regulation] = List.empty,
       selectors: Set[DataCategory] = Set.empty
   ): PrivacyScope =
-    compiledEvents(timestamp, regulations, selectors)
-      .foldLeft(PrivacyScope.empty)(_ union _.getScope)
+    Timeline.eligiblePrivacyScope(compiledEvents(timestamp, regulations, selectors))
 
 }
 
 object Timeline {
   def apply(e: TimelineEvent*) = new Timeline(e.toList)
+
+  def eligiblePrivacyScope(events: List[TimelineEvent]): PrivacyScope =
+    events.foldLeft(PrivacyScope.empty)(_ union _.getScope)
 
   val empty = Timeline(List.empty)
 }
