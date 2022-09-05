@@ -23,20 +23,14 @@ private object codecs {
     Read[(UUID, LegalBaseTerms, Instant, EventTerms, List[String], List[String], List[String])]
       .map {
         case (lbid, lbType, date, event, dcs, pcs, pps) =>
-          val scope = dcs.lazyZip(pcs).lazyZip(pps).map {
-            case (dc, pc, pp) => PrivacyScopeTriple.unsafe(dc, pc, pp)
-          }
-          TimelineEvent.LegalBase(lbid, event, lbType, date, PrivacyScope(scope.toSet))
+          TimelineEvent.LegalBase(lbid, event, lbType, date, PrivacyScope.unsafe(dcs, pcs, pps))
       }
 
   given Read[TimelineEvent.ConsentGiven] =
     Read[(UUID, UUID, Instant, List[String], List[String], List[String])]
       .map {
         case (id, lbid, date, dcs, pcs, pps) =>
-          val scope = dcs.lazyZip(pcs).lazyZip(pps).map {
-            case (dc, pc, pp) => PrivacyScopeTriple.unsafe(dc, pc, pp)
-          }
-          TimelineEvent.ConsentGiven(lbid, date, PrivacyScope(scope.toSet))
+          TimelineEvent.ConsentGiven(lbid, date, PrivacyScope.unsafe(dcs, pcs, pps))
       }
 
   given Read[TimelineEvent.ConsentRevoked] =
@@ -50,20 +44,14 @@ private object codecs {
     Read[(UUID, Instant, List[String], List[String], List[String])]
       .map {
         case (id, date, dcs, pcs, pps) =>
-          val scope = dcs.lazyZip(pcs).lazyZip(pps).map {
-            case (dc, pc, pp) => PrivacyScopeTriple.unsafe(dc, pc, pp)
-          }
-          TimelineEvent.Object(date, PrivacyScope(scope.toSet))
+          TimelineEvent.Object(date, PrivacyScope.unsafe(dcs, pcs, pps))
       }
 
   given Read[TimelineEvent.Restrict] =
     Read[(UUID, Instant, List[String], List[String], List[String])]
       .map {
         case (id, date, dcs, pcs, pps) =>
-          val scope = dcs.lazyZip(pcs).lazyZip(pps).map {
-            case (dc, pc, pp) => PrivacyScopeTriple.unsafe(dc, pc, pp)
-          }
-          TimelineEvent.Restrict(date, PrivacyScope(scope.toSet))
+          TimelineEvent.Restrict(date, PrivacyScope.unsafe(dcs, pcs, pps))
       }
 
 }

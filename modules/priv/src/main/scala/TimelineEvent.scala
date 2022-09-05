@@ -38,6 +38,12 @@ enum TimelineEvent(timestamp: Instant) {
 
   val getTimestamp = this.timestamp
 
+  def getLbId = this match {
+    case lb: LegalBase    => Some(lb.lbId)
+    case cg: ConsentGiven => Some(cg.lbId)
+    case _                => None
+  }
+
   val getScope = this match {
     case lb: LegalBase      => lb.scope
     case c: ConsentGiven    => c.scope

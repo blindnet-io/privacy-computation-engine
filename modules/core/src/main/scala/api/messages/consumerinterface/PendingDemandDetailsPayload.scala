@@ -15,12 +15,13 @@ import io.circe.syntax.*
 import sttp.tapir.*
 import sttp.tapir.generic.Configuration
 import sttp.tapir.generic.auto.*
+import api.endpoints.messages.*
 
 case class PendingDemandDetailsPayload(
     id: UUID,
     date: Instant,
     action: Action,
-    dataSubject: Option[DataSubject],
+    dataSubject: Option[DataSubjectPayload],
     recommendation: Option[Recommendation]
 )
 
@@ -39,7 +40,13 @@ object PendingDemandDetailsPayload {
     )
 
   def fromPrivDemand(d: Demand, pr: PrivacyRequest, r: Option[Recommendation]) = {
-    PendingDemandDetailsPayload(d.id, pr.timestamp, d.action, pr.dataSubject, r)
+    PendingDemandDetailsPayload(
+      d.id,
+      pr.timestamp,
+      d.action,
+      pr.dataSubject.map(DataSubjectPayload.fromDataSubject),
+      r
+    )
   }
 
 }

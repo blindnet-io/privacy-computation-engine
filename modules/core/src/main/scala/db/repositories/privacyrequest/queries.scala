@@ -173,6 +173,19 @@ private object queries {
       )
     """.update.run
 
+  def updateRecommendation(r: Recommendation) =
+    sql"""
+      update demand_recommendations set
+        status = ${r.status.map(_.encode)}::status_terms,
+        motive = ${r.motive.map(_.encode)}::motive_terms,
+        data_categories = ${r.dataCategories.map(_.term).toList},
+        date_from = ${r.dateFrom},
+        date_to = ${r.dateTo},
+        provenance = ${r.provenance.map(_.encode)}::provenance_terms,
+        target = ${r.target.map(_.encode)}::target_terms
+      where did = ${r.dId}
+    """.update.run
+
   def getRecommendation(dId: UUID) =
     sql"""
       select id, did, status, motive, data_categories, date_from, date_to, provenance, target
@@ -182,24 +195,13 @@ private object queries {
       .query[Recommendation]
       .option
 
-  def getAllUserRequestIds(appId: UUID, userId: String) =
+  def getAllUserRequestIds(ds: DataSubject) =
     sql"""
       select id
       from privacy_requests pr
-      where pr.dsid = $userId and pr.appid = $appId
+      where pr.dsid = ${ds.id} and pr.appid = ${ds.appId}
     """
       .query[RequestId]
       .to[List]
-
-  def getDataSubject(dId: UUID) =
-    sql"""
-      select ds.id, ds.schema
-      from data_subjects ds
-        join privacy_requests pr on pr.dsid = ds.id
-        join demands d on d.prid = pr.id
-      where d.id = $dId
-    """
-      .query[DataSubject]
-      .option
 
 }

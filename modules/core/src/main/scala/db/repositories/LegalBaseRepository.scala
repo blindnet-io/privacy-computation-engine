@@ -41,10 +41,7 @@ object LegalBaseRepository {
     ]
       .map {
         case (id, lbTerm, name, desc, active, dcs, pcs, pps) => {
-          val scope = dcs.lazyZip(pcs).lazyZip(pps).map {
-            case (dc, pc, pp) => PrivacyScopeTriple.unsafe(dc, pc, pp)
-          }
-          LegalBase(id, lbTerm, PrivacyScope(scope.toSet), name, desc, active)
+          LegalBase(id, lbTerm, PrivacyScope.unsafe(dcs, pcs, pps), name, desc, active)
         }
       }
 

@@ -23,6 +23,7 @@ import priv.DataSubject
 import priv.privacyrequest.{ Demand, PrivacyRequest, * }
 import priv.terms.*
 import io.blindnet.pce.model.*
+import io.blindnet.pce.priv.Recommendation
 
 class DataConsumerInterfaceService(
     repos: Repositories
@@ -46,7 +47,7 @@ class DataConsumerInterfaceService(
 
   def getPendingDemandDetails(appId: UUID, dId: UUID) =
     for {
-      _ <- repos.privacyRequest.demandExist(appId, dId).emptyNotFound(s"Demand $dId not found")
+      _ <- repos.privacyRequest.demandExist(appId, dId).onFalseNotFound(s"Demand $dId not found")
       d <- repos.privacyRequest.getDemand(dId, false).orFail(s"Demand $dId not found")
       rId = d.reqId
       req <- repos.privacyRequest.getRequest(rId, false).orFail(s"Request $rId not found")
@@ -65,6 +66,23 @@ class DataConsumerInterfaceService(
           "lang" -> req.lang.map(_.asJson).getOrElse(Json.Null)
         )
       )
+      _ <- repos.commands.addCreateResp(List(d))
+    } yield ()
+
+  def denyDemand(appId: UUID, req: DenyDemandPayload) =
+    for {
+      r <- repos.privacyRequest.getRecommendation(req.id).orFail(s"No recommendation found")
+      newR = r.copy(status = Some(Status.Denied), motive = Some(req.motive))
+      _ <- repos.privacyRequest.updateRecommendation(newR)
+      d <- CommandCreateResponse.create(
+        req.id,
+        // TODO: refactor
+        Json.obj(
+          "msg"  -> req.msg.map(_.asJson).getOrElse(Json.Null),
+          "lang" -> req.lang.map(_.asJson).getOrElse(Json.Null)
+        )
+      )
+      _ <- repos.demandsToReview.remove(NonEmptyList.of(req.id))
       _ <- repos.commands.addCreateResp(List(d))
     } yield ()
 

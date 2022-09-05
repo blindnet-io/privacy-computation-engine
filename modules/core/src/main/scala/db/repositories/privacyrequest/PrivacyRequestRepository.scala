@@ -38,9 +38,11 @@ trait PrivacyRequestRepository {
 
   def storeRecommendation(r: Recommendation): IO[Unit]
 
+  def updateRecommendation(r: Recommendation): IO[Unit]
+
   def getRecommendation(dId: UUID): IO[Option[Recommendation]]
 
-  def getAllUserRequestIds(appId: UUID, userId: String): IO[List[RequestId]]
+  def getAllUserRequestIds(ds: DataSubject): IO[List[RequestId]]
 
 }
 

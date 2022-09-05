@@ -17,6 +17,7 @@ trait Repositories {
   val provenance: ProvenancesRepository
   val privacyRequest: PrivacyRequestRepository
   val events: EventsRepository
+  val regulations: RegulationsRepository
 
   val commands: CommandsRepository
   val demandsToReview: DemandsToReviewRepository
@@ -36,6 +37,7 @@ object Repositories {
     val provenanceRepo      = ProvenancesRepository.live(xa)
     val privacyReqRepo      = PrivacyRequestRepository.live(xa)
     val eventsRepo          = EventsRepository.live(xa)
+    val regulationsRepo     = RegulationsRepository.live(xa)
 
     val commandsRepo        = CommandsRepository.live(xa)
     val demandsToReviewRepo = DemandsToReviewRepository.live(xa)
@@ -52,6 +54,7 @@ object Repositories {
       val provenance      = provenanceRepo
       val privacyRequest  = privacyReqRepo
       val events          = eventsRepo
+      val regulations     = regulationsRepo
 
       val commands        = commandsRepo
       val demandsToReview = demandsToReviewRepo

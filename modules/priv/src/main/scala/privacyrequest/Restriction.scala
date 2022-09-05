@@ -47,13 +47,7 @@ object Restriction {
   given Read[Restriction] =
     Read[(String, ConsentId, FromDate, ToDate, ProvenanceT, TargetT, DataRef, DCs, PCs, PPs)].map {
       case ("PRIVACY_SCOPE", _, _, _, _, _, _, dcs, pcs, pps)   =>
-        PrivacyScope(
-          PS(
-            (dcs.flatten lazyZip pcs.flatten lazyZip pps.flatten)
-              .map(PrivacyScopeTriple.unsafe)
-              .toSet
-          )
-        )
+        PrivacyScope(PS.unsafe(dcs.flatten, pcs.flatten, pps.flatten))
       case ("CONSENT", Some(cId), _, _, _, _, _, _, _, _)       => Consent(cId)
       case ("DATE_RANGE", _, from, to, _, _, _, _, _, _)        => DateRange(from, to)
       case ("PROVENANCE", _, _, _, Some(p), t, _, _, _, _)      => Provenance(p, t)

@@ -40,7 +40,7 @@ object ProvenancesRepository {
           join data_categories dc ON p.dcid = dc.id
           where p.appid = $appId
         """
-          .query[(UUID, ProvenanceTerms, String, DataCategory)]
+          .query[(UUID, ProvenanceTerms, Option[String], DataCategory)]
           .map {
             case (id, prov, system, dc) => dc -> Provenance(id, prov, system)
           }
@@ -64,7 +64,7 @@ object ProvenancesRepository {
           insert into provenances (id, appid, dcid, provenance, system)
           values (?, '$appId', (select id from data_categories where term = ?), ?::provenance_terms, ?)
         """
-        Update[(UUID, DataCategory, String, String)](sql)
+        Update[(UUID, DataCategory, String, Option[String])](sql)
           .updateMany(
             rs.map(r => (r._2.id, r._1, r._2.provenance.encode, r._2.system))
           )

@@ -173,10 +173,13 @@ class PrivacyRequestRepositoryLive(xa: Transactor[IO]) extends PrivacyRequestRep
   def storeRecommendation(r: Recommendation): IO[Unit] =
     queries.storeRecommendation(r).transact(xa).void
 
+  def updateRecommendation(r: Recommendation): IO[Unit] =
+    queries.updateRecommendation(r).transact(xa).void
+
   def getRecommendation(dId: UUID): IO[Option[Recommendation]] =
     queries.getRecommendation(dId).transact(xa)
 
-  def getAllUserRequestIds(appId: UUID, userId: String): IO[List[RequestId]] =
-    queries.getAllUserRequestIds(appId, userId).transact(xa)
+  def getAllUserRequestIds(ds: DataSubject): IO[List[RequestId]] =
+    queries.getAllUserRequestIds(ds).transact(xa)
 
 }

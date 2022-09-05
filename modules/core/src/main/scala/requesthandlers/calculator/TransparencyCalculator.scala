@@ -78,11 +78,11 @@ class TransparencyCalculator(
       case TDataCategories       => getDataCategories(appId, t, ds, restr).json
       case TDPO                  => getDpo(appId).json
       case TKnown                => getUserKnown(appId, ds).json
-      case TLegalBases           => lbRepo.get(appId, scope = false).json
+      case TLegalBases           => getLegalBases(appId, t, ds).json // TODO: restrictions
       case TOrganization         => getOrganization(appId).json
       case TPolicy               => getPrivacyPolicy(appId).json
       case TProcessingCategories => getProcessingCategories(appId, t, ds, restr).json
-      case TProvenance           => getProvenances(appId, restr).json
+      case TProvenance           => getProvenances(appId, t, ds, restr).json
       case TPurpose              => getPurposes(appId, t, ds, restr).json
       case TRetention            => getRetentionPolicies(appId, t, ds, restr).json
       case TWhere                => getWhere(appId).json
@@ -98,8 +98,10 @@ class TransparencyCalculator(
 
   private def getEligibilePS(appId: UUID, t: Instant, ds: DataSubject) =
     for {
-      timeline <- repos.events.getTimeline(appId, ds)
-      ePS = timeline.eligiblePrivacyScope(Some(t))
+      timeline    <- repos.events.getTimeline(ds)
+      selectors   <- repos.privacyScope.getSelectors(appId, active = true)
+      regulations <- repos.regulations.get(appId)
+      ePS = timeline.eligiblePrivacyScope(Some(t), regulations, selectors)
     } yield ePS
 
   private def intersect(appId: UUID, eps: PrivacyScope, rps: PrivacyScope) =
@@ -108,6 +110,7 @@ class TransparencyCalculator(
       fPS = rps.zoomIn(selectors) intersection eps.zoomIn(selectors)
     } yield fPS
 
+  // TODO: there is a lot of repeating code in the following methods. refactor!
   private def getDataCategories(
       appId: UUID,
       t: Instant,
@@ -192,17 +195,36 @@ class TransparencyCalculator(
     }
   }
 
-  private def getProvenances(appId: UUID, restr: List[Restriction]) =
-    getRestrictionScope(restr) match {
-      case None      => prRepo.get(appId)
-      case Some(rPS) =>
+  private def getProvenances(
+      appId: UUID,
+      t: Instant,
+      ds: Option[DataSubject],
+      restr: List[Restriction]
+  ) = {
+    val rPS = getRestrictionScope(restr)
+
+    ds match {
+      case None =>
         for {
-          selectors <- repos.privacyScope.getSelectors(appId, active = true)
-          dcs = rPS.zoomIn(selectors).triples.map(_.dataCategory)
           provenances <- prRepo.get(appId)
-          fProvenances = provenances.filter(p => dcs.contains(p._1))
+          selectors   <- repos.privacyScope.getSelectors(appId, active = true)
+          fProvenances = rPS.fold(provenances)(
+            rps =>
+              val dcs = rps.zoomIn(selectors).triples.map(_.dataCategory)
+              provenances.filter(p => dcs.contains(p._1))
+          )
         } yield fProvenances
+
+      case Some(ds) =>
+        for {
+          ePS <- getEligibilePS(appId, t, ds)
+          fPS <- rPS.fold(IO(ePS))(intersect(appId, ePS, _))
+          dcs = fPS.triples.map(_.dataCategory)
+          provenances <- prRepo.get(appId)
+          filtered = provenances.filter(p => dcs.contains(p._1))
+        } yield filtered
     }
+  }
 
   private def getRetentionPolicies(
       appId: UUID,
@@ -232,6 +254,24 @@ class TransparencyCalculator(
           retentionPolicies <- rpRepo.get(appId)
           filtered = retentionPolicies.filter(p => dcs.contains(p._1))
         } yield filtered
+    }
+  }
+
+  private def getLegalBases(
+      appId: UUID,
+      t: Instant,
+      ds: Option[DataSubject]
+  ) = {
+    ds match {
+      case None     => lbRepo.get(appId, scope = false)
+      case Some(ds) =>
+        lbRepo.get(appId, scope = false).json
+        for {
+          timeline <- repos.events.getTimeline(ds)
+          lbIds = timeline.compiledEvents(Some(t)).flatMap(_.getLbId)
+          lbs <- lbRepo.get(appId, scope = false)
+          res = lbs.filter(lb => lbIds.contains(lb.id))
+        } yield res
     }
   }
 

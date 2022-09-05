@@ -37,19 +37,21 @@ class GeneralCalculator(
     for {
       rEventId  <- UUIDGen.randomUUID[IO].map(ResponseEventId.apply)
       timestamp <- Clock[IO].realTimeInstant
-      newResp   <-
+      msg  = ccr.data.hcursor.downField("msg").as[String].toOption
+      lang = ccr.data.hcursor.downField("lang").as[String].toOption
+      newResp <-
         r.status match {
           case Some(Status.Granted) =>
             createGrantedResponse(resp.id, pr.appId, d, ccr, pr.dataSubject.get, r)
 
           case Some(s) =>
             // format: off
-            IO.pure(PrivacyResponse(resp.id, rEventId, d.id, timestamp, d.action, s, r.motive))
+            IO.pure(PrivacyResponse(resp.id, rEventId, d.id, timestamp, d.action, s, r.motive, message = msg, lang = lang))
             // format: on
 
           case None =>
             // format: off
-            IO.pure(PrivacyResponse(resp.id, rEventId, d.id, timestamp, d.action, Status.Denied, r.motive))
+            IO.pure(PrivacyResponse(resp.id, rEventId, d.id, timestamp, d.action, Status.Denied, r.motive, message = msg, lang = lang))
             // format: on
         }
     } yield newResp
@@ -66,18 +68,13 @@ class GeneralCalculator(
       rEventId  <- UUIDGen.randomUUID[IO].map(ResponseEventId.apply)
       timestamp <- Clock[IO].realTimeInstant
 
-      msg  = ccr.data.hcursor.downField("msg").as[String].toOption
-      lang = ccr.data.hcursor.downField("lang").as[String].toOption
-
       newResp = PrivacyResponse(
         respId,
         rEventId,
         d.id,
         timestamp,
         d.action,
-        Status.Granted,
-        message = msg,
-        lang = lang
+        Status.Granted
       )
     } yield newResp
 

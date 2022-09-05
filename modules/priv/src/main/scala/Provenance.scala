@@ -14,7 +14,7 @@ import sttp.tapir.generic.auto.*
 case class Provenance(
     id: UUID,
     provenance: ProvenanceTerms,
-    system: String
+    system: Option[String]
 )
 
 object Provenance {

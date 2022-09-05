@@ -17,9 +17,10 @@ import sttp.tapir.*
 import sttp.tapir.generic.auto.*
 import java.time.Instant
 import sttp.tapir.generic.Configuration
+import api.endpoints.messages.*
 
 case class StartContractPayload(
-    dataSubject: DataSubject,
+    dataSubject: DataSubjectPayload,
     contractId: UUID,
     date: Instant
 )
