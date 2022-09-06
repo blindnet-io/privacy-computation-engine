@@ -92,7 +92,7 @@ class TransparencyCalculator(
 
   private def getRestrictionScope(restr: List[Restriction]) =
     Restriction
-      .get[Restriction.PrivacyScope](restr)
+      .cast[Restriction.PrivacyScope](restr)
       .toNel
       .map(_.foldLeft(PrivacyScope.empty)(_ union _.scope))
 

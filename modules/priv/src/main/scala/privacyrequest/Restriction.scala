@@ -24,7 +24,7 @@ enum Restriction {
 
   case DataReference(dataReferences: List[String]) extends Restriction
 
-  def get[T <: Restriction: Tag]: Option[T] =
+  def cast[T <: Restriction: Tag]: Option[T] =
     this match {
       case ps: T => Some(ps)
       case _     => None
@@ -56,6 +56,6 @@ object Restriction {
       case _                                                    => throw new NotImplementedError()
     }
 
-  def get[T <: Restriction: Tag](l: List[Restriction]): List[T] = l.flatMap(_.get)
+  def cast[T <: Restriction: Tag](l: List[Restriction]): List[T] = l.flatMap(_.cast)
 
 }
