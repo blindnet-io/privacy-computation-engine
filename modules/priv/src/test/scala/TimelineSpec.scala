@@ -13,20 +13,11 @@ import io.blindnet.pce.priv.terms.ProcessingCategory
 import io.blindnet.pce.priv.terms.Purpose
 import java.time.temporal.ChronoUnit
 import java.util.UUID
+import io.blindnet.pce.priv.util.*
 
 class TimelineSpec extends UnitSpec {
 
   object fixtures {
-
-    extension [T](l: List[T]) def sample = l(Random.nextInt(l.length))
-
-    extension (i: Instant) def -(n: Int) = i.minus(1, ChronoUnit.DAYS)
-
-    def uuid = java.util.UUID.randomUUID
-
-    def scope(t: (String, String, String)*) = PrivacyScope(
-      t.toSet.map(tt => PrivacyScopeTriple.unsafe(tt._1, tt._2, tt._3))
-    )
 
     def randomScope() = scope(
       (1 to Random.nextInt(10))
@@ -87,18 +78,16 @@ class TimelineSpec extends UnitSpec {
 
   import fixtures.*
 
-  describe("A Timeline") {
+  describe("Timeline") {
     describe("with no events") {
-      it("should return an empty privacy scope") {
+      it("should return an empty eligible PS") {
         Timeline.empty.eligiblePrivacyScope() shouldBe PrivacyScope.empty
       }
     }
 
-    describe("should calculate a correct privacy scope") {
-      it("for 2 contract start events") {
-        val uuid1 = uuid
-
-        Timeline(startServiceContract(uuid1, scope1), startServiceContract(uuid1, scope2))
+    describe("with 2 contract start events") {
+      it("should return correct eligible PS") {
+        Timeline(startServiceContract(uuid, scope1), startServiceContract(uuid, scope2))
           .eligiblePrivacyScope() shouldBe
           scope(
             ("CONTACT.EMAIL", "COLLECTION", "ADVERTISING"),
@@ -107,8 +96,10 @@ class TimelineSpec extends UnitSpec {
             ("DEMOGRAPHIC.AGE", "COLLECTION", "TRACKING")
           ).zoomIn()
       }
+    }
 
-      it("for start and end service events") {
+    describe("with start and end service events") {
+      it("should return correct eligible PS") {
         val uuid1 = uuid
         val uuid2 = uuid
         val uuid3 = uuid
@@ -129,13 +120,17 @@ class TimelineSpec extends UnitSpec {
           .eligiblePrivacyScope() shouldBe (e2.getScope union e6.getScope union e8.getScope)
           .zoomIn()
       }
+    }
 
-      it("for 1 given consent") {
+    describe("with 1 given consent") {
+      it("should return correct eligible PS") {
         val e1 = cgEvent(uuid, randomScope())
         Timeline(e1).eligiblePrivacyScope() shouldBe e1.getScope.zoomIn()
       }
+    }
 
-      it("for given and revoked consents") {
+    describe("with given and revoked consents") {
+      it("should return correct eligible PS") {
         val uuid1 = uuid
         val uuid2 = uuid
         val uuid3 = uuid
@@ -152,20 +147,20 @@ class TimelineSpec extends UnitSpec {
         Timeline(g1, g2, r1a, g3, r2, r1b, r4, g4).eligiblePrivacyScope() shouldBe
           (g3.getScope union g4.getScope).zoomIn()
       }
-
-      // it("for regulations") {
-      //   val scope1 = PrivacyScope.unsafe("")
-      //   val e1     = startServiceContract(uuid1, randomScope(), now - 100)
-      //   val e2     = startServiceContract(uuid1, randomScope(), now - 90)
-      //   val e3     = startServiceNecessary(uuid3, randomScope(), now - 80)
-      //   val g4     = cgEvent(uuid1, randomScope(), now - 70)
-      // }
-
-      // it("for given consents and restrict events") {
-      //   val g1 = cgEvent("1", randomScope() union scope1, now - 100)
-      //   val g2 = cgEvent("2", randomScope() union scope2, now - 90)
-      // }
     }
+
+    // it("for regulations") {
+    //   val scope1 = PrivacyScope.unsafe("")
+    //   val e1     = startServiceContract(uuid1, randomScope(), now - 100)
+    //   val e2     = startServiceContract(uuid1, randomScope(), now - 90)
+    //   val e3     = startServiceNecessary(uuid3, randomScope(), now - 80)
+    //   val g4     = cgEvent(uuid1, randomScope(), now - 70)
+    // }
+
+    // it("for given consents and restrict events") {
+    //   val g1 = cgEvent("1", randomScope() union scope1, now - 100)
+    //   val g2 = cgEvent("2", randomScope() union scope2, now - 90)
+    // }
   }
 
 }

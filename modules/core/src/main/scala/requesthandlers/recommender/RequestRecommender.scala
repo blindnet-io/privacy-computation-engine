@@ -90,9 +90,10 @@ class RequestRecommender(
       timeline    <- repos.events.getTimeline(pr.dataSubject.get)
       regulations <- repos.regulations.get(pr.appId)
       selectors   <- repos.privacyScope.getSelectors(pr.appId, active = true)
-      eps = timeline.eligiblePrivacyScope(Some(pr.timestamp), regulations, selectors)
+      ctx = PSContext(selectors)
+      eps = timeline.eligiblePrivacyScope(Some(pr.timestamp), regulations, ctx)
 
-      psr   = d.getPSR.orEmpty.zoomIn(selectors)
+      psr   = d.getPSR.orEmpty.zoomIn(ctx)
       psRec =
         if psr.isEmpty then eps
         else eps intersection eps
@@ -111,12 +112,13 @@ class RequestRecommender(
       timeline    <- repos.events.getTimeline(pr.dataSubject.get)
       regulations <- repos.regulations.get(pr.appId)
       selectors   <- repos.privacyScope.getSelectors(pr.appId, active = true)
-      events = timeline.compiledEvents(Some(pr.timestamp), regulations, selectors)
+      ctx    = PSContext(selectors)
+      events = timeline.compiledEvents(Some(pr.timestamp), regulations, ctx)
       eps    = Timeline.eligiblePrivacyScope(events)
 
-      rdcs        = d.getPSR.orEmpty.zoomIn(selectors).dataCategories
+      rdcs        = d.getPSR.orEmpty.zoomIn(ctx).dataCategories
       restDCs     =
-        if rdcs.isEmpty then DataCategory.getMostGranular(DataCategory.All, selectors)
+        if rdcs.isEmpty then DataCategory.granularize(DataCategory.All, selectors)
         else rdcs
       epsDCs      = eps.triples.map(_.dataCategory)
       filteredDCs = events.foldLeft(epsDCs intersect restDCs)(

@@ -101,13 +101,15 @@ class TransparencyCalculator(
       timeline    <- repos.events.getTimeline(ds)
       selectors   <- repos.privacyScope.getSelectors(appId, active = true)
       regulations <- repos.regulations.get(appId)
-      ePS = timeline.eligiblePrivacyScope(Some(t), regulations, selectors)
+      ctx = PSContext(selectors)
+      ePS = timeline.eligiblePrivacyScope(Some(t), regulations, ctx)
     } yield ePS
 
   private def intersect(appId: UUID, eps: PrivacyScope, rps: PrivacyScope) =
     for {
       selectors <- repos.privacyScope.getSelectors(appId, active = true)
-      fPS = rps.zoomIn(selectors) intersection eps.zoomIn(selectors)
+      ctx = PSContext(selectors)
+      fPS = rps.zoomIn(ctx) intersection eps.zoomIn(ctx)
     } yield fPS
 
   // TODO: there is a lot of repeating code in the following methods. refactor!
@@ -124,9 +126,8 @@ class TransparencyCalculator(
         for {
           appDCs    <- psRepo.getDataCategories(appId)
           selectors <- repos.privacyScope.getSelectors(appId, active = true)
-          finalDCs = rPS.fold(appDCs)(
-            _.zoomIn(selectors).triples.map(_.dataCategory) intersect appDCs
-          )
+          ctx      = PSContext(selectors)
+          finalDCs = rPS.fold(appDCs)(_.zoomIn(ctx).triples.map(_.dataCategory) intersect appDCs)
         } yield finalDCs
 
       case Some(ds) =>
@@ -152,8 +153,9 @@ class TransparencyCalculator(
         for {
           appPCs    <- psRepo.getProcessingCategories(appId)
           selectors <- repos.privacyScope.getSelectors(appId, active = true)
+          ctx      = PSContext(selectors)
           finalPCs = rPS.fold(appPCs)(
-            _.zoomIn(selectors).triples.map(_.processingCategory) intersect appPCs
+            _.zoomIn(ctx).triples.map(_.processingCategory) intersect appPCs
           )
         } yield finalPCs
 
@@ -180,8 +182,9 @@ class TransparencyCalculator(
         for {
           appPPs    <- psRepo.getPurposes(appId)
           selectors <- repos.privacyScope.getSelectors(appId, active = true)
+          ctx      = PSContext(selectors)
           finalPPs = rPS.fold(appPPs)(
-            _.zoomIn(selectors).triples.map(_.purpose) intersect appPPs
+            _.zoomIn(ctx).triples.map(_.purpose) intersect appPPs
           )
         } yield finalPPs
 
@@ -208,9 +211,10 @@ class TransparencyCalculator(
         for {
           provenances <- prRepo.get(appId)
           selectors   <- repos.privacyScope.getSelectors(appId, active = true)
+          ctx          = PSContext(selectors)
           fProvenances = rPS.fold(provenances)(
             rps =>
-              val dcs = rps.zoomIn(selectors).triples.map(_.dataCategory)
+              val dcs = rps.zoomIn(ctx).triples.map(_.dataCategory)
               provenances.filter(p => dcs.contains(p._1))
           )
         } yield fProvenances
@@ -239,9 +243,10 @@ class TransparencyCalculator(
         for {
           retentionPolicies <- rpRepo.get(appId)
           selectors         <- repos.privacyScope.getSelectors(appId, active = true)
+          ctx         = PSContext(selectors)
           filteredRPs = rPS.fold(retentionPolicies)(
             rps =>
-              val dcs = rps.zoomIn(selectors).triples.map(_.dataCategory)
+              val dcs = rps.zoomIn(ctx).triples.map(_.dataCategory)
               retentionPolicies.filter(p => dcs.contains(p._1))
           )
         } yield filteredRPs

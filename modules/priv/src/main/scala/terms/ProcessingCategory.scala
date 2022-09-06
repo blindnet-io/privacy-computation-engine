@@ -17,17 +17,19 @@ object ProcessingCategory {
       "Unknown processing category"
     )
 
-  def getMostGranular(dc: ProcessingCategory): Set[ProcessingCategory] = {
-    def getMostGranular0(term: String): List[String] =
+  def granularize(dc: ProcessingCategory): Set[ProcessingCategory] = {
+    def granularize(term: String): List[String] =
       val n = terms.filter(t => t.startsWith(s"$term."))
-      if n.length == 0 then List(term) else n.flatMap(t => getMostGranular0(t))
+      if n.length == 0 then List(term) else n.flatMap(t => granularize(t))
 
     val res =
-      if dc.term == "*" then terms.tail.flatMap(t => getMostGranular0(t))
-      else getMostGranular0(dc.term)
+      if dc.term == "*" then terms.tail.flatMap(t => granularize(t))
+      else granularize(dc.term)
 
     res.toSet.map(ProcessingCategory(_))
   }
+
+  val All = ProcessingCategory("*")
 
   val terms = List(
     "*",

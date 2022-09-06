@@ -16,19 +16,16 @@ object DataCategory {
       "Unknown data category"
     )
 
-  def getMostGranular(
-      dc: DataCategory,
-      selectors: Set[DataCategory] = Set.empty
-  ): Set[DataCategory] = {
+  def granularize(dc: DataCategory, selectors: Set[DataCategory] = Set.empty): Set[DataCategory] = {
     val allterms = terms ++ selectors.map(_.term)
 
-    def getMostGranular0(term: String): List[String] =
+    def granularize(term: String): List[String] =
       val n = allterms.filter(t => t.startsWith(s"$term."))
-      if n.length == 0 then List(term) else n.flatMap(t => getMostGranular0(t))
+      if n.length == 0 then List(term) else n.flatMap(t => granularize(t))
 
     val res =
-      if dc.term == "*" then allterms.tail.flatMap(t => getMostGranular0(t))
-      else getMostGranular0(dc.term)
+      if dc.term == "*" then allterms.tail.flatMap(t => granularize(t))
+      else granularize(dc.term)
 
     res.toSet.map(DataCategory(_))
   }

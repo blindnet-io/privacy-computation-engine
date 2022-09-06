@@ -56,7 +56,7 @@ object PrivacyResponse {
 
     pr.demands.traverse(
       d =>
-        val children = d.action.getMostGranularSubcategories()
+        val children = d.action.granularize()
         if children.length > 0 then
           for {
             resp     <- createResponse(d.id, d.action)

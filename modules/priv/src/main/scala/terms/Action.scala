@@ -33,14 +33,16 @@ enum Action(term: String, parent: Option[Action] = None) {
   case Other       extends Action("OTHER")
 
   def withSubCategories(): List[Action] = {
-    val children = Action.values.filter(_.isChildOf(this)).toList
+    val children = this.children()
     this +: children.flatMap(_.withSubCategories())
   }
 
-  def getMostGranularSubcategories(): List[Action] = {
-    val children = Action.values.filter(_.isChildOf(this)).toList
-    children.flatMap(_.withSubCategories())
+  def granularize(): List[Action] = {
+    val children = this.children()
+    if children.isEmpty then List(this) else children.flatMap(_.granularize())
   }
+
+  def children() = Action.values.filter(_.isChildOf(this)).toList
 
   def isChildOf(a: Action) = parent.exists(_ == a)
 

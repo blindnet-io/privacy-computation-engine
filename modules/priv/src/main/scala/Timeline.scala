@@ -15,7 +15,7 @@ case class Timeline(
   def compiledEvents(
       timestamp: Option[Instant] = None,
       regulations: List[Regulation] = List.empty,
-      selectors: Set[DataCategory] = Set.empty
+      ctx: PSContext = PSContext.empty
   ): List[TimelineEvent] = {
 
     import TimelineEvent.*
@@ -47,18 +47,19 @@ case class Timeline(
           (acc, event) => {
             event match {
               case ev @ LegalBase(_, RelationshipStart | ServiceStart, _, _, _) =>
-                addEvent(ev.copy(scope = ev.scope.zoomIn(selectors)), acc)
+                addEvent(ev.copy(scope = ev.scope.zoomIn(ctx)), acc)
               case LegalBase(id, RelationshipEnd | ServiceEnd, _, _, _)         =>
                 removeEvent(id, acc)
 
-              case ev: ConsentGiven => addEvent(ev.copy(scope = ev.scope.zoomIn(selectors)), acc)
+              case ev: ConsentGiven =>
+                addEvent(ev.copy(scope = ev.scope.zoomIn(ctx)), acc)
 
               case ev: ConsentRevoked => removeEvent(ev.lbId, acc)
 
               case Restrict(_, scope) =>
                 val newRestrictScope =
-                  if (acc.restrictScope.isEmpty) then scope.zoomIn(selectors)
-                  else acc.restrictScope intersection scope.zoomIn(selectors)
+                  if (acc.restrictScope.isEmpty) then scope.zoomIn(ctx)
+                  else acc.restrictScope intersection scope.zoomIn(ctx)
                 acc.copy(
                   restrictScope = newRestrictScope,
                   events = acc.events.map {
@@ -68,7 +69,7 @@ case class Timeline(
                 )
 
               case Object(_, scope) =>
-                val newObjectScope = acc.objectScope union scope.zoomIn(selectors)
+                val newObjectScope = acc.objectScope union scope.zoomIn(ctx)
                 acc.copy(
                   objectScope = newObjectScope,
                   events = acc.events.map {
@@ -113,9 +114,9 @@ case class Timeline(
   def eligiblePrivacyScope(
       timestamp: Option[Instant] = None,
       regulations: List[Regulation] = List.empty,
-      selectors: Set[DataCategory] = Set.empty
+      ctx: PSContext = PSContext.empty
   ): PrivacyScope =
-    Timeline.eligiblePrivacyScope(compiledEvents(timestamp, regulations, selectors))
+    Timeline.eligiblePrivacyScope(compiledEvents(timestamp, regulations, ctx))
 
 }
 

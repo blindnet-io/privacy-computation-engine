@@ -66,7 +66,8 @@ class ConfigurationService(
     for {
       id        <- UUIDGen.randomUUID[IO]
       selectors <- repos.privacyScope.getSelectors(appId, active = true)
-      scope = req.getPrivPrivacyScope.zoomIn(selectors)
+      ctx   = PSContext(selectors)
+      scope = req.getPrivPrivacyScope.zoomIn(ctx)
       lb    = LegalBase(id, req.lbType, scope, req.name, req.description, true)
       // TODO: handling error
       _ <- repos.legalBase.add(appId, lb).start
@@ -83,7 +84,7 @@ class ConfigurationService(
       rps <- reqNel.flatTraverse {
         r =>
           DataCategory
-            .getMostGranular(r.dataCategory, selectors)
+            .granularize(r.dataCategory, selectors)
             .toList
             .toNel
             .get
@@ -114,7 +115,7 @@ class ConfigurationService(
       ps <- reqNel.flatTraverse {
         r =>
           DataCategory
-            .getMostGranular(r.dataCategory, selectors)
+            .granularize(r.dataCategory, selectors)
             .toList
             .toNel
             .get
