@@ -6,14 +6,15 @@ import io.blindnet.pce.model.error.MigrationError
 import org.flywaydb.core.Flyway
 import org.flywaydb.core.api.output.MigrateResult
 import config.DbConfig
+import javax.sql.DataSource
 
 object Migrator {
 
-  def migrateDatabase(conf: DbConfig): IO[Unit] = {
+  def migrateDatabase(ds: DataSource): IO[Unit] = {
 
     val flywayConf = Flyway
       .configure()
-      .dataSource(conf.uri, conf.username, conf.password.value)
+      .dataSource(ds)
       // .group(true)
       .table("Flyway")
       .locations(org.flywaydb.core.api.Location("classpath:db/migration"))

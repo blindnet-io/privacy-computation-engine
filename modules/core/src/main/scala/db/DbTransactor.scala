@@ -19,7 +19,7 @@ object DbTransactor {
           conf.password.value,
           ec
         )
-      _  <- Resource.eval(xa.configure(c => IO { c.setMaxLifetime(600000) }))
+      _  <- Resource.eval(xa.configure(ds => IO { ds.setMaxLifetime(600000) }))
     } yield xa
 
 }
