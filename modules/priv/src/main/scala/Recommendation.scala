@@ -5,7 +5,7 @@ import java.time.Instant
 import java.util.UUID
 
 import terms.*
-import util.parsing.*
+import io.blindnet.pce.util.parsing.*
 import io.circe.*
 import io.circe.generic.semiauto.*
 import io.circe.syntax.*

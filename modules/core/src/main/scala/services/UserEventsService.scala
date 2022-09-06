@@ -11,7 +11,6 @@ import cats.effect.std.*
 import cats.implicits.*
 import io.blindnet.pce.api.endpoints.messages.consumerinterface.*
 import io.blindnet.pce.model.error.given
-import io.blindnet.pce.services.util.*
 import io.blindnet.pce.util.extension.*
 import io.circe.Json
 import io.circe.generic.auto.*
@@ -22,7 +21,6 @@ import model.error.*
 import priv.DataSubject
 import priv.privacyrequest.{ Demand, PrivacyRequest, * }
 import priv.terms.*
-import io.blindnet.pce.util.extension.*
 import util.*
 import priv.LegalBase
 import priv.terms.EventTerms.*

@@ -19,7 +19,17 @@ lazy val root = (project in file("."))
   .settings(
     name := "privacy-computation-engine"
   )
-  .aggregate(core, priv)
+  .aggregate(util, priv, core)
+
+lazy val util = (project in file("modules/util"))
+  .settings(commonSettings*)
+  .settings(
+    name := "pce-util",
+    libraryDependencies ++= Seq(
+      dependencies.main.circe,
+      dependencies.main.circeGeneric
+    )
+  )
 
 lazy val priv = (project in file("modules/priv"))
   .settings(commonSettings*)
@@ -36,6 +46,7 @@ lazy val priv = (project in file("modules/priv"))
       dependencies.test.scalaCheck
     )
   )
+  .dependsOn(util)
 
 lazy val core = (project in file("modules/core"))
   .enablePlugins(BuildInfoPlugin)
@@ -81,4 +92,4 @@ lazy val core = (project in file("modules/core"))
         oldStrategy(x)
     }
   )
-  .dependsOn(priv)
+  .dependsOn(util, priv)

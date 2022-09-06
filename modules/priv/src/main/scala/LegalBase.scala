@@ -4,7 +4,7 @@ package priv
 import terms.*
 import io.circe.*
 import io.circe.generic.semiauto.*
-import util.parsing.*
+import io.blindnet.pce.util.parsing.*
 import sttp.tapir.*
 import sttp.tapir.generic.Configuration
 import java.util.UUID
