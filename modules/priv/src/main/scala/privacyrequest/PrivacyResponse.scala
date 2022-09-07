@@ -47,16 +47,16 @@ object PrivacyResponse {
 
     def createResponse(dId: UUID, action: Action, parent: Option[ResponseId] = None) =
       for {
-        id  <- UUIDGen[F].randomUUID.map(ResponseId.apply)
-        rId <- UUIDGen[F].randomUUID.map(ResponseEventId.apply)
+        id   <- UUIDGen[F].randomUUID.map(ResponseId.apply)
+        evId <- UUIDGen[F].randomUUID.map(ResponseEventId.apply)
         // format: off
-        resp = PrivacyResponse(id, rId, dId, pr.timestamp, action, Status.UnderReview, parent = parent)
+        resp = PrivacyResponse(id, evId, dId, pr.timestamp, action, Status.UnderReview, parent = parent)
         // format: on
       } yield resp
 
     pr.demands.traverse(
       d =>
-        val children = d.action.granularize()
+        val children = d.action.granularize().filterNot(_ == d.action)
         if children.length > 0 then
           for {
             resp     <- createResponse(d.id, d.action)
@@ -67,7 +67,7 @@ object PrivacyResponse {
 
   }
 
-  // TODO: optimize with Map
+  // TODO: optimize with HashMap
   def group(rs: List[PrivacyResponse]): List[PrivacyResponse] = {
     def loop(
         all: List[PrivacyResponse],

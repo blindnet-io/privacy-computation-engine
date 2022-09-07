@@ -24,6 +24,11 @@ case class Demand(
     case _                            => None
   }.headOption
 
+  def getConsentR = restrictions.flatMap {
+    case Restriction.Consent(id) => Option((id))
+    case _                       => None
+  }.headOption
+
   def getDateRangeR = restrictions.flatMap {
     case Restriction.DateRange(from, to) => Option((from, to))
     case _                               => None

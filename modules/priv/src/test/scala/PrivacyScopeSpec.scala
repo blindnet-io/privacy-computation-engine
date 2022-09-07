@@ -14,7 +14,7 @@ import io.blindnet.pce.priv.terms.Purpose
 import java.time.temporal.ChronoUnit
 import java.util.UUID
 import io.blindnet.pce.priv.util.*
-import io.blindnet.pce.priv.PS
+import io.blindnet.pce.priv.test.*
 
 class PrivacyScopeSpec extends UnitSpec {
 
@@ -36,7 +36,7 @@ class PrivacyScopeSpec extends UnitSpec {
 
       it("for full scope") {
         val ps = scope(("*", "*", "*")).zoomIn()
-        ps shouldBe PS.full
+        ps shouldBe fullPS
       }
 
       it("for simple scope 1") {

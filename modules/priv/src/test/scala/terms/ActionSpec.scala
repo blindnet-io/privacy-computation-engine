@@ -5,18 +5,12 @@ import java.time.Instant
 import org.scalatest.matchers.should.Matchers.*
 import org.scalatest.matchers.must.Matchers.*
 import org.scalatest.funspec.*
-import io.blindnet.pce.priv.terms.EventTerms
-import io.blindnet.pce.priv.terms.LegalBaseTerms
-import io.blindnet.pce.priv.terms.DataCategory
+import io.blindnet.pce.priv.terms.*
 import scala.util.Random
-import io.blindnet.pce.priv.terms.ProcessingCategory
-import io.blindnet.pce.priv.terms.Purpose
 import java.time.temporal.ChronoUnit
 import java.util.UUID
 import io.blindnet.pce.priv.util.*
 import io.blindnet.pce.priv.PS
-import io.blindnet.pce.priv.terms.Action
-import java.awt.Transparency
 
 class ActionSpec extends UnitSpec {
 

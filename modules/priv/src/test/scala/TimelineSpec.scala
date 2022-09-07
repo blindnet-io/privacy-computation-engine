@@ -37,8 +37,6 @@ class TimelineSpec extends UnitSpec {
       ("DEMOGRAPHIC.AGE", "COLLECTION", "TRACKING")
     )
 
-    val now = Instant.now()
-
     val emptyS = PrivacyScope.empty
 
     def lbEvent(
