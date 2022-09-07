@@ -51,6 +51,8 @@ object dependencies {
     val scalaCheck         = "org.scalacheck" %% "scalacheck"                    % "1.16.0" % "test"
     val ceTestingScalatest = "org.typelevel"  %% "cats-effect-testing-scalatest" % "1.4.0"  % Test
 
+    val weaver = "com.disneystreaming" %% "weaver-cats" % "0.7.15" % Test
+
     val testContainers = "com.dimafeng" %% "testcontainers-scala-scalatest" % testContainersV % Test
     val testContainersPosgres =
       "com.dimafeng" %% "testcontainers-scala-postgresql" % testContainersV % Test

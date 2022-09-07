@@ -25,6 +25,7 @@ lazy val util = (project in file("modules/util"))
   .settings(commonSettings*)
   .settings(
     name := "pce-util",
+    testFrameworks += new TestFramework("weaver.framework.CatsEffect"),
     libraryDependencies ++= Seq(
       dependencies.main.circe,
       dependencies.main.circeGeneric
@@ -35,6 +36,7 @@ lazy val priv = (project in file("modules/priv"))
   .settings(commonSettings*)
   .settings(
     name := "pce-priv",
+    testFrameworks += new TestFramework("weaver.framework.CatsEffect"),
     libraryDependencies ++= Seq(
       dependencies.main.cats,
       dependencies.main.circe,
@@ -43,7 +45,8 @@ lazy val priv = (project in file("modules/priv"))
       dependencies.main.doobie,
       dependencies.main.doobiePostgres,
       dependencies.test.scalatest,
-      dependencies.test.scalaCheck
+      dependencies.test.scalaCheck,
+      dependencies.test.weaver
     )
   )
   .dependsOn(util)
@@ -55,6 +58,7 @@ lazy val core = (project in file("modules/core"))
     name                             := "pce-core",
     buildInfoKeys                    := Seq[BuildInfoKey](name, version, scalaVersion, sbtVersion),
     buildInfoPackage                 := "build",
+    testFrameworks += new TestFramework("weaver.framework.CatsEffect"),
     libraryDependencies ++= Seq(
       dependencies.main.catsEffect,
       dependencies.main.ciris,
