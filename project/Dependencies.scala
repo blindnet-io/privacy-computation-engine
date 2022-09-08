@@ -45,7 +45,7 @@ object dependencies {
   }
 
   object test {
-    private val testContainersV = "0.40.8"
+    private val testContainersV = "0.40.10"
 
     val scalaCheck         = "org.scalacheck" %% "scalacheck"                    % "1.16.0" % Test
     val ceTestingScalatest = "org.typelevel"  %% "cats-effect-testing-scalatest" % "1.4.0"  % Test

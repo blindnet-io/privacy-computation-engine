@@ -9,6 +9,8 @@ ThisBuild / scalafixDependencies += "com.github.liancheng" %% "organize-imports"
 ThisBuild / semanticdbEnabled                              := true
 ThisBuild / semanticdbVersion                              := scalafixSemanticdb.revision
 
+Test / fork := true
+
 resolvers += Resolver.sonatypeRepo("snapshots")
 
 val commonSettings = Seq(
@@ -83,7 +85,11 @@ lazy val core = (project in file("modules/core"))
       dependencies.main.tapirSwagger,
       dependencies.main.logback,
       dependencies.main.janino,
-      dependencies.main.log4catsSlf4j
+      dependencies.main.log4catsSlf4j,
+      dependencies.test.scalaCheck,
+      dependencies.test.weaver,
+      dependencies.test.testContainers,
+      dependencies.test.testContainersPosgres
     ),
     assembly / mainClass             := Some("io.blindnet.pce.Main"),
     assembly / assemblyJarName       := "devkit_pce.jar",
