@@ -2,9 +2,6 @@ package io.blindnet.pce
 package priv
 
 import java.time.Instant
-import org.scalatest.matchers.should.Matchers.*
-import org.scalatest.matchers.must.Matchers.*
-import org.scalatest.funspec.*
 import scala.util.Random
 import io.blindnet.pce.priv.terms.*
 import java.time.temporal.ChronoUnit

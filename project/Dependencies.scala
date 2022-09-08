@@ -47,8 +47,7 @@ object dependencies {
   object test {
     private val testContainersV = "0.40.8"
 
-    val scalatest          = "org.scalatest"  %% "scalatest"                     % "3.2.12" % Test
-    val scalaCheck         = "org.scalacheck" %% "scalacheck"                    % "1.16.0" % "test"
+    val scalaCheck         = "org.scalacheck" %% "scalacheck"                    % "1.16.0" % Test
     val ceTestingScalatest = "org.typelevel"  %% "cats-effect-testing-scalatest" % "1.4.0"  % Test
 
     val weaver = "com.disneystreaming" %% "weaver-cats" % "0.7.15" % Test

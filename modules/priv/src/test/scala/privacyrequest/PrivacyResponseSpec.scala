@@ -2,9 +2,6 @@ package io.blindnet.pce
 package priv
 
 import java.time.Instant
-import org.scalatest.matchers.should.Matchers.*
-import org.scalatest.matchers.must.Matchers.*
-import org.scalatest.funspec.*
 import io.blindnet.pce.priv.terms.*
 import scala.util.Random
 import java.time.temporal.ChronoUnit
@@ -16,7 +13,7 @@ import cats.implicits.*
 import cats.effect.IO
 import weaver.*
 
-object PrivacyResponseSpec extends SimpleIOSuite {
+object PrivacyResponseSuite extends SimpleIOSuite {
 
   object fixtures {}
 
@@ -25,7 +22,7 @@ object PrivacyResponseSpec extends SimpleIOSuite {
 
   import Action.*
 
-  test("Response from request with Access demand") {
+  test("response from request with Access demand") {
     val pr = request(List(demand(Access)))
     PrivacyResponse
       .fromPrivacyRequest[IO](pr)
@@ -42,7 +39,7 @@ object PrivacyResponseSpec extends SimpleIOSuite {
       )
   }
 
-  test("Response from request with Transparency demand") {
+  test("response from request with Transparency demand") {
     val pr = request(List(demand(Transparency)))
     PrivacyResponse
       .fromPrivacyRequest[IO](pr)
@@ -74,14 +71,14 @@ object PrivacyResponseSpec extends SimpleIOSuite {
       )
   }
 
-  test("Response from request with multiple demands") {
+  test("response from request with multiple demands") {
     val pr = request(List(demand(Access), demand(Delete), demand(RevokeConsent)))
     PrivacyResponse
       .fromPrivacyRequest[IO](pr)
       .map(resp => expect(resp.length == 3))
   }
 
-  pureTest("Group responses 1") {
+  pureTest("group unrelated responses") {
     val r1 = response(a = Access)
     val r2 = response(a = Delete)
     val r3 = response(a = Transparency)
@@ -89,7 +86,7 @@ object PrivacyResponseSpec extends SimpleIOSuite {
     expect(PrivacyResponse.group(List(r1, r2, r3)) == List(r1, r2, r3))
   }
 
-  pureTest("Group responses") {
+  pureTest("group related responses") {
     val r1   = response(a = Access)
     val r1a  = response(a = Access, parent = r1.id.some)
     val r1b  = response(a = Access, parent = r1.id.some)
@@ -113,20 +110,6 @@ object PrivacyResponseSpec extends SimpleIOSuite {
         r3
       )
     )
-
-    //   dId: UUID = uuid,
-    //   t: Instant = now,
-    //   a: Action = Action.Access,
-    //   s: Status = Status.Granted,
-    //   motive: Option[Motive] = None,
-    //   answer: Option[Json] = None,
-    //   message: Option[String] = None,
-    //   lang: Option[String] = None,
-    //   system: Option[String] = None,
-    //   parent: Option[ResponseId] = None,
-    //   includes: List[PrivacyResponse] = List.empty,
-    //   data: Option[String] = None
-    // )
   }
 
 }

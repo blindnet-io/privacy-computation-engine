@@ -44,7 +44,6 @@ lazy val priv = (project in file("modules/priv"))
       dependencies.main.tapir,
       dependencies.main.doobie,
       dependencies.main.doobiePostgres,
-      dependencies.test.scalatest,
       dependencies.test.scalaCheck,
       dependencies.test.weaver
     )
