@@ -19,7 +19,7 @@ import api.endpoints.BaseEndpoint.*
 import api.endpoints.messages.callback.*
 
 class CallbackEndpoints(
-    callbacksService: CallbackService
+    callbacksService: CallbackHandler
 ) {
   given Configuration = Configuration.default.withSnakeCaseMemberNames
 
@@ -33,7 +33,7 @@ class CallbackEndpoints(
       .post
       .in(path[UUID]("callbackId"))
       .in(jsonBody[DataCallbackPayload])
-      .serverLogicSuccess((id, req) => callbacksService.handle(appId, id, req))
+      .serverLogicSuccess((id, req) => callbacksService.handleAccessResponse(appId, id, req))
 
   val endpoints = List(cb)
 

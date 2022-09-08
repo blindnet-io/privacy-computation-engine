@@ -19,17 +19,19 @@ import io.blindnet.pce.db.repositories.Repositories
 import api.endpoints.messages.callback.*
 import io.blindnet.pce.util.extension.*
 import cats.effect.std.UUIDGen
-import io.blindnet.pce.services.util.*
 import org.typelevel.log4cats.*
 import org.typelevel.log4cats.slf4j.*
 
-class CallbackService(repos: Repositories) {
+class CallbackHandler(repos: Repositories) {
   val logger: Logger[IO] = Slf4jLogger.getLogger[IO]
 
-  def handle(appId: UUID, cbId: UUID, req: DataCallbackPayload): IO[Unit] =
+  // TODO: handle errors
+  def handleAccessResponse(appId: UUID, cbId: UUID, req: DataCallbackPayload): IO[Unit] =
     for {
       _      <- logger.info(s"Received callback for id $cbId. req:\n${req.asJson}")
       cbData <- repos.callbacks.get(cbId).orFail(s"Wrong callback id ${cbId}")
+      _      <- repos.callbacks.remove(cbId)
+
       (appId2, rId) = cbData
       _ <-
         if appId == appId2
@@ -38,7 +40,6 @@ class CallbackService(repos: Repositories) {
         else "Error".failBadRequest
 
       _ <- repos.privacyRequest.storeResponseData(rId, req.data_url)
-      _ <- repos.callbacks.remove(cbId)
     } yield ()
 
 }
