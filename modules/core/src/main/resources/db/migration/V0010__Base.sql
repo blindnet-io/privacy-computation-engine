@@ -94,6 +94,20 @@ create table scope (
     on delete cascade
 );
 
+insert into data_categories (id, term) values (gen_random_uuid(), '*'), (gen_random_uuid(), 'AFFILIATION'), (gen_random_uuid(), 'AFFILIATION.MEMBERSHIP'), (gen_random_uuid(), 'AFFILIATION.MEMBERSHIP.UNION'), (gen_random_uuid(), 'AFFILIATION.SCHOOL'), (gen_random_uuid(), 'AFFILIATION.WORKPLACE'), (gen_random_uuid(), 'BEHAVIOR'), (gen_random_uuid(), 'BEHAVIOR.ACTIVITY'), (gen_random_uuid(), 'BEHAVIOR.CONNECTION'), (gen_random_uuid(), 'BEHAVIOR.PREFERENCE'), (gen_random_uuid(), 'BEHAVIOR.TELEMETRY'), (gen_random_uuid(), 'BIOMETRIC'), (gen_random_uuid(), 'CONTACT'), (gen_random_uuid(), 'CONTACT.EMAIL'), (gen_random_uuid(), 'CONTACT.ADDRESS'), (gen_random_uuid(), 'CONTACT.PHONE'), (gen_random_uuid(), 'DEMOGRAPHIC'), (gen_random_uuid(), 'DEMOGRAPHIC.AGE'), (gen_random_uuid(), 'DEMOGRAPHIC.BELIEFS'), (gen_random_uuid(), 'DEMOGRAPHIC.GENDER'), (gen_random_uuid(), 'DEMOGRAPHIC.ORIGIN'), (gen_random_uuid(), 'DEMOGRAPHIC.RACE'), (gen_random_uuid(), 'DEMOGRAPHIC.SEXUAL-ORIENTATION'), (gen_random_uuid(), 'DEVICE'), (gen_random_uuid(), 'FINANCIAL'), (gen_random_uuid(), 'FINANCIAL.BANK-ACCOUNT'), (gen_random_uuid(), 'GENETIC'), (gen_random_uuid(), 'HEALTH'), (gen_random_uuid(), 'IMAGE'), (gen_random_uuid(), 'LOCATION'), (gen_random_uuid(), 'NAME'), (gen_random_uuid(), 'PROFILING'), (gen_random_uuid(), 'RELATIONSHIPS'), (gen_random_uuid(), 'UID'), (gen_random_uuid(), 'UID.ID'), (gen_random_uuid(), 'UID.IP'), (gen_random_uuid(), 'UID.USER-ACCOUNT'), (gen_random_uuid(), 'UID.SOCIAL-MEDIA'), (gen_random_uuid(), 'OTHER-DATA');
+
+insert into processing_categories values (gen_random_uuid(), '*'), (gen_random_uuid(), 'ANONYMIZATION'), (gen_random_uuid(), 'AUTOMATED-INFERENCE'), (gen_random_uuid(), 'AUTOMATED-DECISION-MAKING'), (gen_random_uuid(), 'COLLECTION'), (gen_random_uuid(), 'GENERATING'), (gen_random_uuid(), 'PUBLISHING'), (gen_random_uuid(), 'STORING'), (gen_random_uuid(), 'SHARING'), (gen_random_uuid(), 'USING'), (gen_random_uuid(), 'OTHER-PROCESSING');
+
+insert into processing_purposes values (gen_random_uuid(), '*'), (gen_random_uuid(), 'ADVERTISING'), (gen_random_uuid(), 'COMPLIANCE'), (gen_random_uuid(), 'EMPLOYMENT'), (gen_random_uuid(), 'JUSTICE'), (gen_random_uuid(), 'MARKETING'), (gen_random_uuid(), 'MEDICAL'), (gen_random_uuid(), 'PERSONALIZATION'), (gen_random_uuid(), 'PUBLIC-INTERESTS'), (gen_random_uuid(), 'RESEARCH'), (gen_random_uuid(), 'SALE'), (gen_random_uuid(), 'SECURITY'), (gen_random_uuid(), 'SERVICES'), (gen_random_uuid(), 'SERVICES.ADDITIONAL-SERVICES'), (gen_random_uuid(), 'SERVICES.BASIC-SERVICE'), (gen_random_uuid(), 'SOCIAL-PROTECTION'), (gen_random_uuid(), 'TRACKING'), (gen_random_uuid(), 'VITAL-INTERESTS'), (gen_random_uuid(), 'OTHER-PURPOSE');
+
+insert into "scope" (
+  select gen_random_uuid() as id, dc.id as dcid, pc.id as pcid, pp.id as ppid
+  from data_categories dc, processing_categories pc, processing_purposes pp
+);
+
+
+-- PROVENANCES
+
 create type target_terms as enum ('*', 'ORGANIZATION', 'PARTNERS', 'SYSTEM', 'PARTNERS.DOWNWARD', 'PARTNERS.UPWARD');
 create type provenance_terms as enum ('*', 'DERIVED', 'TRANSFERRED', 'USER', 'USER.DATA-SUBJECT');
 
@@ -112,6 +126,8 @@ create table provenances (
     references data_categories(id)
     on delete cascade
 );
+
+-- RETENTION POLICIES
 
 create type policy_terms as enum ('NO-LONGER-THAN', 'NO-LESS-THAN');
 create type event_terms as enum ('CAPTURE-DATE', 'RELATIONSHIP-END', 'RELATIONSHIP-START', 'SERVICE-END', 'SERVICE-START');
