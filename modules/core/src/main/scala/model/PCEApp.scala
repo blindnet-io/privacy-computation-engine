@@ -13,18 +13,27 @@ case class AutoResolve(
     delete: Boolean
 )
 
+case class DacConfig(
+    usingDac: Boolean,
+    uri: Option[Uri]
+)
+
 case class PCEApp(
     id: UUID,
-    dacUri: Uri,
+    dac: DacConfig,
     autoResolve: AutoResolve
 )
 
 object PCEApp {
   given Read[PCEApp] =
-    Read[(UUID, String, Boolean, Boolean, Boolean, Boolean)]
+    Read[(UUID, Boolean, Option[String], Boolean, Boolean, Boolean, Boolean)]
       .map {
-        case (id, dcaUri, t, c, a, d) =>
-          PCEApp(id, Uri.unsafeFromString(dcaUri), AutoResolve(t, c, a, d))
+        case (id, usingDac, dacUri, t, c, a, d) =>
+          PCEApp(
+            id,
+            DacConfig(usingDac, dacUri.map(Uri.unsafeFromString)),
+            AutoResolve(t, c, a, d)
+          )
       }
 
 }

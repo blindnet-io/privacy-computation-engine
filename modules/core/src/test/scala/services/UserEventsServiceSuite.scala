@@ -65,9 +65,9 @@ object UserEventsSuite extends FuncSuite {
         ds <- UUIDGen.randomUUID[IO].map(id => DataSubject(id.toString, appId))
         _  <- res.services.userEvents.handleUser(appId, ds)
         // format: off
-        exists <- sql"select exists (select id from data_subjects where id=${ds.id})".query[Boolean].unique.transact(res.xa)
+        userInDb <- sql"select exists (select id from data_subjects where id=${ds.id})".query[Boolean].unique.transact(res.xa)
         // format: on
-        _ <- expect(!exists).failFast
+        _ <- expect(userInDb).failFast
       } yield success
   }
 

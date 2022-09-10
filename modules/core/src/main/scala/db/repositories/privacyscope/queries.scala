@@ -15,14 +15,14 @@ import priv.terms.*
 import codecs.given
 
 object queries {
-  def getDataCategories(appId: UUID, selectors: Boolean) =
+  def getDataCategories(appId: UUID, withSelectors: Boolean) =
     (fr"""
       select distinct(dc.term) from legal_bases lb
       join legal_bases_scope lbsc on lbsc.lbid = lb.id
       join "scope" s on s.id = lbsc.scid
       join data_categories dc on dc.id = s.dcid
       where lb.active and dc.active and lb.appid = $appId
-    """ ++ (if selectors then fr"" else fr" and selector = false"))
+    """ ++ (if withSelectors then fr"" else fr" and selector = false"))
       .query[DataCategory]
       .to[Set]
 

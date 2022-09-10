@@ -98,18 +98,18 @@ class TransparencyCalculator(
 
   private def getEligibilePS(appId: UUID, t: Instant, ds: DataSubject) =
     for {
-      timeline    <- repos.events.getTimeline(ds)
-      selectors   <- repos.privacyScope.getSelectors(appId, active = true)
-      regulations <- repos.regulations.get(appId)
+      selectors <- repos.privacyScope.getSelectors(appId, active = true)
       ctx = PSContext(selectors)
-      ePS = timeline.eligiblePrivacyScope(Some(t), regulations, ctx)
+      timeline    <- repos.events.getTimeline(ds, ctx)
+      regulations <- repos.regulations.get(appId, ctx)
+      ePS = timeline.eligiblePrivacyScope(Some(t), regulations)
     } yield ePS
 
   private def intersect(appId: UUID, eps: PrivacyScope, rps: PrivacyScope) =
     for {
       selectors <- repos.privacyScope.getSelectors(appId, active = true)
       ctx = PSContext(selectors)
-      fPS = rps.zoomIn(ctx) intersection eps.zoomIn(ctx)
+      fPS = rps.zoomIn(ctx) intersection eps
     } yield fPS
 
   // TODO: there is a lot of repeating code in the following methods. refactor!
@@ -272,7 +272,7 @@ class TransparencyCalculator(
       case Some(ds) =>
         lbRepo.get(appId, scope = false).json
         for {
-          timeline <- repos.events.getTimeline(ds)
+          timeline <- repos.events.getTimeline(ds, PSContext.empty)
           lbIds = timeline.compiledEvents(Some(t)).flatMap(_.getLbId)
           lbs <- lbRepo.get(appId, scope = false)
           res = lbs.filter(lb => lbIds.contains(lb.id))

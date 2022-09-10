@@ -38,7 +38,7 @@ class ConfigurationService(
 
   def getPrivacyScopeDimensions(appId: UUID) =
     for {
-      dcs <- repos.privacyScope.getDataCategories(appId, selectors = false)
+      dcs <- repos.privacyScope.getDataCategories(appId, withSelectors = false)
       pcs <- repos.privacyScope.getProcessingCategories(appId)
       pps <- repos.privacyScope.getPurposes(appId)
       resp = PrivacyScopeDimensionsPayload(dcs, pcs, pps)
@@ -56,6 +56,7 @@ class ConfigurationService(
   def getLegalBases(appId: UUID) =
     repos.legalBase.get(appId, scope = false)
 
+  // TODO: granular privacy scope
   def getLegalBase(appId: UUID, lbId: UUID) =
     repos.legalBase
       .get(appId, lbId, true)

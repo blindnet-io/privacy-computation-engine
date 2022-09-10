@@ -17,7 +17,7 @@ import db.DbUtil
 
 trait RegulationsRepository {
 
-  def get(appId: UUID): IO[List[Regulation]]
+  def get(appId: UUID, ctx: PSContext): IO[List[Regulation]]
 
   def getInfo(): IO[List[RegulationInfo]]
 
@@ -34,7 +34,7 @@ object RegulationsRepository {
   def live(xa: Transactor[IO]): RegulationsRepository =
     new RegulationsRepository {
 
-      def get(appId: UUID): IO[List[Regulation]] =
+      def get(appId: UUID, ctx: PSContext): IO[List[Regulation]] =
         sql"""
           select ar.rid as rid, rlbfs.legal_base as lb, array_agg(dc.term) as dc, array_agg(pc.term) as pc, array_agg(pp.term) as pp
           from app_regulations ar
@@ -54,7 +54,8 @@ object RegulationsRepository {
               Regulation(
                 id,
                 l.map {
-                  case (_, lb, dcs, pcs, pps) => lb -> PrivacyScope.unsafe(dcs, pcs, pps)
+                  case (_, lb, dcs, pcs, pps) =>
+                    lb -> PrivacyScope.unsafe(dcs, pcs, pps).zoomIn(ctx)
                 }.toMap
               )
           }.toList)

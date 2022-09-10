@@ -80,7 +80,10 @@ object TimelineSuite extends FunSuite {
 
   test("EPS when 2 contract start events") {
     expect(
-      Timeline(startServiceContract(uuid, scope1), startServiceContract(uuid, scope2))
+      Timeline
+        .create(startServiceContract(uuid, scope1), startServiceContract(uuid, scope2))(
+          PSContext.empty
+        )
         .eligiblePrivacyScope() ==
         scope(
           ("CONTACT.EMAIL", "COLLECTION", "ADVERTISING"),
@@ -109,7 +112,8 @@ object TimelineSuite extends FunSuite {
     val e10 = endServiceNecessary(uuid, now - 10)
 
     expect(
-      Timeline(e1, e2, e3, e4, e5, e6, e7, e8, e9, e10)
+      Timeline
+        .create(e1, e2, e3, e4, e5, e6, e7, e8, e9, e10)(PSContext.empty)
         .eligiblePrivacyScope() == (e2.getScope union e6.getScope union e8.getScope)
         .zoomIn()
     )
@@ -117,7 +121,7 @@ object TimelineSuite extends FunSuite {
 
   test("EPS when one given consent") {
     val e1 = cgEvent(uuid, randomScope())
-    expect(Timeline(e1).eligiblePrivacyScope() == e1.getScope.zoomIn())
+    expect(Timeline.create(e1)(PSContext.empty).eligiblePrivacyScope() == e1.getScope.zoomIn())
   }
 
   test("EPS when given and revoked consents") {
@@ -135,7 +139,7 @@ object TimelineSuite extends FunSuite {
     val g4  = cgEvent(uuid3, randomScope(), now - 30)
 
     expect(
-      Timeline(g1, g2, r1a, g3, r2, r1b, r4, g4).eligiblePrivacyScope() ==
+      Timeline.create(g1, g2, r1a, g3, r2, r1b, r4, g4)(PSContext.empty).eligiblePrivacyScope() ==
         (g3.getScope union g4.getScope).zoomIn()
     )
   }

@@ -58,8 +58,8 @@ object UserEventsEndpointsSuite extends FuncSuite {
         _        <- expect(response.status == Status.Ok).failFast
         sql =
           sql"select exists (select lbid from consent_given_events where lbid=$cId and dsid=${ds.id})"
-        exists <- sql.query[Boolean].unique.transact(res.xa)
-        _      <- expect(exists).failFast
+        userInDb <- sql.query[Boolean].unique.transact(res.xa)
+        _        <- expect(userInDb).failFast
       } yield success
   }
 
@@ -77,8 +77,8 @@ object UserEventsEndpointsSuite extends FuncSuite {
         _        <- expect(existsEv).failFast
 
         sqlDs = sql"select exists (select id from data_subjects where id=$uid)"
-        existsDs <- sqlDs.query[Boolean].unique.transact(res.xa)
-        _        <- expect(existsDs).failFast
+        userInDb <- sqlDs.query[Boolean].unique.transact(res.xa)
+        _        <- expect(userInDb).failFast
 
       } yield success
   }
@@ -91,37 +91,37 @@ object UserEventsEndpointsSuite extends FuncSuite {
         .map(response => expect(response.status == Status.NotFound))
   }
 
-  test("record start of contract for known user") {
-    res =>
-      val req = json"""{ "data_subject": {"id": ${ds.id}}, "contract_id": $ctId, "date": $now }"""
-      for {
-        response <- res.server.run(post("user-events/contract/start", req))
-        _        <- expect(response.status == Status.Ok).failFast
-        sql =
-          sql"select exists (select lbid from legal_base_events where lbid=$ctId and dsid=${ds.id})"
-        exists <- sql.query[Boolean].unique.transact(res.xa)
-        _      <- expect(exists).failFast
-      } yield success
-  }
+  // test("record start of contract for known user") {
+  //   res =>
+  //     val req = json"""{ "data_subject": {"id": ${ds.id}}, "contract_id": $ctId, "date": $now }"""
+  //     for {
+  //       response <- res.server.run(post("user-events/contract/start", req))
+  //       _        <- expect(response.status == Status.Ok).failFast
+  //       sql =
+  //         sql"select exists (select lbid from legal_base_events where lbid=$ctId and dsid=${ds.id})"
+  //       userInDb <- sql.query[Boolean].unique.transact(res.xa)
+  //       _        <- expect(userInDb).failFast
+  //     } yield success
+  // }
 
-  test("record start of contract for unknown user") {
-    res =>
-      val uid = uuid.toString
-      val req = json"""{ "data_subject": {"id": $uid}, "contract_id": $ctId, "date": $now }"""
-      for {
-        response <- res.server.run(post("user-events/contract/start", req))
-        _        <- expect(response.status == Status.Ok).failFast
+  // test("record start of contract for unknown user") {
+  //   res =>
+  //     val uid = uuid.toString
+  //     val req = json"""{ "data_subject": {"id": $uid}, "contract_id": $ctId, "date": $now }"""
+  //     for {
+  //       response <- res.server.run(post("user-events/contract/start", req))
+  //       _        <- expect(response.status == Status.Ok).failFast
 
-        sqlEv =
-          sql"select exists (select lbid from legal_base_events where lbid=$ctId and dsid=$uid)"
-        existsEv <- sqlEv.query[Boolean].unique.transact(res.xa)
-        _        <- expect(existsEv).failFast
+  //       sqlEv =
+  //         sql"select exists (select lbid from legal_base_events where lbid=$ctId and dsid=$uid)"
+  //       existsEv <- sqlEv.query[Boolean].unique.transact(res.xa)
+  //       _        <- expect(existsEv).failFast
 
-        sqlDs = sql"select exists (select id from data_subjects where id=$uid)"
-        existsDs <- sqlDs.query[Boolean].unique.transact(res.xa)
-        _        <- expect(existsDs).failFast
+  //       sqlDs = sql"select exists (select id from data_subjects where id=$uid)"
+  //       userInDb <- sqlDs.query[Boolean].unique.transact(res.xa)
+  //       _        <- expect(userInDb).failFast
 
-      } yield success
-  }
+  //     } yield success
+  // }
 
 }

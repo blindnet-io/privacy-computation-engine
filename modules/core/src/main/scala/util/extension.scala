@@ -57,6 +57,7 @@ object extension {
     def onFalseBadRequest(msg: String) =
       if b then IO.unit else BadRequestException(msg).raise
 
+    def runOnTrue[A](io: IO[A]) = if b then io.void else IO.unit
   }
 
   extension (s: String) {

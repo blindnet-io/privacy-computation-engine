@@ -18,7 +18,7 @@ import java.time.Instant
 
 class EventsRepositoryLive(xa: Transactor[IO]) extends EventsRepository {
 
-  def getTimeline(ds: DataSubject): IO[Timeline] = {
+  def getTimeline(ds: DataSubject, ctx: PSContext): IO[Timeline] = {
     val res =
       for {
         lbEvents <- queries.getLegalBaseEvents(ds)
@@ -27,7 +27,7 @@ class EventsRepositoryLive(xa: Transactor[IO]) extends EventsRepository {
         oEvents  <- queries.getObjectEvents(ds)
         rEvents  <- queries.getRestrictEvents(ds)
         allEvents = (lbEvents ++ cgEvents ++ crEvents ++ oEvents ++ rEvents).sortBy(_.getTimestamp)
-      } yield Timeline(allEvents)
+      } yield Timeline.create(allEvents)(ctx)
 
     res.transact(xa)
   }

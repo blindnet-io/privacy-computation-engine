@@ -18,17 +18,27 @@ import db.DbUtil
 // TODO: select for users
 class PrivacyScopeRepositoryLive(xa: Transactor[IO]) extends PrivacyScopeRepository {
 
-  def getDataCategories(appId: UUID, selectors: Boolean = true): IO[Set[DataCategory]] =
-    queries.getDataCategories(appId, selectors).transact(xa)
+  def getDataCategories(appId: UUID, withSelectors: Boolean = true): IO[Set[DataCategory]] =
+    if withSelectors then {
+      val q = for {
+        selectors <- queries.getSelectors(appId, true)
+        dcs       <- queries.getDataCategories(appId, withSelectors)
+        res = dcs.flatMap(DataCategory.granularize(_, selectors))
+      } yield res
+      q.transact(xa)
+    } else queries.getDataCategories(appId, withSelectors).transact(xa)
 
   def getAllDataCategories(appId: UUID): IO[Set[DataCategory]] =
     queries.getAllDataCategories(appId).transact(xa)
 
   def getProcessingCategories(appId: UUID): IO[Set[ProcessingCategory]] =
-    queries.getProcessingCategories(appId).transact(xa)
+    queries
+      .getProcessingCategories(appId)
+      .map(_.flatMap(ProcessingCategory.granularize))
+      .transact(xa)
 
   def getPurposes(appId: UUID): IO[Set[Purpose]] =
-    queries.getPurposes(appId).transact(xa)
+    queries.getPurposes(appId).map(_.flatMap(Purpose.granularize)).transact(xa)
 
   def getSelectors(appId: UUID, active: Boolean): IO[Set[DataCategory]] =
     queries.getSelectors(appId, active).transact(xa)

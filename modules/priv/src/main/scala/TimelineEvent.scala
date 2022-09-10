@@ -52,4 +52,12 @@ enum TimelineEvent(timestamp: Instant) {
     case o: Object          => o.scope
   }
 
+  def withGranularScope(ctx: PSContext) = this match {
+    case lb: LegalBase      => lb.copy(scope = lb.scope.zoomIn(ctx))
+    case c: ConsentGiven    => c.copy(scope = c.scope.zoomIn(ctx))
+    case cr: ConsentRevoked => cr
+    case r: Restrict        => r.copy(scope = r.scope.zoomIn(ctx))
+    case o: Object          => o.copy(scope = o.scope.zoomIn(ctx))
+  }
+
 }
