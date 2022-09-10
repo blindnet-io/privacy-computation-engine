@@ -24,13 +24,13 @@ case class PrivacyScope(
 
   def isEmpty = triples.isEmpty
 
-  def zoomIn(selectors: Set[DataCategory] = Set.empty): PrivacyScope = {
+  def zoomIn(ctx: PSContext = PSContext.empty): PrivacyScope = {
     val newTriples = triples.flatMap(
       triple =>
         for {
-          dc <- DataCategory.getMostGranular(triple.dataCategory, selectors)
-          pc <- ProcessingCategory.getMostGranular(triple.processingCategory)
-          pp <- Purpose.getMostGranular(triple.purpose)
+          dc <- DataCategory.granularize(triple.dataCategory, ctx.selectors)
+          pc <- ProcessingCategory.granularize(triple.processingCategory)
+          pp <- Purpose.granularize(triple.purpose)
         } yield PrivacyScopeTriple(dc, pc, pp)
     )
     PrivacyScope(newTriples)

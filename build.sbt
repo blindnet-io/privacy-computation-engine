@@ -9,6 +9,8 @@ ThisBuild / scalafixDependencies += "com.github.liancheng" %% "organize-imports"
 ThisBuild / semanticdbEnabled                              := true
 ThisBuild / semanticdbVersion                              := scalafixSemanticdb.revision
 
+Test / fork := true
+
 resolvers += Resolver.sonatypeRepo("snapshots")
 
 val commonSettings = Seq(
@@ -25,6 +27,7 @@ lazy val util = (project in file("modules/util"))
   .settings(commonSettings*)
   .settings(
     name := "pce-util",
+    testFrameworks += new TestFramework("weaver.framework.CatsEffect"),
     libraryDependencies ++= Seq(
       dependencies.main.circe,
       dependencies.main.circeGeneric
@@ -35,6 +38,7 @@ lazy val priv = (project in file("modules/priv"))
   .settings(commonSettings*)
   .settings(
     name := "pce-priv",
+    testFrameworks += new TestFramework("weaver.framework.CatsEffect"),
     libraryDependencies ++= Seq(
       dependencies.main.cats,
       dependencies.main.circe,
@@ -42,8 +46,8 @@ lazy val priv = (project in file("modules/priv"))
       dependencies.main.tapir,
       dependencies.main.doobie,
       dependencies.main.doobiePostgres,
-      dependencies.test.scalatest,
-      dependencies.test.scalaCheck
+      dependencies.test.scalaCheck,
+      dependencies.test.weaver
     )
   )
   .dependsOn(util)
@@ -55,6 +59,7 @@ lazy val core = (project in file("modules/core"))
     name                             := "pce-core",
     buildInfoKeys                    := Seq[BuildInfoKey](name, version, scalaVersion, sbtVersion),
     buildInfoPackage                 := "build",
+    testFrameworks += new TestFramework("weaver.framework.CatsEffect"),
     libraryDependencies ++= Seq(
       dependencies.main.catsEffect,
       dependencies.main.ciris,
@@ -80,7 +85,11 @@ lazy val core = (project in file("modules/core"))
       dependencies.main.tapirSwagger,
       dependencies.main.logback,
       dependencies.main.janino,
-      dependencies.main.log4catsSlf4j
+      dependencies.main.log4catsSlf4j,
+      dependencies.test.scalaCheck,
+      dependencies.test.weaver,
+      dependencies.test.testContainers,
+      dependencies.test.testContainersPosgres
     ),
     assembly / mainClass             := Some("io.blindnet.pce.Main"),
     assembly / assemblyJarName       := "devkit_pce.jar",

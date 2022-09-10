@@ -85,17 +85,19 @@ class RequestRecommender(
       case _ => IO.raiseError(new NotImplementedError)
     }
 
+  // TODO: handle when psr is empty
   private def getRecAccess(pr: PrivacyRequest, d: Demand) =
     for {
-      timeline    <- repos.events.getTimeline(pr.dataSubject.get)
-      regulations <- repos.regulations.get(pr.appId)
-      selectors   <- repos.privacyScope.getSelectors(pr.appId, active = true)
-      eps = timeline.eligiblePrivacyScope(Some(pr.timestamp), regulations, selectors)
+      selectors <- repos.privacyScope.getSelectors(pr.appId, active = true)
+      ctx = PSContext(selectors)
+      timeline    <- repos.events.getTimeline(pr.dataSubject.get, ctx)
+      regulations <- repos.regulations.get(pr.appId, ctx)
+      eps = timeline.eligiblePrivacyScope(Some(pr.timestamp), regulations)
 
-      psr   = d.getPSR.orEmpty.zoomIn(selectors)
+      psr   = d.getPSR.orEmpty.zoomIn(ctx)
       psRec =
         if psr.isEmpty then eps
-        else eps intersection eps
+        else psr intersection eps
 
       (from, to) = d.getDateRangeR.getOrElse((None, None))
       pRec       = d.getProvenanceR.map(_._1).filter(_ != ProvenanceTerms.All)
@@ -108,15 +110,16 @@ class RequestRecommender(
 
   private def getRecDelete(pr: PrivacyRequest, d: Demand) =
     for {
-      timeline    <- repos.events.getTimeline(pr.dataSubject.get)
-      regulations <- repos.regulations.get(pr.appId)
-      selectors   <- repos.privacyScope.getSelectors(pr.appId, active = true)
-      events = timeline.compiledEvents(Some(pr.timestamp), regulations, selectors)
+      selectors <- repos.privacyScope.getSelectors(pr.appId, active = true)
+      ctx = PSContext(selectors)
+      timeline    <- repos.events.getTimeline(pr.dataSubject.get, ctx)
+      regulations <- repos.regulations.get(pr.appId, ctx)
+      events = timeline.compiledEvents(Some(pr.timestamp), regulations)
       eps    = Timeline.eligiblePrivacyScope(events)
 
-      rdcs        = d.getPSR.orEmpty.zoomIn(selectors).dataCategories
+      rdcs        = d.getPSR.orEmpty.zoomIn(ctx).dataCategories
       restDCs     =
-        if rdcs.isEmpty then DataCategory.getMostGranular(DataCategory.All, selectors)
+        if rdcs.isEmpty then DataCategory.granularize(DataCategory.All, selectors)
         else rdcs
       epsDCs      = eps.triples.map(_.dataCategory)
       filteredDCs = events.foldLeft(epsDCs intersect restDCs)(

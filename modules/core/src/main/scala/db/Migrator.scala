@@ -7,20 +7,11 @@ import org.flywaydb.core.Flyway
 import org.flywaydb.core.api.output.MigrateResult
 import config.DbConfig
 import javax.sql.DataSource
+import org.flywaydb.core.api.configuration.FluentConfiguration
 
 object Migrator {
 
-  def migrateDatabase(ds: DataSource): IO[Unit] = {
-
-    val flywayConf = Flyway
-      .configure()
-      .dataSource(ds)
-      // .group(true)
-      .table("Flyway")
-      .locations(org.flywaydb.core.api.Location("classpath:db/migration"))
-      .baselineOnMigrate(true)
-      .ignorePendingMigrations(true)
-
+  private def migrate(flywayConf: FluentConfiguration) =
     for {
       validation <- IO(flywayConf.load().validateWithResult())
 
@@ -35,6 +26,33 @@ object Migrator {
         else IO.raiseError(MigrationError("Migration failed"))
 
     } yield ()
+
+  def migrateDatabase(ds: DataSource): IO[Unit] = {
+
+    val flywayConf = Flyway
+      .configure()
+      .dataSource(ds)
+      // .group(true)
+      .table("Flyway")
+      .locations(org.flywaydb.core.api.Location("classpath:db/migration"))
+      .baselineOnMigrate(true)
+      .ignorePendingMigrations(true)
+
+    migrate(flywayConf)
+  }
+
+  def migrateDatabase(uri: String, username: String, pass: String): IO[Unit] = {
+
+    val flywayConf = Flyway
+      .configure()
+      .dataSource(uri, username, pass)
+      // .group(true)
+      .table("Flyway")
+      .locations(org.flywaydb.core.api.Location("classpath:db/migration"))
+      .baselineOnMigrate(true)
+      .ignorePendingMigrations(true)
+
+    migrate(flywayConf)
 
   }
 

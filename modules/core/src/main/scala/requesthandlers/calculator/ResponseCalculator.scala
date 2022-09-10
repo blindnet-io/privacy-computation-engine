@@ -52,8 +52,9 @@ class ResponseCalculator(
           newResp <- createResponse(pr, ccr, d, resp, r)
           _       <- repos.privacyRequest.storeNewResponse(newResp)
           _       <- if (newResp.status == Granted) then storeEvent(pr, d) else IO.unit
-          _       <- callStorage(pr.appId, newResp.eventId, d, pr.dataSubject, r)
-          // _       <- callStorage(pr.appId, newResp.eventId, d, pr.dataSubject, r).attempt
+          app     <- repos.app.get(pr.appId).map(_.get)
+          // TODO: model apps using/not using DAC
+          _ <- app.dac.usingDac.runOnTrue(callStorage(app, newResp.eventId, d, pr.dataSubject, r))
         } yield ()
       case _           => logger.info(s"Response ${resp.id} not UNDER-REVIEW")
     }
@@ -106,7 +107,7 @@ class ResponseCalculator(
     }
 
   private def callStorage(
-      appId: UUID,
+      app: PCEApp,
       rEventId: ResponseEventId,
       d: Demand,
       ds: Option[DataSubject],
@@ -116,14 +117,14 @@ class ResponseCalculator(
       case (Access, Some(ds)) =>
         for {
           cbId <- UUIDGen.randomUUID[IO]
-          _    <- repos.callbacks.set(cbId, appId, rEventId)
-          _    <- storage.requestAccess(cbId, appId, d.id, ds, r)
+          _    <- repos.callbacks.set(cbId, app.id, rEventId)
+          _    <- storage.requestAccess(app, cbId, d.id, ds, r)
         } yield ()
       case (Delete, Some(ds)) =>
         for {
           cbId <- UUIDGen.randomUUID[IO]
-          _    <- repos.callbacks.set(cbId, appId, rEventId)
-          _    <- storage.requestDeletion(cbId, appId, d.id, ds, r)
+          _    <- repos.callbacks.set(cbId, app.id, rEventId)
+          _    <- storage.requestDeletion(app, cbId, d.id, ds, r)
         } yield ()
       case _                  => IO.unit
     }

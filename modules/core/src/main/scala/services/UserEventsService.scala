@@ -28,19 +28,19 @@ import priv.terms.EventTerms.*
 class UserEventsService(
     repos: Repositories
 ) {
-  // TODO: repeating code, refactor
+  def verifyLbExists(appId: UUID, id: UUID, check: LegalBase => Boolean) =
+    for {
+      lbOpt <- repos.legalBase.get(appId, id, false)
+      isConsent = lbOpt.map(check).getOrElse(false)
+      _ <- isConsent.onFalseNotFound(s"Legal base $id not found")
+    } yield ()
 
   def handleUser(appId: UUID, ds: DataSubject) =
-    for {
-      userExists <- repos.dataSubject.exist(appId, ds.id)
-      _          <- if userExists then IO.unit else repos.dataSubject.insert(appId, ds)
-    } yield ()
+    repos.dataSubject.exist(appId, ds.id).ifM(IO.unit, repos.dataSubject.insert(appId, ds))
 
   def addConsentGivenEvent(appId: UUID, req: GiveConsentPayload) =
     for {
-      lbOpt <- repos.legalBase.get(appId, req.consentId, false)
-      isConsent = lbOpt.map(_.isConsent).getOrElse(false)
-      _ <- isConsent.onFalseNotFound(s"Consent ${req.consentId} not found")
+      _ <- verifyLbExists(appId, req.consentId, _.isConsent)
       ds = req.dataSubject.toPrivDataSubject(appId)
       _ <- handleUser(appId, ds)
 
@@ -49,9 +49,7 @@ class UserEventsService(
 
   def addStartContractEvent(appId: UUID, req: StartContractPayload) =
     for {
-      lbOpt <- repos.legalBase.get(appId, req.contractId, false)
-      isContract = lbOpt.map(_.isContract).getOrElse(false)
-      _ <- isContract.onFalseNotFound(s"Contract ${req.contractId} not found")
+      _ <- verifyLbExists(appId, req.contractId, _.isContract)
       ds = req.dataSubject.toPrivDataSubject(appId)
       _ <- handleUser(appId, ds)
 
@@ -60,9 +58,7 @@ class UserEventsService(
 
   def addEndContractEvent(appId: UUID, req: EndContractPayload) =
     for {
-      lbOpt <- repos.legalBase.get(appId, req.contractId, false)
-      isContract = lbOpt.map(_.isContract).getOrElse(false)
-      _ <- isContract.onFalseNotFound(s"Contract ${req.contractId} not found")
+      _ <- verifyLbExists(appId, req.contractId, _.isContract)
       ds = req.dataSubject.toPrivDataSubject(appId)
       _ <- handleUser(appId, ds)
 
@@ -72,9 +68,7 @@ class UserEventsService(
   def addStartLegitimateInterestEvent(appId: UUID, req: StartLegitimateInterestPayload) =
     val id = req.legitimateInterestId
     for {
-      lbOpt <- repos.legalBase.get(appId, id, false)
-      isLegitimateInterest = lbOpt.map(_.isLegitimateInterest).getOrElse(false)
-      _ <- isLegitimateInterest.onFalseNotFound(s"Legitimate interest $id not found")
+      _ <- verifyLbExists(appId, req.legitimateInterestId, _.isLegitimateInterest)
       ds = req.dataSubject.toPrivDataSubject(appId)
       _ <- handleUser(appId, ds)
 
@@ -84,9 +78,7 @@ class UserEventsService(
   def addEndLegitimateInterestEvent(appId: UUID, req: EndLegitimateInterestPayload) =
     val id = req.legitimateInterestId
     for {
-      lbOpt <- repos.legalBase.get(appId, id, false)
-      isLegitimateInterest = lbOpt.map(_.isLegitimateInterest).getOrElse(false)
-      _ <- isLegitimateInterest.onFalseNotFound(s"Legitimate interest $id not found")
+      _ <- verifyLbExists(appId, req.legitimateInterestId, _.isLegitimateInterest)
       ds = req.dataSubject.toPrivDataSubject(appId)
       _ <- handleUser(appId, ds)
 

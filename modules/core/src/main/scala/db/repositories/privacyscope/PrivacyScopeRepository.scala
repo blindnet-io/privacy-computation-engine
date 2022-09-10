@@ -16,7 +16,7 @@ import priv.terms.*
 import db.DbUtil
 
 trait PrivacyScopeRepository {
-  def getDataCategories(appId: UUID, selectors: Boolean = true): IO[Set[DataCategory]]
+  def getDataCategories(appId: UUID, withSelectors: Boolean = true): IO[Set[DataCategory]]
 
   def getAllDataCategories(appId: UUID): IO[Set[DataCategory]]
 

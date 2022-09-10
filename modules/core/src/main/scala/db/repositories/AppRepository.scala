@@ -21,7 +21,7 @@ object AppRepository {
 
       def get(id: UUID): IO[Option[PCEApp]] =
         sql"""
-          select a.id, d.uri, arc.auto_transparency, arc.auto_consents, arc.auto_access, arc.auto_delete
+          select a.id, d.active, d.uri, arc.auto_transparency, arc.auto_consents, arc.auto_access, arc.auto_delete
           from apps a
             join dac d on d.appid = a.id
             join automatic_responses_config arc on arc.appid = a.id

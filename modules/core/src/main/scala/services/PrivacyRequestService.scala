@@ -30,15 +30,15 @@ class PrivacyRequestService(
 
   private def validateRequest(appId: UUID, req: PrivacyRequest) = {
     for {
-      _ <-
-        if req.demands.map(_.action).toSet.size == req.demands.size then IO.unit
-        else "2 or more demands have duplicate action types".failBadRequest
+      _ <- IO.unit
+      // TODO: rethink if/how to handle duplicate action types
+      // _ <- (req.demands.map(_.action).toSet.size == req.demands.size)
+      //   .onFalseBadRequest("2 or more demands have duplicate action types")
 
       (invalid, _) = PrivacyRequest.validateDemands(req)
 
-      _ <-
-        if invalid.length == 0 then IO.unit
-        else invalid.foldLeft("")((acc, cur) => acc + s"${cur._1.mkString_("\n")}").failBadRequest
+      _ <- (invalid.length == 0)
+        .onFalseBadRequest(invalid.foldLeft("")((acc, cur) => acc + s"${cur._1.mkString_("\n")}"))
 
       validConsentIds <-
         req.demands.traverse(
@@ -94,45 +94,43 @@ class PrivacyRequestService(
     } yield PrivacyRequestCreatedPayload(reqId.value)
   }
 
+  def createReqHistoryItem(req: PrivacyRequest, resp: List[PrivacyResponse]) = {
+    val statuses                           = resp.map(_.status)
+    val (underReview, canceled, completed) =
+      statuses.foldLeft((0, 0, 0))(
+        (acc, cur) =>
+          if (cur == Status.UnderReview) then (acc._1 + 1, acc._2, acc._3)
+          else if (cur == Status.Canceled) then (acc._1, acc._2 + 1, acc._3)
+          else (acc._1, acc._2, acc._3 + 1)
+      )
+
+    val l      = statuses.length
+    val status =
+      if (l == 0) then PrStatus.Completed
+      else if (canceled == l) then PrStatus.Canceled
+      else if (completed + canceled == l) then PrStatus.Completed
+      else if (underReview == l) then PrStatus.InProcessing
+      else if (underReview + canceled == l) then PrStatus.InProcessing
+      else PrStatus.PartiallyCompleted
+
+    PrItem(req.id.value, req.timestamp, req.demands.length, status)
+  }
+
   def getRequestHistory(appId: UUID, userId: String) =
     for {
       ds     <- IO(DataSubject(userId, appId))
       reqIds <- repos.privacyRequest.getAllUserRequestIds(ds)
       // TODO: this can be optimized in the db
-      resps  <- reqIds.parTraverse(
-        id =>
-          val getReq  = repos.privacyRequest.getRequest(id)
-          val getResp = repos.privacyRequest.getResponsesForRequest(id)
-          (getReq both getResp).map { case (req, resps) => req -> resps }
-      )
+      reqs   <- reqIds
+        .parTraverse(
+          id =>
+            val getReq  = repos.privacyRequest.getRequest(id)
+            val getResp = repos.privacyRequest.getResponsesForRequest(id)
+            getReq both getResp
+        )
+        .map(_.flatMap(r => r._1.map((_, r._2))))
 
-      history = resps.flatMap(
-        r =>
-          r._1.map(
-            req => {
-              val statuses                           = r._2.map(_.status)
-              val (underReview, canceled, completed) =
-                statuses.foldLeft((0, 0, 0))(
-                  (acc, cur) =>
-                    if (cur == Status.UnderReview) then (acc._1 + 1, acc._2, acc._3)
-                    else if (cur == Status.Canceled) then (acc._1, acc._2 + 1, acc._3)
-                    else (acc._1, acc._2, acc._3 + 1)
-                )
-
-              val l      = statuses.length
-              val status =
-                if (l == 0) then PrStatus.Completed
-                else if (canceled == l) then PrStatus.Canceled
-                else if (completed + canceled == l) then PrStatus.Completed
-                else if (underReview == l) then PrStatus.InProcessing
-                else if (underReview + canceled == l) then PrStatus.InProcessing
-                else PrStatus.PartiallyCompleted
-
-              PrItem(req.id.value, req.timestamp, req.demands.length, status)
-            }
-          )
-      )
-
+      history = reqs.map { case (req, resp) => createReqHistoryItem(req, resp) }
     } yield RequestHistoryPayload(history)
 
   private def verifyReqExists(requestId: RequestId, appId: UUID, userId: Option[String]) =

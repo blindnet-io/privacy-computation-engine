@@ -11,7 +11,6 @@ import cats.effect.std.*
 import cats.implicits.*
 import io.blindnet.pce.api.endpoints.messages.consumerinterface.*
 import io.blindnet.pce.model.error.given
-import io.blindnet.pce.services.util.*
 import io.blindnet.pce.util.extension.*
 import io.circe.Json
 import io.circe.generic.auto.*
@@ -39,7 +38,7 @@ class ConfigurationService(
 
   def getPrivacyScopeDimensions(appId: UUID) =
     for {
-      dcs <- repos.privacyScope.getDataCategories(appId, selectors = false)
+      dcs <- repos.privacyScope.getDataCategories(appId, withSelectors = false)
       pcs <- repos.privacyScope.getProcessingCategories(appId)
       pps <- repos.privacyScope.getPurposes(appId)
       resp = PrivacyScopeDimensionsPayload(dcs, pcs, pps)
@@ -57,6 +56,7 @@ class ConfigurationService(
   def getLegalBases(appId: UUID) =
     repos.legalBase.get(appId, scope = false)
 
+  // TODO: granular privacy scope
   def getLegalBase(appId: UUID, lbId: UUID) =
     repos.legalBase
       .get(appId, lbId, true)
@@ -66,7 +66,8 @@ class ConfigurationService(
     for {
       id        <- UUIDGen.randomUUID[IO]
       selectors <- repos.privacyScope.getSelectors(appId, active = true)
-      scope = req.getPrivPrivacyScope.zoomIn(selectors)
+      ctx   = PSContext(selectors)
+      scope = req.getPrivPrivacyScope.zoomIn(ctx)
       lb    = LegalBase(id, req.lbType, scope, req.name, req.description, true)
       // TODO: handling error
       _ <- repos.legalBase.add(appId, lb).start
@@ -83,7 +84,7 @@ class ConfigurationService(
       rps <- reqNel.flatTraverse {
         r =>
           DataCategory
-            .getMostGranular(r.dataCategory, selectors)
+            .granularize(r.dataCategory, selectors)
             .toList
             .toNel
             .get
@@ -114,7 +115,7 @@ class ConfigurationService(
       ps <- reqNel.flatTraverse {
         r =>
           DataCategory
-            .getMostGranular(r.dataCategory, selectors)
+            .granularize(r.dataCategory, selectors)
             .toList
             .toNel
             .get

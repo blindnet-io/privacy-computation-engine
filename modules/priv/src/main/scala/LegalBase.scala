@@ -20,6 +20,8 @@ case class LegalBase(
   def isConsent            = lbType == LegalBaseTerms.Consent
   def isContract           = lbType == LegalBaseTerms.Contract
   def isLegitimateInterest = lbType == LegalBaseTerms.LegitimateInterest
+
+  def withGranularPS(ctx: PSContext) = this.copy(scope = scope.zoomIn(ctx))
 }
 
 object LegalBase {

@@ -18,20 +18,21 @@ import model.error.InternalException
 import io.blindnet.pce.db.repositories.Repositories
 import org.typelevel.log4cats.*
 import org.typelevel.log4cats.slf4j.*
+import io.blindnet.pce.model.PCEApp
 
 // TODO: refactor
 trait StorageInterface {
   def requestAccess(
+      app: PCEApp,
       callbackId: UUID,
-      appId: UUID,
       demandId: UUID,
       subject: DataSubject,
       rec: Recommendation
   ): IO[Unit]
 
   def requestDeletion(
+      app: PCEApp,
       callbackId: UUID,
-      appId: UUID,
       demandId: UUID,
       subject: DataSubject,
       rec: Recommendation
@@ -45,8 +46,8 @@ object StorageInterface {
   def live(c: Client[IO], repos: Repositories, conf: Config) =
     new StorageInterface {
       def requestAccess(
+          app: PCEApp,
           callbackId: UUID,
-          appId: UUID,
           demandId: UUID,
           subject: DataSubject,
           rec: Recommendation
@@ -74,17 +75,17 @@ object StorageInterface {
           .withEntity(payload)
 
         for {
-          // TODO: handle not found
-          app <- repos.app.get(appId).map(_.get)
-          _   <- logger.info(s"Sending request to ${app.dacUri} \n ${payload.asJson}")
-          res <- c.successful(req(app.dacUri))
+          // TODO: exception
+          uri <- app.dac.uri.fold(IO.raiseError(new Exception("DAC uri not found")))(IO(_))
+          _   <- logger.info(s"Sending request to $uri \n ${payload.asJson}")
+          res <- c.successful(req(uri))
           _ = if res then IO.unit else IO.raiseError(InternalException("Non 200 response from DAC"))
         } yield ()
       }
 
       def requestDeletion(
+          app: PCEApp,
           callbackId: UUID,
-          appId: UUID,
           demandId: UUID,
           subject: DataSubject,
           rec: Recommendation
@@ -110,10 +111,10 @@ object StorageInterface {
           .withEntity(payload)
 
         for {
-          // TODO: handle not found
-          app <- repos.app.get(appId).map(_.get)
-          _   <- logger.info(s"Sending request to ${app.dacUri} \n ${payload.asJson}")
-          res <- c.successful(req(app.dacUri))
+          // TODO: exception
+          uri <- app.dac.uri.fold(IO.raiseError(new Exception("DAC uri not found")))(IO(_))
+          _   <- logger.info(s"Sending request to $uri \n ${payload.asJson}")
+          res <- c.successful(req(uri))
           _ = if res then IO.unit else IO.raiseError(InternalException("Non 200 response from DAC"))
         } yield ()
       }

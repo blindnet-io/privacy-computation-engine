@@ -36,15 +36,11 @@ object extension {
   }
 
   extension [M[_]: MonadThrow](m: M[Boolean]) {
-    def onFalseNotFound(msg: String) = m.flatMap {
-      case false => NotFoundException(msg).raiseError
-      case true  => ().pure
-    }
+    def onFalseNotFound(msg: String) =
+      m.ifM(().pure, NotFoundException(msg).raiseError)
 
-    def onFalseBadRequest(msg: String) = m.flatMap {
-      case false => BadRequestException(msg).raiseError
-      case true  => ().pure
-    }
+    def onFalseBadRequest(msg: String) =
+      m.ifM(().pure, BadRequestException(msg).raiseError)
 
   }
 
@@ -61,6 +57,7 @@ object extension {
     def onFalseBadRequest(msg: String) =
       if b then IO.unit else BadRequestException(msg).raise
 
+    def runOnTrue[A](io: IO[A]) = if b then io.void else IO.unit
   }
 
   extension (s: String) {

@@ -13,7 +13,7 @@ trait Services {
   val consumerInterface: DataConsumerInterfaceService
   val configuration: ConfigurationService
   val userEvents: UserEventsService
-  val callbacks: CallbackService
+  val callbacks: CallbackHandler
 }
 
 object Services {
@@ -25,14 +25,14 @@ object Services {
     lazy val consumerInterfaceService = DataConsumerInterfaceService(repos)
     lazy val configurationService     = ConfigurationService(repos)
     lazy val userEventsService        = UserEventsService(repos)
-    lazy val callbackService          = CallbackService(repos)
+    lazy val callbackHandler          = CallbackHandler(repos)
 
     new Services {
       val privacyRequest    = privacyRequestService
       val consumerInterface = consumerInterfaceService
       val configuration     = configurationService
       val userEvents        = userEventsService
-      val callbacks         = callbackService
+      val callbacks         = callbackHandler
     }
   }
 

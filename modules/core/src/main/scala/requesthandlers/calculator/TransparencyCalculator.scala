@@ -92,22 +92,24 @@ class TransparencyCalculator(
 
   private def getRestrictionScope(restr: List[Restriction]) =
     Restriction
-      .get[Restriction.PrivacyScope](restr)
+      .cast[Restriction.PrivacyScope](restr)
       .toNel
       .map(_.foldLeft(PrivacyScope.empty)(_ union _.scope))
 
   private def getEligibilePS(appId: UUID, t: Instant, ds: DataSubject) =
     for {
-      timeline    <- repos.events.getTimeline(ds)
-      selectors   <- repos.privacyScope.getSelectors(appId, active = true)
-      regulations <- repos.regulations.get(appId)
-      ePS = timeline.eligiblePrivacyScope(Some(t), regulations, selectors)
+      selectors <- repos.privacyScope.getSelectors(appId, active = true)
+      ctx = PSContext(selectors)
+      timeline    <- repos.events.getTimeline(ds, ctx)
+      regulations <- repos.regulations.get(appId, ctx)
+      ePS = timeline.eligiblePrivacyScope(Some(t), regulations)
     } yield ePS
 
   private def intersect(appId: UUID, eps: PrivacyScope, rps: PrivacyScope) =
     for {
       selectors <- repos.privacyScope.getSelectors(appId, active = true)
-      fPS = rps.zoomIn(selectors) intersection eps.zoomIn(selectors)
+      ctx = PSContext(selectors)
+      fPS = rps.zoomIn(ctx) intersection eps
     } yield fPS
 
   // TODO: there is a lot of repeating code in the following methods. refactor!
@@ -124,9 +126,8 @@ class TransparencyCalculator(
         for {
           appDCs    <- psRepo.getDataCategories(appId)
           selectors <- repos.privacyScope.getSelectors(appId, active = true)
-          finalDCs = rPS.fold(appDCs)(
-            _.zoomIn(selectors).triples.map(_.dataCategory) intersect appDCs
-          )
+          ctx      = PSContext(selectors)
+          finalDCs = rPS.fold(appDCs)(_.zoomIn(ctx).triples.map(_.dataCategory) intersect appDCs)
         } yield finalDCs
 
       case Some(ds) =>
@@ -152,8 +153,9 @@ class TransparencyCalculator(
         for {
           appPCs    <- psRepo.getProcessingCategories(appId)
           selectors <- repos.privacyScope.getSelectors(appId, active = true)
+          ctx      = PSContext(selectors)
           finalPCs = rPS.fold(appPCs)(
-            _.zoomIn(selectors).triples.map(_.processingCategory) intersect appPCs
+            _.zoomIn(ctx).triples.map(_.processingCategory) intersect appPCs
           )
         } yield finalPCs
 
@@ -180,8 +182,9 @@ class TransparencyCalculator(
         for {
           appPPs    <- psRepo.getPurposes(appId)
           selectors <- repos.privacyScope.getSelectors(appId, active = true)
+          ctx      = PSContext(selectors)
           finalPPs = rPS.fold(appPPs)(
-            _.zoomIn(selectors).triples.map(_.purpose) intersect appPPs
+            _.zoomIn(ctx).triples.map(_.purpose) intersect appPPs
           )
         } yield finalPPs
 
@@ -208,9 +211,10 @@ class TransparencyCalculator(
         for {
           provenances <- prRepo.get(appId)
           selectors   <- repos.privacyScope.getSelectors(appId, active = true)
+          ctx          = PSContext(selectors)
           fProvenances = rPS.fold(provenances)(
             rps =>
-              val dcs = rps.zoomIn(selectors).triples.map(_.dataCategory)
+              val dcs = rps.zoomIn(ctx).triples.map(_.dataCategory)
               provenances.filter(p => dcs.contains(p._1))
           )
         } yield fProvenances
@@ -239,9 +243,10 @@ class TransparencyCalculator(
         for {
           retentionPolicies <- rpRepo.get(appId)
           selectors         <- repos.privacyScope.getSelectors(appId, active = true)
+          ctx         = PSContext(selectors)
           filteredRPs = rPS.fold(retentionPolicies)(
             rps =>
-              val dcs = rps.zoomIn(selectors).triples.map(_.dataCategory)
+              val dcs = rps.zoomIn(ctx).triples.map(_.dataCategory)
               retentionPolicies.filter(p => dcs.contains(p._1))
           )
         } yield filteredRPs
@@ -267,7 +272,7 @@ class TransparencyCalculator(
       case Some(ds) =>
         lbRepo.get(appId, scope = false).json
         for {
-          timeline <- repos.events.getTimeline(ds)
+          timeline <- repos.events.getTimeline(ds, PSContext.empty)
           lbIds = timeline.compiledEvents(Some(t)).flatMap(_.getLbId)
           lbs <- lbRepo.get(appId, scope = false)
           res = lbs.filter(lb => lbIds.contains(lb.id))
