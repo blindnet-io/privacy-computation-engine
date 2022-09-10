@@ -23,11 +23,16 @@ import fs2.{ text }
 import fs2.io.file.{ Files, Path }
 import io.blindnet.pce.services.Services
 import io.blindnet.pce.config.*
-import org.http4s.Uri
+import org.http4s.*
+import io.blindnet.pce.priv.DataSubject
+import com.comcast.ip4s.*
+import io.blindnet.pce.api.*
+import cats.data.Kleisli
 
 trait FuncSuite extends IOSuite {
 
   val appId = UUID.fromString("6f083c15-4ada-4671-a6d1-c671bc9105dc")
+  val ds    = DataSubject("fdfc95a6-8fd8-4581-91f7-b3d236a6a10e", appId)
 
   def populateDb(xa: Transactor[IO]) =
     for {
@@ -43,7 +48,8 @@ trait FuncSuite extends IOSuite {
       xa: Transactor[IO],
       client: Client[IO],
       repos: Repositories,
-      services: Services
+      services: Services,
+      server: Kleisli[IO, Request[IO], Response[IO]]
   )
 
   override type Res = Resources
@@ -67,11 +73,14 @@ trait FuncSuite extends IOSuite {
         env = AppEnvironment.Development,
         callbackUri = Uri.unsafeFromString("localhost"),
         db = null,
-        api = null,
+        api = ApiConfig(ipv4"0.0.0.0", port"9009"),
         components = ComponentsConfig()
       )
       services = Services.make(repos, conf)
-    } yield Resources(xa, client, repos, services)
+
+      server = AppRouter.make(services).httpApp
+
+    } yield Resources(xa, client, repos, services, server)
   }
 
 }

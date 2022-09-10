@@ -27,12 +27,16 @@ import io.blindnet.pce.services.*
 import testutil.*
 import weaver.*
 import io.blindnet.pce.priv.*
+import doobie.*
+import doobie.implicits.*
+import doobie.postgres.*
+import doobie.postgres.implicits.*
 
 object UserEventsSuite extends FuncSuite {
 
   val cId = UUID.fromString("28b5bee0-9db8-40ec-840e-64eafbfb9ddd")
 
-  test("verifyLbExists should fail for non existent legal base") {
+  test("verifyLbExists should fail for non existing legal base") {
     res =>
       res.services.userEvents
         .verifyLbExists(appId, uuid, _.isConsent)
@@ -40,7 +44,7 @@ object UserEventsSuite extends FuncSuite {
         .handleError(_ => success)
   }
 
-  test("verifyLbExists should fail for wrong existent legal base") {
+  test("verifyLbExists should fail for wrong existing legal base") {
     res =>
       res.services.userEvents
         .verifyLbExists(appId, cId, _.isContract)
@@ -53,6 +57,18 @@ object UserEventsSuite extends FuncSuite {
       res.services.userEvents
         .verifyLbExists(appId, cId, _.isConsent)
         .as(success)
+  }
+
+  test("handleUser should register a new data subject if not known") {
+    res =>
+      for {
+        ds <- UUIDGen.randomUUID[IO].map(id => DataSubject(id.toString, appId))
+        _  <- res.services.userEvents.handleUser(appId, ds)
+        // format: off
+        exists <- sql"select exists (select id from data_subjects where id=${ds.id})".query[Boolean].unique.transact(res.xa)
+        // format: on
+        _ <- expect(!exists).failFast
+      } yield success
   }
 
 }
