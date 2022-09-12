@@ -32,13 +32,63 @@ TODO
 
 :rocket: Check out our [Quick Start Guide](https://blindnet.dev/docs/quickstart) to get started in a snap.
 
-## Installation
-
-TODO
-
 ## Usage
 
-TODO
+To run the Privacy Computation Engine locally, make sure you have installed the latest versions of the following tools:
+- [sbt](https://www.scala-sbt.org/1.x/docs/Setup.html)
+- [docker-compose](https://docs.docker.com/compose/install/)
+
+In the root directory, run 
+```console
+sbt docker:publishLocal
+```
+to create a docker image of the app.
+
+Then run
+```console
+./scripts/start.sh
+```
+which starts a Postgres instance, executes db migrations and run the Privacy Computation Engine.
+
+After the script has completed successfully, verify the app is running by calling `curl localhost:9000/v0/health`
+
+Make sure to clear up the services with
+```console
+./scripts/stop.sh
+```
+
+Environment variables are defined in the `.env` file.
+
+### Development
+
+Make sure you have installed the latest versions of the following tools:
+- [sbt](https://www.scala-sbt.org/1.x/docs/Setup.html)
+- [docker-compose](https://docs.docker.com/compose/install/)
+
+To start a Postgres instance and populate it with test data, run 
+```console
+./scripts/start_dev.sh
+```
+
+Define the following environment variables:
+| Name                       | Description                  | Example                              | Default                  |
+|----------------------------|------------------------------|--------------------------------------|:-------------------------|
+| API_HOST                   | HTTP host                    | localhost | 0.0.0.0                  |                          |
+| API_PORT                   | HTTP port                    | 80                                   | 9000                     |
+| DB_URI                     | jdbc connection string       | jdbc:postgresql://localhost:5432/pce |                          |
+| DB_USER                    | database user                | postgres                             |                          |
+| DB_PASS                    | database user's password     | mysecretpassword                     |                          |
+| APP_CALLBACK_URI           | callback api prefix          | localhost:9000/v0                    |                          |
+
+To start the Privacy Computation Engine, run
+```console
+sbt "~core/reStart"
+```
+
+To clean up the database server, run
+```console
+./scripts/stop_dev.sh
+```
 
 ## Contributing
 
