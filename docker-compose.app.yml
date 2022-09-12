@@ -1,0 +1,22 @@
+version: "3.9"
+
+services:
+  pce:
+    image: pce:latest
+    ports:
+      - ${pce_api_port}:${pce_api_port}
+    environment:
+      - API_HOST=${pce_api_host}
+      - API_PORT=${pce_api_port}
+      - DB_URI=jdbc:postgresql://db:5432/${pg_db_name}
+      - DB_USER=${pg_user}
+      - DB_PASS=${pg_pass}
+      - APP_CALLBACK_URI=${pce_callback_uri}
+    depends_on:
+      insert_test_data:
+        condition: service_completed_successfully
+    healthcheck:
+      test: curl --fail localhost:9000/v0/health || exit 1
+      interval: 5s
+      timeout: 5s
+      retries: 10
