@@ -96,18 +96,13 @@ First, start a Postgres instance and populate it with test data:
 ./scripts/start_dev.sh
 ```
 
-Then, define the following environment variables:
+Then, define the required environment variables in your local environment with default values:
 
-| Name             | Description              | Example                              | Default |
-| ---------------- | ------------------------ | ------------------------------------ | :------ |
-| API_HOST         | HTTP host                | localhost                            | 0.0.0.0 |
-| API_PORT         | HTTP port                | 80                                   | 9000    |
-| DB_URI           | jdbc connection string   | jdbc:postgresql://localhost:5432/pce |         |
-| DB_USER          | database user            | postgres                             |         |
-| DB_PASS          | database user's password | mysecretpassword                     |         |
-| APP_CALLBACK_URI | callback api prefix      | localhost:9000/v0                    |         |
+```bash
+source ./scripts/dev-env.sh
+```
 
-Finally, start the Privacy Computation Engine with:
+Finally, in the same terminal session, start the Privacy Computation Engine with:
 
 ```bash
 sbt "~core/reStart"
@@ -118,6 +113,17 @@ When you're done, make sure to stop and clean up the database docker container w
 ```bash
 ./scripts/stop_dev.sh
 ```
+
+### Environment Variables
+
+| Name             | Description              | Example                              | Default |
+| ---------------- | ------------------------ | ------------------------------------ | :------ |
+| API_HOST         | HTTP host                | localhost                            | 0.0.0.0 |
+| API_PORT         | HTTP port                | 80                                   | 9000    |
+| DB_URI           | jdbc connection string   | jdbc:postgresql://localhost:5432/pce |         |
+| DB_USER          | database user            | postgres                             |         |
+| DB_PASS          | database user's password | mysecretpassword                     |         |
+| APP_CALLBACK_URI | callback api prefix      | localhost:9000/v0                    |         |
 
 ## Contributing
 
