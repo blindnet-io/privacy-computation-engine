@@ -7,7 +7,7 @@
 <p align=center><img src="https://user-images.githubusercontent.com/7578400/163549893-117bbd70-b81a-47fd-8e1f-844911e48d68.png#gh-dark-mode-only" height="80" /></p>
 
 <p align="center">
-  <strong>Component that interprets rights about users' data in a system and handles Privacy Requests.</strong>
+  <strong>Interpret sensitive data access rights and handle Privacy Requests.</strong>
 </p>
 
 <p align="center">
@@ -26,67 +26,96 @@
 
 ## About
 
-TODO
+The blindnet devkit **Privacy Computation Engine** (PCE) is the core of your "privacy stack".
+
+It is a service delivering Restful APIs to manage the two core features of the DevKit by:
+
+1. interpreting your rights to hold and treat a particular **[Data Capture](https://blindnet.dev/docs/references/lexicon#data-capture)** at a particular point in time
+2. calculating a response to [Data Subjects'](/docs/references/lexicon#data-subject) **[Privacy Requests](https://blindnet.dev/docs/references/lexicon#privacy-request)**.
+
+You'll find its full documentation in the [Computation](https://blindnet.dev/docs/computation) section of [blindnet.dev](https://blindnet.dev).
 
 ## Get Started
 
-:rocket: Check out our [Quick Start Guide](https://blindnet.dev/docs/quickstart) to get started in a snap.
+:rocket: Check out our [introductory tutorial](https://blindnet.dev/docs/tutorial) to familiarize yourself with the blindnet devkit components and understand how they play together.
 
 ## Usage
 
+See [/swagger](https://devkit-pce-staging.azurewebsites.net/swagger/) for complete and up-to-date OpenAPI references and documentation.
+
+### Requirements
+
 To run the Privacy Computation Engine locally, make sure you have installed the latest versions of the following tools:
+
 - [sbt](https://www.scala-sbt.org/1.x/docs/Setup.html)
 - [docker-compose](https://docs.docker.com/compose/install/)
 
-In the root directory, run 
-```console
+> **Warning**
+>
+> Following instructions extensively use Docker.
+>
+> Make sure the Docker daemon is running and accessible to your current user before anything.
+>
+> When using Systemd, you can run `sudo systemctl status docker` to check the status of the Docker daemon, and `sudo systemctl start docker` to start it.
+
+### Run Locally
+
+In the root directory, run the following `sbt` command to create a docker image for the application:
+
+```bash
 sbt docker:publishLocal
 ```
-to create a docker image of the app.
 
-Then run
-```console
+Then, run the `scripts/start.sh` script to start a Postgres instance, execute database migrations and run the Privacy Computation Engine:
+
+```bash
 ./scripts/start.sh
 ```
-which starts a Postgres instance, executes db migrations and run the Privacy Computation Engine.
 
-After the script has completed successfully, verify the app is running by calling `curl localhost:9000/v0/health`
+Finally, after this script has been executed successfully, you can verify the service is running and available by calling:
 
-Make sure to clear up the services with
-```console
+```bash
+curl -v localhost:9000/v0/health
+```
+
+When you're done, make sure to stop and clean up all associated docker containers with:
+
+```bash
 ./scripts/stop.sh
 ```
 
-Environment variables are defined in the `.env` file.
+> **Note**
+>
+> Environment variables are defined in the `.env` file.
 
 ### Development
 
-Make sure you have installed the latest versions of the following tools:
-- [sbt](https://www.scala-sbt.org/1.x/docs/Setup.html)
-- [docker-compose](https://docs.docker.com/compose/install/)
+First, start a Postgres instance and populate it with test data:
 
-To start a Postgres instance and populate it with test data, run 
-```console
+```bash
 ./scripts/start_dev.sh
 ```
 
-Define the following environment variables:
-| Name                       | Description                  | Example                              | Default                  |
-|----------------------------|------------------------------|--------------------------------------|:-------------------------|
-| API_HOST                   | HTTP host                    | localhost | 0.0.0.0                  |                          |
-| API_PORT                   | HTTP port                    | 80                                   | 9000                     |
-| DB_URI                     | jdbc connection string       | jdbc:postgresql://localhost:5432/pce |                          |
-| DB_USER                    | database user                | postgres                             |                          |
-| DB_PASS                    | database user's password     | mysecretpassword                     |                          |
-| APP_CALLBACK_URI           | callback api prefix          | localhost:9000/v0                    |                          |
+Then, define the following environment variables:
 
-To start the Privacy Computation Engine, run
-```console
+| Name             | Description              | Example                              | Default |
+| ---------------- | ------------------------ | ------------------------------------ | :------ |
+| API_HOST         | HTTP host                | localhost                            | 0.0.0.0 |
+| API_PORT         | HTTP port                | 80                                   | 9000    |
+| DB_URI           | jdbc connection string   | jdbc:postgresql://localhost:5432/pce |         |
+| DB_USER          | database user            | postgres                             |         |
+| DB_PASS          | database user's password | mysecretpassword                     |         |
+| APP_CALLBACK_URI | callback api prefix      | localhost:9000/v0                    |         |
+
+Finally, start the Privacy Computation Engine with:
+
+```bash
 sbt "~core/reStart"
 ```
 
-To clean up the database server, run
-```console
+When you're done, make sure to stop and clean up the database docker container with:
+
+```bash
 ./scripts/stop_dev.sh
 ```
 
@@ -113,10 +142,12 @@ Stay up to date with new releases and projects, learn more about how to protect 
 The blindnet devkit privacy-computation-engine is available under [MIT][license] (and [here](https://github.com/blindnet-io/openness-framework/blob/main/docs/decision-records/DR-0001-oss-license.md) is why).
 
 <!-- project's URLs -->
+
 [new-issue]: https://github.com/blindnet-io/privacy-computation-engine/issues/new/choose
 [fork]: https://github.com/blindnet-io/privacy-computation-engine/fork
 
 <!-- common URLs -->
+
 [devkit]: https://github.com/blindnet-io/blindnet.dev
 [openness]: https://github.com/blindnet-io/openness-framework
 [product]: https://github.com/blindnet-io/product-management
