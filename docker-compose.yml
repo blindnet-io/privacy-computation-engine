@@ -1,0 +1,42 @@
+version: "3.9"
+
+services:
+  db:
+    restart: always
+    image: postgres:13.0-alpine
+    ports:
+      - 5432:5432
+    environment:
+      - POSTGRES_USER=${pg_user}
+      - POSTGRES_PASSWORD=${pg_pass}
+      - POSTGRES_DB=${pg_db_name}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 3s
+      timeout: 4s
+      retries: 5
+
+  migrate:
+    image: flyway/flyway
+    command: -url=jdbc:postgresql://db:5432/${pg_db_name} -user=${pg_user} -password=${pg_pass} -table=Flyway -connectRetries=60 migrate
+    volumes:
+      - ./modules/core/src/main/resources/db/migration:/flyway/sql:ro
+      # adding afterMigrate callback to /flyway/jars (to insert data) might be better than spawning another container
+      # https://flywaydb.org/documentation/usage/api/hooks#callsbacks
+    depends_on:
+      db:
+        condition: service_healthy
+
+  insert_test_data:
+    image: alpine:3.16
+    command:
+      - /bin/sh
+      - -c
+      - |
+        apk --no-cache add postgresql13-client
+        psql postgresql://${pg_user}:${pg_pass}@db:5432/${pg_db_name} -f /sql/insert.sql
+    volumes:
+      - ./scripts/insert.sql:/sql/insert.sql:ro
+    depends_on:
+      migrate:
+        condition: service_completed_successfully

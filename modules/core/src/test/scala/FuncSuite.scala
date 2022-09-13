@@ -37,7 +37,7 @@ trait FuncSuite extends IOSuite {
   def populateDb(xa: Transactor[IO]) =
     for {
       sql <- Files[IO]
-        .readAll(Path("modules/core/src/test/scala/insert.sql"))
+        .readAll(Path("modules/core/src/test/resources/db/insert.sql"))
         .through(text.utf8.decode)
         .compile
         .fold("")(_ + _)

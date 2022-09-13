@@ -54,6 +54,8 @@ lazy val priv = (project in file("modules/priv"))
 
 lazy val core = (project in file("modules/core"))
   .enablePlugins(BuildInfoPlugin)
+  .enablePlugins(DockerPlugin)
+  .enablePlugins(AshScriptPlugin)
   .settings(commonSettings*)
   .settings(
     name                             := "pce-core",
@@ -100,5 +102,11 @@ lazy val core = (project in file("modules/core"))
         val oldStrategy = (assembly / assemblyMergeStrategy).value
         oldStrategy(x)
     }
+  )
+  .settings(
+    Docker / packageName := "pce",
+    dockerBaseImage      := "eclipse-temurin:17",
+    makeBatScripts       := Nil,
+    dockerUpdateLatest   := true
   )
   .dependsOn(util, priv)
