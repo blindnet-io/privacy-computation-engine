@@ -20,7 +20,7 @@ trait DemandsToReviewRepository {
 
   def add(ids: List[UUID]): IO[Unit]
 
-  def remove(id: NonEmptyList[UUID]): IO[Unit]
+  def remove(ids: NonEmptyList[UUID]): IO[Unit]
 }
 
 object DemandsToReviewRepository {

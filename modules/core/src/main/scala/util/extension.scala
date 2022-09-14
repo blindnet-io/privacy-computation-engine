@@ -44,11 +44,18 @@ object extension {
 
   }
 
-  extension [A](o: Option[A])
+  extension [A](o: Option[A]) {
     def orBadRequest(msg: String): IO[A] = o match {
       case None    => BadRequestException(msg).raiseError
       case Some(x) => IO(x)
     }
+
+    def orNotFound(msg: String): IO[A] = o match {
+      case None    => NotFoundException(msg).raiseError
+      case Some(x) => IO(x)
+    }
+
+  }
 
   extension (b: Boolean) {
     def onFalseNotFound(msg: String) =

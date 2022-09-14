@@ -147,4 +147,28 @@ class PrivacyRequestService(
         .map(PrivacyResponsePayload.fromPrivPrivacyResponse)
     } yield resp
 
+  private def verifyDemandExists(appId: UUID, dId: UUID, userId: String) =
+    repos.privacyRequest
+      .demandExist(appId, dId, userId)
+      .onFalseNotFound("Demand not found")
+
+  def cancelDemand(req: CancelDemandPayload, appId: UUID, userId: String) =
+    val dId = req.demandId
+    for {
+      _     <- verifyDemandExists(appId, dId, userId)
+      resps <- repos.privacyRequest.getDemandResponses(dId)
+      underReviewROpt = resps.filter(_.status == Status.UnderReview).toNel
+      underReviewR <- underReviewROpt.orBadRequest(s"Responses for demand $dId not UNDER-REVIEW")
+      _            <- underReviewR.traverse(
+        r =>
+          for {
+            id        <- UUIDGen.randomUUID[IO].map(ResponseEventId(_))
+            timestamp <- Clock[IO].realTimeInstant
+            newR = r.copy(eventId = id, timestamp = timestamp, status = Status.Canceled)
+            _ <- repos.privacyRequest.storeNewResponse(newR)
+          } yield ()
+      )
+      _            <- repos.demandsToReview.remove(underReviewR.map(_.demandId))
+    } yield ()
+
 }
