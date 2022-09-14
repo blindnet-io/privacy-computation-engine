@@ -37,6 +37,17 @@ private object queries {
       .query[Boolean]
       .unique
 
+  def demandExist(appId: UUID, dId: UUID, userId: String) =
+    sql"""
+      select exists (
+        select 1 from demands d
+        	join privacy_requests pr on pr.id = d.prid
+        where d.id = $dId and pr.appid = $appId and pr.dsid = $userId
+      )
+    """
+      .query[Boolean]
+      .unique
+
   def getDemand(id: UUID) =
     sql"""
       select d.id, pr.id, action, message, lang

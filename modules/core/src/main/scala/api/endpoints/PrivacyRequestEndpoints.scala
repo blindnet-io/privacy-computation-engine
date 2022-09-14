@@ -55,6 +55,15 @@ class PrivacyRequestEndpoints(
       .errorOut(statusCode(StatusCode.NotFound))
       .serverLogicSuccess(reqId => reqService.getResponse(PrivReqId(reqId), appId, Some(userId)))
 
-  val endpoints = List(createPrivacyRequest, getRequestHistory, getReqStatus)
+  val cancelDemand =
+    base
+      .description("Cancel a pending demand")
+      .post
+      .in("cancel")
+      .in(jsonBody[CancelDemandPayload])
+      .errorOut(statusCode(StatusCode.UnprocessableEntity))
+      .serverLogicSuccess(req => reqService.cancelDemand(req, appId, userId))
+
+  val endpoints = List(createPrivacyRequest, getRequestHistory, getReqStatus, cancelDemand)
 
 }

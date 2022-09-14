@@ -18,6 +18,8 @@ trait PrivacyRequestRepository {
 
   def demandExist(appid: UUID, dId: UUID): IO[Boolean]
 
+  def demandExist(appid: UUID, dId: UUID, userId: String): IO[Boolean]
+
   def getRequest(reqId: RequestId, withDemands: Boolean = true): IO[Option[PrivacyRequest]]
 
   def getRequest(d: Demand): IO[Option[PrivacyRequest]]
