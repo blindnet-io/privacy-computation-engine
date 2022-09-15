@@ -5,7 +5,7 @@ package terms
 import cats.data.Validated
 import doobie.util.Get
 import io.circe.*
-import sttp.tapir.{Schema, Validator}
+import sttp.tapir.{ Schema, Validator }
 
 case class Purpose(term: String)
 

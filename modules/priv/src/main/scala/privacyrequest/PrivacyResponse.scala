@@ -5,7 +5,7 @@ package privacyrequest
 import java.time.Instant
 import java.util.UUID
 
-import cats.effect.kernel.{Clock, Sync}
+import cats.effect.kernel.{ Clock, Sync }
 import cats.effect.std.UUIDGen
 import cats.implicits.*
 import doobie.*

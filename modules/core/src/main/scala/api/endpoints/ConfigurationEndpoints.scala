@@ -5,7 +5,7 @@ import java.util.UUID
 
 import cats.data.NonEmptyList
 import cats.effect.IO
-import io.blindnet.pce.priv.{GeneralInformation, LegalBase}
+import io.blindnet.pce.priv.{ GeneralInformation, LegalBase }
 import io.circe.generic.auto.*
 import org.http4s.server.Router
 import sttp.model.StatusCode
