@@ -13,6 +13,11 @@ Test / fork := true
 
 resolvers += Resolver.sonatypeRepo("snapshots")
 
+// hooks are added after sbt has started for the first time
+Global / onLoad ~= (_ andThen ("writeHooks" :: _))
+lazy val writeHooks = taskKey[Unit]("Write git hooks")
+Global / writeHooks := GitHooks(file("git-hooks"), file(".git/hooks"), streams.value.log)
+
 val commonSettings = Seq(
   scalacOptions ++= Seq("-Xmax-inlines", "100"),
   scalacOptions ++= Seq("-deprecation")

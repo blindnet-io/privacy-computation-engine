@@ -1,0 +1,13 @@
+# 1. Check staged files
+# How to restrict to only check files from "git diff --cached --name-only"?
+# "diff-dirty" limits to files from "git status" which is not what we want
+# https://scalameta.org/scalafmt/docs/installation.html#settings
+
+# sbt "set ThisBuild / scalafmtFilter := (\"diff-dirty\"); scalafmtCheck"
+# fmt_status=$?
+
+# if test $fmt_status -gt 0
+# then
+#  echo "******** Sources not formatted correctly. Run sbt scalafmt ********"
+#  exit 1
+# fi
