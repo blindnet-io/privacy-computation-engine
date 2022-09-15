@@ -14,7 +14,8 @@ Test / fork := true
 resolvers += Resolver.sonatypeRepo("snapshots")
 
 val commonSettings = Seq(
-  scalacOptions ++= Seq("-Xmax-inlines", "100")
+  scalacOptions ++= Seq("-Xmax-inlines", "100"),
+  scalacOptions ++= Seq("-deprecation")
 )
 
 lazy val root = (project in file("."))
