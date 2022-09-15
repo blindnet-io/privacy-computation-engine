@@ -32,7 +32,7 @@ object PrivacyScopeSuite extends FunSuite {
 
   test("full scope to most granular categories") {
     val ps = scope(("*", "*", "*")).zoomIn()
-    expect(ps == fullPS)
+    expect(ps == PrivacyScope.full())
   }
 
   test("simple scope to most granular categories 1") {

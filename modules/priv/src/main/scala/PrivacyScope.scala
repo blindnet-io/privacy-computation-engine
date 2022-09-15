@@ -44,6 +44,10 @@ case class PrivacyScope(
 object PrivacyScope {
   def empty = PrivacyScope(Set.empty)
 
+  def full(ctx: PSContext = PSContext.empty) =
+    PrivacyScope(Set(PrivacyScopeTriple(DataCategory.All, ProcessingCategory.All, Purpose.All)))
+      .zoomIn(ctx)
+
   def unsafe(dcs: Seq[String], pcs: Seq[String], pps: Seq[String]) =
     PrivacyScope((dcs lazyZip pcs lazyZip pps).map(PrivacyScopeTriple.unsafe).toSet)
 

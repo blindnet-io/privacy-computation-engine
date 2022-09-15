@@ -89,15 +89,13 @@ class RequestRecommender(
   private def getRecAccess(pr: PrivacyRequest, d: Demand) =
     for {
       selectors <- repos.privacyScope.getSelectors(pr.appId, active = true)
-      ctx = PSContext(selectors)
-      timeline    <- repos.events.getTimeline(pr.dataSubject.get, ctx)
-      regulations <- repos.regulations.get(pr.appId, ctx)
-      eps = timeline.eligiblePrivacyScope(Some(pr.timestamp), regulations)
+      ctx   = PSContext(selectors)
+      scope = PrivacyScope.full(ctx)
 
       psr   = d.getPSR.orEmpty.zoomIn(ctx)
       psRec =
-        if psr.isEmpty then eps
-        else psr intersection eps
+        if psr.isEmpty then scope
+        else psr intersection scope
 
       (from, to) = d.getDateRangeR.getOrElse((None, None))
       pRec       = d.getProvenanceR.map(_._1).filter(_ != ProvenanceTerms.All)

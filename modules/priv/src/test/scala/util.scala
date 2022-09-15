@@ -82,18 +82,4 @@ trait response {
       // format: off
 }
 
-trait PS {
-  val fullPS = {
-    val triples = for {
-      dc <- DataCategory.terms.flatMap(dc => DataCategory.granularize(DataCategory(dc)))
-      pc <- ProcessingCategory.terms.flatMap(
-        pc => ProcessingCategory.granularize(ProcessingCategory(pc))
-      )
-      pp <- Purpose.terms.flatMap(pp => Purpose.granularize(Purpose(pp)))
-    } yield PrivacyScopeTriple(dc, pc, pp)
-    PrivacyScope(triples.toSet)
-  }
-
-}
-
-object test extends request with demand with restriction with response with PS
+object test extends request with demand with restriction with response

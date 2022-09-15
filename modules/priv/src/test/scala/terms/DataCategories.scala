@@ -7,7 +7,6 @@ import scala.util.Random
 import java.time.temporal.ChronoUnit
 import java.util.UUID
 import io.blindnet.pce.priv.util.*
-import io.blindnet.pce.priv.PS
 import weaver.*
 
 object DataCategorySuite extends FunSuite {
