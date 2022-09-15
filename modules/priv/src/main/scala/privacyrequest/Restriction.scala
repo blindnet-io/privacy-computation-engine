@@ -2,14 +2,16 @@ package io.blindnet.pce
 package priv
 package privacyrequest
 
-import PrivacyScope as PS
-import terms.*
 import java.time.Instant
-import doobie.util.*
+import java.util.UUID
+
+import scala.reflect.TypeTest
+
 import doobie.postgres.*
 import doobie.postgres.implicits.*
-import java.util.UUID
-import scala.reflect.TypeTest
+import doobie.util.*
+import priv.PrivacyScope as PS
+import terms.*
 
 type Tag[T] = TypeTest[Any, T]
 
