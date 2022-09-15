@@ -79,68 +79,68 @@ insert into consent_given_events (id, lbid, dsid, appid, date) values
 
 -- regulations
 
-insert into regulations values
-('77c568c0-e4a5-4cde-b51f-cefd06c258a2', 'GDPR'),
-('93a6cefc-da22-4f60-9258-506355278399', 'GDPR-health');
+-- insert into regulations values
+-- ('77c568c0-e4a5-4cde-b51f-cefd06c258a2', 'GDPR'),
+-- ('93a6cefc-da22-4f60-9258-506355278399', 'GDPR-health');
 
-insert into app_regulations values
-('6f083c15-4ada-4671-a6d1-c671bc9105dc', '77c568c0-e4a5-4cde-b51f-cefd06c258a2');
+-- insert into app_regulations values
+-- ('6f083c15-4ada-4671-a6d1-c671bc9105dc', '77c568c0-e4a5-4cde-b51f-cefd06c258a2');
 
-insert into regulation_legal_base_forbidden_scope values
--- prohibited CONTRACT under GDPR
-('77c568c0-e4a5-4cde-b51f-cefd06c258a2', 'CONTRACT', (select s.id from scope s join data_categories dc on dc.id = s.dcid join processing_categories pc on pc.id = s.pcid join processing_purposes pp on pp.id = s.ppid
-	where dc.term = 'AFFILIATION.MEMBERSHIP.UNION' and pc.term = '*' and pp.term = '*')),
-('77c568c0-e4a5-4cde-b51f-cefd06c258a2', 'CONTRACT', (select s.id from scope s join data_categories dc on dc.id = s.dcid join processing_categories pc on pc.id = s.pcid join processing_purposes pp on pp.id = s.ppid
-	where dc.term = 'DEMOGRAPHIC.ORIGIN' and pc.term = '*' and pp.term = '*')),
-('77c568c0-e4a5-4cde-b51f-cefd06c258a2', 'CONTRACT', (select s.id from scope s join data_categories dc on dc.id = s.dcid join processing_categories pc on pc.id = s.pcid join processing_purposes pp on pp.id = s.ppid
-	where dc.term = 'DEMOGRAPHIC.RACE' and pc.term = '*' and pp.term = '*')),
-('77c568c0-e4a5-4cde-b51f-cefd06c258a2', 'CONTRACT', (select s.id from scope s join data_categories dc on dc.id = s.dcid join processing_categories pc on pc.id = s.pcid join processing_purposes pp on pp.id = s.ppid
-	where dc.term = 'DEMOGRAPHIC.BELIEFS' and pc.term = '*' and pp.term = '*')),
-('77c568c0-e4a5-4cde-b51f-cefd06c258a2', 'CONTRACT', (select s.id from scope s join data_categories dc on dc.id = s.dcid join processing_categories pc on pc.id = s.pcid join processing_purposes pp on pp.id = s.ppid
-	where dc.term = 'DEMOGRAPHIC.SEXUAL-ORIENTATION' and pc.term = '*' and pp.term = '*')),
-('77c568c0-e4a5-4cde-b51f-cefd06c258a2', 'CONTRACT', (select s.id from scope s join data_categories dc on dc.id = s.dcid join processing_categories pc on pc.id = s.pcid join processing_purposes pp on pp.id = s.ppid
-	where dc.term = 'GENETIC' and pc.term = '*' and pp.term = '*')),
-('77c568c0-e4a5-4cde-b51f-cefd06c258a2', 'CONTRACT', (select s.id from scope s join data_categories dc on dc.id = s.dcid join processing_categories pc on pc.id = s.pcid join processing_purposes pp on pp.id = s.ppid
-	where dc.term = 'HEALTH' and pc.term = '*' and pp.term = '*')),
-('77c568c0-e4a5-4cde-b51f-cefd06c258a2', 'CONTRACT', (select s.id from scope s join data_categories dc on dc.id = s.dcid join processing_categories pc on pc.id = s.pcid join processing_purposes pp on pp.id = s.ppid
-	where dc.term = 'BIOMETRIC' and pc.term = '*' and pp.term = '*')),
-('77c568c0-e4a5-4cde-b51f-cefd06c258a2', 'CONTRACT', (select s.id from scope s join data_categories dc on dc.id = s.dcid join processing_categories pc on pc.id = s.pcid join processing_purposes pp on pp.id = s.ppid
-	where dc.term = 'AFFILIATION.MEMBERSHIP.UNION' and pc.term = '*' and pp.term = '*')),
--- prohibited LEGITIMATE-INTEREST under GDPR
-('77c568c0-e4a5-4cde-b51f-cefd06c258a2', 'LEGITIMATE-INTEREST', (select s.id from scope s join data_categories dc on dc.id = s.dcid join processing_categories pc on pc.id = s.pcid join processing_purposes pp on pp.id = s.ppid
-	where dc.term = 'AFFILIATION.MEMBERSHIP.UNION' and pc.term = '*' and pp.term = '*')),
-('77c568c0-e4a5-4cde-b51f-cefd06c258a2', 'LEGITIMATE-INTEREST', (select s.id from scope s join data_categories dc on dc.id = s.dcid join processing_categories pc on pc.id = s.pcid join processing_purposes pp on pp.id = s.ppid
-	where dc.term = 'DEMOGRAPHIC.ORIGIN' and pc.term = '*' and pp.term = '*')),
-('77c568c0-e4a5-4cde-b51f-cefd06c258a2', 'LEGITIMATE-INTEREST', (select s.id from scope s join data_categories dc on dc.id = s.dcid join processing_categories pc on pc.id = s.pcid join processing_purposes pp on pp.id = s.ppid
-	where dc.term = 'DEMOGRAPHIC.RACE' and pc.term = '*' and pp.term = '*')),
-('77c568c0-e4a5-4cde-b51f-cefd06c258a2', 'LEGITIMATE-INTEREST', (select s.id from scope s join data_categories dc on dc.id = s.dcid join processing_categories pc on pc.id = s.pcid join processing_purposes pp on pp.id = s.ppid
-	where dc.term = 'DEMOGRAPHIC.BELIEFS' and pc.term = '*' and pp.term = '*')),
-('77c568c0-e4a5-4cde-b51f-cefd06c258a2', 'LEGITIMATE-INTEREST', (select s.id from scope s join data_categories dc on dc.id = s.dcid join processing_categories pc on pc.id = s.pcid join processing_purposes pp on pp.id = s.ppid
-	where dc.term = 'DEMOGRAPHIC.SEXUAL-ORIENTATION' and pc.term = '*' and pp.term = '*')),
-('77c568c0-e4a5-4cde-b51f-cefd06c258a2', 'LEGITIMATE-INTEREST', (select s.id from scope s join data_categories dc on dc.id = s.dcid join processing_categories pc on pc.id = s.pcid join processing_purposes pp on pp.id = s.ppid
-	where dc.term = 'GENETIC' and pc.term = '*' and pp.term = '*')),
-('77c568c0-e4a5-4cde-b51f-cefd06c258a2', 'LEGITIMATE-INTEREST', (select s.id from scope s join data_categories dc on dc.id = s.dcid join processing_categories pc on pc.id = s.pcid join processing_purposes pp on pp.id = s.ppid
-	where dc.term = 'HEALTH' and pc.term = '*' and pp.term = '*')),
-('77c568c0-e4a5-4cde-b51f-cefd06c258a2', 'LEGITIMATE-INTEREST', (select s.id from scope s join data_categories dc on dc.id = s.dcid join processing_categories pc on pc.id = s.pcid join processing_purposes pp on pp.id = s.ppid
-	where dc.term = 'BIOMETRIC' and pc.term = '*' and pp.term = '*')),
-('77c568c0-e4a5-4cde-b51f-cefd06c258a2', 'LEGITIMATE-INTEREST', (select s.id from scope s join data_categories dc on dc.id = s.dcid join processing_categories pc on pc.id = s.pcid join processing_purposes pp on pp.id = s.ppid
-	where dc.term = 'AFFILIATION.MEMBERSHIP.UNION' and pc.term = '*' and pp.term = '*')),
--- prohibited LEGITIMATE-INTEREST under GDPR for health
-('93a6cefc-da22-4f60-9258-506355278399', 'LEGITIMATE-INTEREST', (select s.id from scope s join data_categories dc on dc.id = s.dcid join processing_categories pc on pc.id = s.pcid join processing_purposes pp on pp.id = s.ppid
-	where dc.term = 'AFFILIATION.MEMBERSHIP.UNION' and pc.term = '*' and pp.term = '*')),
-('93a6cefc-da22-4f60-9258-506355278399', 'LEGITIMATE-INTEREST', (select s.id from scope s join data_categories dc on dc.id = s.dcid join processing_categories pc on pc.id = s.pcid join processing_purposes pp on pp.id = s.ppid
-	where dc.term = 'DEMOGRAPHIC.ORIGIN' and pc.term = '*' and pp.term = '*')),
-('93a6cefc-da22-4f60-9258-506355278399', 'LEGITIMATE-INTEREST', (select s.id from scope s join data_categories dc on dc.id = s.dcid join processing_categories pc on pc.id = s.pcid join processing_purposes pp on pp.id = s.ppid
-	where dc.term = 'DEMOGRAPHIC.RACE' and pc.term = '*' and pp.term = '*')),
-('93a6cefc-da22-4f60-9258-506355278399', 'LEGITIMATE-INTEREST', (select s.id from scope s join data_categories dc on dc.id = s.dcid join processing_categories pc on pc.id = s.pcid join processing_purposes pp on pp.id = s.ppid
-	where dc.term = 'DEMOGRAPHIC.BELIEFS' and pc.term = '*' and pp.term = '*')),
-('93a6cefc-da22-4f60-9258-506355278399', 'LEGITIMATE-INTEREST', (select s.id from scope s join data_categories dc on dc.id = s.dcid join processing_categories pc on pc.id = s.pcid join processing_purposes pp on pp.id = s.ppid
-	where dc.term = 'DEMOGRAPHIC.SEXUAL-ORIENTATION' and pc.term = '*' and pp.term = '*')),
-('93a6cefc-da22-4f60-9258-506355278399', 'LEGITIMATE-INTEREST', (select s.id from scope s join data_categories dc on dc.id = s.dcid join processing_categories pc on pc.id = s.pcid join processing_purposes pp on pp.id = s.ppid
-	where dc.term = 'GENETIC' and pc.term = '*' and pp.term = '*')),
-('93a6cefc-da22-4f60-9258-506355278399', 'LEGITIMATE-INTEREST', (select s.id from scope s join data_categories dc on dc.id = s.dcid join processing_categories pc on pc.id = s.pcid join processing_purposes pp on pp.id = s.ppid
-	where dc.term = 'HEALTH' and pc.term = '*' and pp.term = '*')),
-('93a6cefc-da22-4f60-9258-506355278399', 'LEGITIMATE-INTEREST', (select s.id from scope s join data_categories dc on dc.id = s.dcid join processing_categories pc on pc.id = s.pcid join processing_purposes pp on pp.id = s.ppid
-	where dc.term = 'BIOMETRIC' and pc.term = '*' and pp.term = '*')),
-('93a6cefc-da22-4f60-9258-506355278399', 'LEGITIMATE-INTEREST', (select s.id from scope s join data_categories dc on dc.id = s.dcid join processing_categories pc on pc.id = s.pcid join processing_purposes pp on pp.id = s.ppid
-	where dc.term = 'AFFILIATION.MEMBERSHIP.UNION' and pc.term = '*' and pp.term = '*'));
+-- insert into regulation_legal_base_forbidden_scope values
+-- -- prohibited CONTRACT under GDPR
+-- ('77c568c0-e4a5-4cde-b51f-cefd06c258a2', 'CONTRACT', (select s.id from scope s join data_categories dc on dc.id = s.dcid join processing_categories pc on pc.id = s.pcid join processing_purposes pp on pp.id = s.ppid
+-- 	where dc.term = 'AFFILIATION.MEMBERSHIP.UNION' and pc.term = '*' and pp.term = '*')),
+-- ('77c568c0-e4a5-4cde-b51f-cefd06c258a2', 'CONTRACT', (select s.id from scope s join data_categories dc on dc.id = s.dcid join processing_categories pc on pc.id = s.pcid join processing_purposes pp on pp.id = s.ppid
+-- 	where dc.term = 'DEMOGRAPHIC.ORIGIN' and pc.term = '*' and pp.term = '*')),
+-- ('77c568c0-e4a5-4cde-b51f-cefd06c258a2', 'CONTRACT', (select s.id from scope s join data_categories dc on dc.id = s.dcid join processing_categories pc on pc.id = s.pcid join processing_purposes pp on pp.id = s.ppid
+-- 	where dc.term = 'DEMOGRAPHIC.RACE' and pc.term = '*' and pp.term = '*')),
+-- ('77c568c0-e4a5-4cde-b51f-cefd06c258a2', 'CONTRACT', (select s.id from scope s join data_categories dc on dc.id = s.dcid join processing_categories pc on pc.id = s.pcid join processing_purposes pp on pp.id = s.ppid
+-- 	where dc.term = 'DEMOGRAPHIC.BELIEFS' and pc.term = '*' and pp.term = '*')),
+-- ('77c568c0-e4a5-4cde-b51f-cefd06c258a2', 'CONTRACT', (select s.id from scope s join data_categories dc on dc.id = s.dcid join processing_categories pc on pc.id = s.pcid join processing_purposes pp on pp.id = s.ppid
+-- 	where dc.term = 'DEMOGRAPHIC.SEXUAL-ORIENTATION' and pc.term = '*' and pp.term = '*')),
+-- ('77c568c0-e4a5-4cde-b51f-cefd06c258a2', 'CONTRACT', (select s.id from scope s join data_categories dc on dc.id = s.dcid join processing_categories pc on pc.id = s.pcid join processing_purposes pp on pp.id = s.ppid
+-- 	where dc.term = 'GENETIC' and pc.term = '*' and pp.term = '*')),
+-- ('77c568c0-e4a5-4cde-b51f-cefd06c258a2', 'CONTRACT', (select s.id from scope s join data_categories dc on dc.id = s.dcid join processing_categories pc on pc.id = s.pcid join processing_purposes pp on pp.id = s.ppid
+-- 	where dc.term = 'HEALTH' and pc.term = '*' and pp.term = '*')),
+-- ('77c568c0-e4a5-4cde-b51f-cefd06c258a2', 'CONTRACT', (select s.id from scope s join data_categories dc on dc.id = s.dcid join processing_categories pc on pc.id = s.pcid join processing_purposes pp on pp.id = s.ppid
+-- 	where dc.term = 'BIOMETRIC' and pc.term = '*' and pp.term = '*')),
+-- ('77c568c0-e4a5-4cde-b51f-cefd06c258a2', 'CONTRACT', (select s.id from scope s join data_categories dc on dc.id = s.dcid join processing_categories pc on pc.id = s.pcid join processing_purposes pp on pp.id = s.ppid
+-- 	where dc.term = 'AFFILIATION.MEMBERSHIP.UNION' and pc.term = '*' and pp.term = '*')),
+-- -- prohibited LEGITIMATE-INTEREST under GDPR
+-- ('77c568c0-e4a5-4cde-b51f-cefd06c258a2', 'LEGITIMATE-INTEREST', (select s.id from scope s join data_categories dc on dc.id = s.dcid join processing_categories pc on pc.id = s.pcid join processing_purposes pp on pp.id = s.ppid
+-- 	where dc.term = 'AFFILIATION.MEMBERSHIP.UNION' and pc.term = '*' and pp.term = '*')),
+-- ('77c568c0-e4a5-4cde-b51f-cefd06c258a2', 'LEGITIMATE-INTEREST', (select s.id from scope s join data_categories dc on dc.id = s.dcid join processing_categories pc on pc.id = s.pcid join processing_purposes pp on pp.id = s.ppid
+-- 	where dc.term = 'DEMOGRAPHIC.ORIGIN' and pc.term = '*' and pp.term = '*')),
+-- ('77c568c0-e4a5-4cde-b51f-cefd06c258a2', 'LEGITIMATE-INTEREST', (select s.id from scope s join data_categories dc on dc.id = s.dcid join processing_categories pc on pc.id = s.pcid join processing_purposes pp on pp.id = s.ppid
+-- 	where dc.term = 'DEMOGRAPHIC.RACE' and pc.term = '*' and pp.term = '*')),
+-- ('77c568c0-e4a5-4cde-b51f-cefd06c258a2', 'LEGITIMATE-INTEREST', (select s.id from scope s join data_categories dc on dc.id = s.dcid join processing_categories pc on pc.id = s.pcid join processing_purposes pp on pp.id = s.ppid
+-- 	where dc.term = 'DEMOGRAPHIC.BELIEFS' and pc.term = '*' and pp.term = '*')),
+-- ('77c568c0-e4a5-4cde-b51f-cefd06c258a2', 'LEGITIMATE-INTEREST', (select s.id from scope s join data_categories dc on dc.id = s.dcid join processing_categories pc on pc.id = s.pcid join processing_purposes pp on pp.id = s.ppid
+-- 	where dc.term = 'DEMOGRAPHIC.SEXUAL-ORIENTATION' and pc.term = '*' and pp.term = '*')),
+-- ('77c568c0-e4a5-4cde-b51f-cefd06c258a2', 'LEGITIMATE-INTEREST', (select s.id from scope s join data_categories dc on dc.id = s.dcid join processing_categories pc on pc.id = s.pcid join processing_purposes pp on pp.id = s.ppid
+-- 	where dc.term = 'GENETIC' and pc.term = '*' and pp.term = '*')),
+-- ('77c568c0-e4a5-4cde-b51f-cefd06c258a2', 'LEGITIMATE-INTEREST', (select s.id from scope s join data_categories dc on dc.id = s.dcid join processing_categories pc on pc.id = s.pcid join processing_purposes pp on pp.id = s.ppid
+-- 	where dc.term = 'HEALTH' and pc.term = '*' and pp.term = '*')),
+-- ('77c568c0-e4a5-4cde-b51f-cefd06c258a2', 'LEGITIMATE-INTEREST', (select s.id from scope s join data_categories dc on dc.id = s.dcid join processing_categories pc on pc.id = s.pcid join processing_purposes pp on pp.id = s.ppid
+-- 	where dc.term = 'BIOMETRIC' and pc.term = '*' and pp.term = '*')),
+-- ('77c568c0-e4a5-4cde-b51f-cefd06c258a2', 'LEGITIMATE-INTEREST', (select s.id from scope s join data_categories dc on dc.id = s.dcid join processing_categories pc on pc.id = s.pcid join processing_purposes pp on pp.id = s.ppid
+-- 	where dc.term = 'AFFILIATION.MEMBERSHIP.UNION' and pc.term = '*' and pp.term = '*')),
+-- -- prohibited LEGITIMATE-INTEREST under GDPR for health
+-- ('93a6cefc-da22-4f60-9258-506355278399', 'LEGITIMATE-INTEREST', (select s.id from scope s join data_categories dc on dc.id = s.dcid join processing_categories pc on pc.id = s.pcid join processing_purposes pp on pp.id = s.ppid
+-- 	where dc.term = 'AFFILIATION.MEMBERSHIP.UNION' and pc.term = '*' and pp.term = '*')),
+-- ('93a6cefc-da22-4f60-9258-506355278399', 'LEGITIMATE-INTEREST', (select s.id from scope s join data_categories dc on dc.id = s.dcid join processing_categories pc on pc.id = s.pcid join processing_purposes pp on pp.id = s.ppid
+-- 	where dc.term = 'DEMOGRAPHIC.ORIGIN' and pc.term = '*' and pp.term = '*')),
+-- ('93a6cefc-da22-4f60-9258-506355278399', 'LEGITIMATE-INTEREST', (select s.id from scope s join data_categories dc on dc.id = s.dcid join processing_categories pc on pc.id = s.pcid join processing_purposes pp on pp.id = s.ppid
+-- 	where dc.term = 'DEMOGRAPHIC.RACE' and pc.term = '*' and pp.term = '*')),
+-- ('93a6cefc-da22-4f60-9258-506355278399', 'LEGITIMATE-INTEREST', (select s.id from scope s join data_categories dc on dc.id = s.dcid join processing_categories pc on pc.id = s.pcid join processing_purposes pp on pp.id = s.ppid
+-- 	where dc.term = 'DEMOGRAPHIC.BELIEFS' and pc.term = '*' and pp.term = '*')),
+-- ('93a6cefc-da22-4f60-9258-506355278399', 'LEGITIMATE-INTEREST', (select s.id from scope s join data_categories dc on dc.id = s.dcid join processing_categories pc on pc.id = s.pcid join processing_purposes pp on pp.id = s.ppid
+-- 	where dc.term = 'DEMOGRAPHIC.SEXUAL-ORIENTATION' and pc.term = '*' and pp.term = '*')),
+-- ('93a6cefc-da22-4f60-9258-506355278399', 'LEGITIMATE-INTEREST', (select s.id from scope s join data_categories dc on dc.id = s.dcid join processing_categories pc on pc.id = s.pcid join processing_purposes pp on pp.id = s.ppid
+-- 	where dc.term = 'GENETIC' and pc.term = '*' and pp.term = '*')),
+-- ('93a6cefc-da22-4f60-9258-506355278399', 'LEGITIMATE-INTEREST', (select s.id from scope s join data_categories dc on dc.id = s.dcid join processing_categories pc on pc.id = s.pcid join processing_purposes pp on pp.id = s.ppid
+-- 	where dc.term = 'HEALTH' and pc.term = '*' and pp.term = '*')),
+-- ('93a6cefc-da22-4f60-9258-506355278399', 'LEGITIMATE-INTEREST', (select s.id from scope s join data_categories dc on dc.id = s.dcid join processing_categories pc on pc.id = s.pcid join processing_purposes pp on pp.id = s.ppid
+-- 	where dc.term = 'BIOMETRIC' and pc.term = '*' and pp.term = '*')),
+-- ('93a6cefc-da22-4f60-9258-506355278399', 'LEGITIMATE-INTEREST', (select s.id from scope s join data_categories dc on dc.id = s.dcid join processing_categories pc on pc.id = s.pcid join processing_purposes pp on pp.id = s.ppid
+-- 	where dc.term = 'AFFILIATION.MEMBERSHIP.UNION' and pc.term = '*' and pp.term = '*'));
