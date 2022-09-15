@@ -37,7 +37,6 @@ object Migrator {
       .table("Flyway")
       .locations(org.flywaydb.core.api.Location("classpath:db/migration"))
       .baselineOnMigrate(true)
-      .ignorePendingMigrations(false)
 
     migrate(flywayConf)
   }
@@ -51,7 +50,6 @@ object Migrator {
       .table("Flyway")
       .locations(org.flywaydb.core.api.Location("classpath:db/migration"))
       .baselineOnMigrate(true)
-      .ignorePendingMigrations(true)
 
     migrate(flywayConf)
 
