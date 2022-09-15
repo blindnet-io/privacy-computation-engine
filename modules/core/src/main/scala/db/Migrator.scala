@@ -9,6 +9,7 @@ import org.flywaydb.core.Flyway
 import org.flywaydb.core.api.configuration.FluentConfiguration
 import org.flywaydb.core.api.output.MigrateResult
 import config.DbConfig
+import org.flywaydb.core.api.pattern.ValidatePattern
 
 object Migrator {
 
@@ -50,6 +51,7 @@ object Migrator {
       .table("Flyway")
       .locations(org.flywaydb.core.api.Location("classpath:db/migration"))
       .baselineOnMigrate(true)
+      .ignoreMigrationPatterns(ValidatePattern.fromPattern("*:pending"))
 
     migrate(flywayConf)
 
