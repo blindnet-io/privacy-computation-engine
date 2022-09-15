@@ -4,11 +4,14 @@ package services
 import java.time.Instant
 import java.util.UUID
 
+import scala.concurrent.duration.*
+
 import cats.data.{ NonEmptyList, * }
 import cats.effect.*
 import cats.effect.kernel.Clock
 import cats.effect.std.*
 import cats.implicits.*
+import io.blindnet.pce.api.endpoints.messages.configuration.*
 import io.blindnet.pce.api.endpoints.messages.consumerinterface.*
 import io.blindnet.pce.model.error.given
 import io.blindnet.pce.util.extension.*
@@ -21,8 +24,6 @@ import model.error.*
 import priv.privacyrequest.{ Demand, PrivacyRequest, * }
 import priv.*
 import priv.terms.*
-import io.blindnet.pce.api.endpoints.messages.configuration.*
-import scala.concurrent.duration.*
 
 class ConfigurationService(
     repos: Repositories

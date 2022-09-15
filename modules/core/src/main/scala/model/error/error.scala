@@ -4,8 +4,8 @@ package model.error
 import scala.util.control.NoStackTrace
 
 import cats.data.NonEmptyList
-import io.circe.Json
 import cats.effect.IO
+import io.circe.Json
 
 case class ValidationException(errors: NonEmptyList[String]) extends NoStackTrace
 

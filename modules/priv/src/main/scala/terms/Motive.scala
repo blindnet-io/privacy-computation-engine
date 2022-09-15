@@ -3,9 +3,9 @@ package priv
 package terms
 
 import cats.data.Validated
+import doobie.util.Get
 import io.circe.*
 import sttp.tapir.*
-import doobie.util.Get
 
 enum Motive(term: String) {
   case IdentityUnconfirmed extends Motive("IDENTITY-UNCONFIRMED")

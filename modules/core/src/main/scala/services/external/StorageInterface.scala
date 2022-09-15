@@ -4,6 +4,8 @@ package services.external
 import java.util.UUID
 
 import cats.effect.*
+import io.blindnet.pce.db.repositories.Repositories
+import io.blindnet.pce.model.PCEApp
 import io.circe.*
 import io.circe.syntax.*
 import org.http4s.*
@@ -12,13 +14,11 @@ import org.http4s.circe.*
 import org.http4s.client.*
 import org.http4s.client.dsl.Http4sClientDsl
 import org.http4s.implicits.*
+import org.typelevel.log4cats.*
+import org.typelevel.log4cats.slf4j.*
 import priv.*
 import config.Config
 import model.error.InternalException
-import io.blindnet.pce.db.repositories.Repositories
-import org.typelevel.log4cats.*
-import org.typelevel.log4cats.slf4j.*
-import io.blindnet.pce.model.PCEApp
 
 // TODO: refactor
 trait StorageInterface {

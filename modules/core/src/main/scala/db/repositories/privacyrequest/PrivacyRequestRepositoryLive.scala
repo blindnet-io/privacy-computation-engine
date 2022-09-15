@@ -11,8 +11,8 @@ import doobie.implicits.*
 import doobie.postgres.*
 import doobie.postgres.implicits.*
 import io.blindnet.pce.db.DbUtil.*
-import priv.privacyrequest.*
 import io.blindnet.pce.util.extension.*
+import priv.privacyrequest.*
 import priv.*
 import priv.terms.*
 import codecs.given

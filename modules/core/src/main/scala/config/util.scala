@@ -1,10 +1,10 @@
 package io.blindnet.pce
 package config
 
-import cats.implicits.*
-import com.comcast.ip4s.*
-import ciris.*
 import cats.Show
+import cats.implicits.*
+import ciris.*
+import com.comcast.ip4s.*
 import org.http4s.Uri
 
 object util {

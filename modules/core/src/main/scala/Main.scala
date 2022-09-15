@@ -3,6 +3,8 @@ package io.blindnet.pce
 import cats.data.*
 import cats.effect.*
 import cats.implicits.*
+import ch.qos.logback.core.net.server.Client
+import org.http4s.ember.client.EmberClientBuilder
 import org.typelevel.log4cats.*
 import org.typelevel.log4cats.slf4j.*
 import db.*
@@ -11,8 +13,6 @@ import requesthandlers.*
 import api.*
 import services.*
 import config.{ given, * }
-import org.http4s.ember.client.EmberClientBuilder
-import ch.qos.logback.core.net.server.Client
 import services.external.StorageInterface
 
 object Main extends IOApp {

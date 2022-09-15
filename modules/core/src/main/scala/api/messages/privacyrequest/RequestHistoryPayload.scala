@@ -6,7 +6,6 @@ import java.util.UUID
 
 import cats.effect.*
 import cats.implicits.*
-import priv.privacyrequest.PrivacyResponse
 import io.blindnet.pce.util.parsing.*
 import io.circe.*
 import io.circe.generic.semiauto.*
@@ -16,6 +15,7 @@ import sttp.tapir.generic.Configuration
 import sttp.tapir.generic.auto.*
 import sttp.tapir.json.circe.*
 import sttp.tapir.{ Schema, Validator }
+import priv.privacyrequest.PrivacyResponse
 import priv.terms.*
 
 enum PrStatus(val s: String) {

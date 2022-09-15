@@ -2,9 +2,10 @@ package io.blindnet.pce
 package model
 
 import java.util.UUID
-import org.http4s.Uri
-import doobie.util.Read
+
 import doobie.postgres.implicits.*
+import doobie.util.Read
+import org.http4s.Uri
 
 case class AutoResolve(
     transparency: Boolean,

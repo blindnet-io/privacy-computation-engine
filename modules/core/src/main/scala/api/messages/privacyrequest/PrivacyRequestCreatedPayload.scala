@@ -6,7 +6,6 @@ import java.util.UUID
 
 import cats.effect.*
 import cats.implicits.*
-import priv.terms.*
 import io.blindnet.pce.util.parsing.*
 import io.circe.*
 import io.circe.generic.semiauto.*
@@ -15,6 +14,7 @@ import org.http4s.*
 import org.http4s.circe.*
 import sttp.tapir.*
 import sttp.tapir.generic.auto.*
+import priv.terms.*
 
 case class PrivacyRequestCreatedPayload(
     requestId: UUID

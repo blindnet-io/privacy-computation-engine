@@ -9,17 +9,17 @@ import cats.data.NonEmptyList
 import cats.effect.*
 import cats.effect.std.UUIDGen
 import cats.implicits.*
+import io.blindnet.pce.model.*
 import io.blindnet.pce.model.error.*
-import priv.Recommendation
-import priv.privacyrequest.*
-import priv.terms.*
+import io.blindnet.pce.priv.DataSubject
+import io.blindnet.pce.services.external.StorageInterface
 import io.blindnet.pce.util.extension.*
 import org.typelevel.log4cats.*
 import org.typelevel.log4cats.slf4j.*
+import priv.Recommendation
+import priv.privacyrequest.*
+import priv.terms.*
 import db.repositories.Repositories
-import io.blindnet.pce.services.external.StorageInterface
-import io.blindnet.pce.priv.DataSubject
-import io.blindnet.pce.model.*
 
 // TODO: refactor
 class ResponseCalculator(

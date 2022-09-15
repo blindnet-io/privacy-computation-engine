@@ -1,10 +1,10 @@
 package io.blindnet.pce
 package config
 
-import ciris.*
-import com.comcast.ip4s.*
 import cats.Show
 import cats.implicits.*
+import ciris.*
+import com.comcast.ip4s.*
 import io.blindnet.pce.config.util.{ *, given }
 
 case class ApiConfig(

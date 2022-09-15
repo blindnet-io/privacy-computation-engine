@@ -3,9 +3,9 @@ package priv
 package terms
 
 import cats.data.Validated
+import doobie.util.Get
 import io.circe.*
 import sttp.tapir.*
-import doobie.util.Get
 
 enum Action(term: String, parent: Option[Action] = None) {
   case Access          extends Action("ACCESS")

@@ -1,6 +1,7 @@
 package io.blindnet.pce
 package db.repositories.events
 
+import java.time.Instant
 import java.util.UUID
 import javax.xml.crypto.Data
 
@@ -14,7 +15,6 @@ import doobie.postgres.implicits.*
 import priv.*
 import priv.terms.*
 import db.DbUtil
-import java.time.Instant
 
 class EventsRepositoryLive(xa: Transactor[IO]) extends EventsRepository {
 

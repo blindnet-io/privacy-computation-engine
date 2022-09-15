@@ -1,6 +1,7 @@
 package io.blindnet.pce
 package db.repositories.events
 
+import java.time.Instant
 import java.util.UUID
 
 import cats.data.NonEmptyList
@@ -13,7 +14,6 @@ import priv.privacyrequest.*
 import priv.*
 import priv.terms.*
 import codecs.given
-import java.time.Instant
 
 object queries {
 

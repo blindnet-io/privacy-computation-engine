@@ -1,13 +1,13 @@
 package io.blindnet.pce
 package priv
 
+import cats.Show
+import cats.implicits.*
+import cats.kernel.Monoid
+import io.blindnet.pce.priv.terms.*
 import io.circe.*
 import io.circe.generic.semiauto.*
 import sttp.tapir.Schema
-import cats.Show
-import cats.implicits.*
-import io.blindnet.pce.priv.terms.*
-import cats.kernel.Monoid
 
 // TODO: optimize methods
 case class PrivacyScope(

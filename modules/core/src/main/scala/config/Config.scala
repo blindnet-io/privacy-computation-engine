@@ -1,14 +1,14 @@
 package io.blindnet.pce
 package config
 
-import cats.implicits.*
-import cats.effect.*
-import ciris.*
-import org.http4s.implicits.*
-import com.comcast.ip4s.*
 import cats.Show
-import org.http4s.Uri
+import cats.effect.*
+import cats.implicits.*
+import ciris.*
+import com.comcast.ip4s.*
 import io.blindnet.pce.config.util.{ *, given }
+import org.http4s.Uri
+import org.http4s.implicits.*
 
 case class Config(
     env: AppEnvironment,

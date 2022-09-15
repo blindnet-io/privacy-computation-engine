@@ -3,10 +3,10 @@ package services.external
 
 import java.time.Instant
 
+import io.blindnet.pce.util.parsing.*
 import io.circe.*
 import io.circe.generic.semiauto.*
 import io.circe.syntax.*
-import io.blindnet.pce.util.parsing.*
 
 enum DataRequestAction {
   case GET, DELETE

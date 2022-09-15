@@ -3,9 +3,9 @@ package util
 
 import cats.*
 import cats.data.*
+import cats.effect.IO
 import cats.implicits.*
 import io.blindnet.pce.model.error.*
-import cats.effect.IO
 
 object extension {
   extension [M[_], A](m: M[Option[A]])

@@ -4,7 +4,7 @@ package terms
 
 import cats.data.Validated
 import io.circe.*
-import sttp.tapir.{ Schema, Validator, ValidationResult }
+import sttp.tapir.{Schema, ValidationResult, Validator}
 
 case class DataCategory(term: String)
 

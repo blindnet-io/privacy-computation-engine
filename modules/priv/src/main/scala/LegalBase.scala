@@ -1,13 +1,14 @@
 package io.blindnet.pce
 package priv
 
-import terms.*
+import java.util.UUID
+
+import io.blindnet.pce.util.parsing.*
 import io.circe.*
 import io.circe.generic.semiauto.*
-import io.blindnet.pce.util.parsing.*
 import sttp.tapir.*
 import sttp.tapir.generic.Configuration
-import java.util.UUID
+import terms.*
 
 case class LegalBase(
     id: UUID,

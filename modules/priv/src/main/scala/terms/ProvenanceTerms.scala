@@ -3,11 +3,8 @@ package priv
 package terms
 
 import cats.data.Validated
-import io.circe.*
-
-import cats.data.Validated
-import io.circe.*
 import doobie.util.Get
+import io.circe.*
 import sttp.tapir.{ Schema, Validator }
 
 enum ProvenanceTerms(term: String, parent: Option[ProvenanceTerms] = None) {

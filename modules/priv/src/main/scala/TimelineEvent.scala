@@ -1,9 +1,10 @@
 package io.blindnet.pce
 package priv
 
-import terms.*
 import java.time.Instant
 import java.util.UUID
+
+import terms.*
 
 enum TimelineEvent(timestamp: Instant) {
 

@@ -1,9 +1,9 @@
 package io.blindnet.pce
 package util
 
-import io.circe.*
-
 import java.util.regex.Pattern
+
+import io.circe.*
 
 object parsing {
 

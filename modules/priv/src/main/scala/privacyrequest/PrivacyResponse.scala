@@ -5,15 +5,14 @@ package privacyrequest
 import java.time.Instant
 import java.util.UUID
 
-import io.circe.Json
-import terms.*
-import cats.effect.kernel.Sync
+import cats.effect.kernel.{Clock, Sync}
 import cats.effect.std.UUIDGen
-import cats.effect.kernel.Clock
 import cats.implicits.*
-import doobie.util.Get
 import doobie.*
 import doobie.postgres.implicits.*
+import doobie.util.Get
+import io.circe.Json
+import terms.*
 
 opaque type ResponseId = UUID
 object ResponseId:

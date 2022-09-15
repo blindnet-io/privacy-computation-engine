@@ -3,10 +3,9 @@ package priv
 package terms
 
 import cats.data.Validated
-import io.circe.*
 import doobie.util.Get
-import sttp.tapir.Schema
-import sttp.tapir.Validator
+import io.circe.*
+import sttp.tapir.{Schema, Validator}
 
 case class Purpose(term: String)
 

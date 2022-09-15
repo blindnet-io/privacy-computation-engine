@@ -5,6 +5,7 @@ import java.util.UUID
 
 import cats.data.NonEmptyList
 import cats.effect.IO
+import cats.effect.kernel.Ref
 import cats.effect.std.Queue
 import doobie.*
 import doobie.implicits.*
@@ -16,7 +17,6 @@ import io.blindnet.pce.util.extension.*
 import priv.*
 import priv.privacyrequest.*
 import priv.terms.*
-import cats.effect.kernel.Ref
 
 trait CallbacksRepository {
   def set(id: UUID, appId: UUID, respEvId: ResponseEventId): IO[Unit]

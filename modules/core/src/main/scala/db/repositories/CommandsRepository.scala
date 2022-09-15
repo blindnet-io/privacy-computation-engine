@@ -6,17 +6,17 @@ import java.util.UUID
 import cats.data.NonEmptyList
 import cats.effect.IO
 import doobie.*
+import doobie.free.connection
 import doobie.implicits.*
 import doobie.postgres.*
-import doobie.postgres.implicits.*
 import doobie.postgres.circe.jsonb.implicits.*
+import doobie.postgres.implicits.*
 import doobie.util.transactor.Transactor
 import io.blindnet.pce.db.DbUtil
+import io.blindnet.pce.model.*
 import io.blindnet.pce.util.extension.*
 import priv.*
 import priv.terms.*
-import io.blindnet.pce.model.*
-import doobie.free.connection
 
 trait CommandsRepository {
   def getCreateRec(n: Int = 0): IO[List[CommandCreateRecommendation]]

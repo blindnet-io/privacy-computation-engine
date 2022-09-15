@@ -1,16 +1,17 @@
 package io.blindnet.pce
 package model
 
-import java.util.UUID
-import org.http4s.Uri
-import doobie.util.Read
-import doobie.postgres.implicits.*
-import io.circe.Json
 import java.time.Instant
-import cats.effect.std.UUIDGen
-import cats.effect.kernel.*
-import cats.implicits.*
+import java.util.UUID
+
 import cats.effect.IO
+import cats.effect.kernel.*
+import cats.effect.std.UUIDGen
+import cats.implicits.*
+import doobie.postgres.implicits.*
+import doobie.util.Read
+import io.circe.Json
+import org.http4s.Uri
 
 case class CommandCreateRecommendation(
     id: UUID,

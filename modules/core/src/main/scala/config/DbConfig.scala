@@ -1,9 +1,9 @@
 package io.blindnet.pce
 package config
 
-import ciris.*
-import cats.implicits.*
 import cats.Show
+import cats.implicits.*
+import ciris.*
 
 case class DbConfig(
     uri: String,

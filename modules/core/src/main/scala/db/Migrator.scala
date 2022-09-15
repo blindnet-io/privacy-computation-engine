@@ -1,13 +1,14 @@
 package io.blindnet.pce
 package db
 
+import javax.sql.DataSource
+
 import cats.effect.*
 import io.blindnet.pce.model.error.MigrationError
 import org.flywaydb.core.Flyway
+import org.flywaydb.core.api.configuration.FluentConfiguration
 import org.flywaydb.core.api.output.MigrateResult
 import config.DbConfig
-import javax.sql.DataSource
-import org.flywaydb.core.api.configuration.FluentConfiguration
 
 object Migrator {
 

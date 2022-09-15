@@ -1,8 +1,8 @@
 package io.blindnet.pce
 package config
 
-import ciris.*
 import cats.Show
+import ciris.*
 
 enum AppEnvironment {
   case Development

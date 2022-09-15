@@ -4,6 +4,9 @@ package services
 import java.util.UUID
 
 import cats.effect.*
+import cats.effect.std.UUIDGen
+import io.blindnet.pce.db.repositories.Repositories
+import io.blindnet.pce.util.extension.*
 import io.circe.*
 import io.circe.syntax.*
 import org.http4s.*
@@ -12,15 +15,12 @@ import org.http4s.circe.*
 import org.http4s.client.*
 import org.http4s.client.dsl.Http4sClientDsl
 import org.http4s.implicits.*
+import org.typelevel.log4cats.*
+import org.typelevel.log4cats.slf4j.*
 import priv.*
 import config.Config
 import model.error.InternalException
-import io.blindnet.pce.db.repositories.Repositories
 import api.endpoints.messages.callback.*
-import io.blindnet.pce.util.extension.*
-import cats.effect.std.UUIDGen
-import org.typelevel.log4cats.*
-import org.typelevel.log4cats.slf4j.*
 
 class CallbackHandler(repos: Repositories) {
   val logger: Logger[IO] = Slf4jLogger.getLogger[IO]

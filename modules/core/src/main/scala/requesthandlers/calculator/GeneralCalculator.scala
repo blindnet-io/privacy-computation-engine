@@ -6,7 +6,10 @@ import java.util.UUID
 
 import cats.data.{ NonEmptyList, * }
 import cats.effect.*
+import cats.effect.std.UUIDGen
 import cats.implicits.*
+import io.blindnet.pce.model.*
+import io.blindnet.pce.services.external.StorageInterface
 import io.blindnet.pce.util.extension.*
 import io.circe.generic.auto.*
 import io.circe.syntax.*
@@ -16,9 +19,6 @@ import priv.privacyrequest.*
 import priv.*
 import priv.terms.*
 import model.error.*
-import cats.effect.std.UUIDGen
-import io.blindnet.pce.services.external.StorageInterface
-import io.blindnet.pce.model.*
 
 class GeneralCalculator(
     repos: Repositories,

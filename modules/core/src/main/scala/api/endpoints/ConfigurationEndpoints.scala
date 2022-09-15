@@ -3,7 +3,9 @@ package api.endpoints
 
 import java.util.UUID
 
+import cats.data.NonEmptyList
 import cats.effect.IO
+import io.blindnet.pce.priv.{GeneralInformation, LegalBase}
 import io.circe.generic.auto.*
 import org.http4s.server.Router
 import sttp.model.StatusCode
@@ -16,9 +18,6 @@ import sttp.tapir.server.http4s.*
 import services.*
 import api.endpoints.BaseEndpoint.*
 import api.endpoints.messages.configuration.*
-import io.blindnet.pce.priv.GeneralInformation
-import io.blindnet.pce.priv.LegalBase
-import cats.data.NonEmptyList
 
 class ConfigurationEndpoints(
     configurationService: ConfigurationService

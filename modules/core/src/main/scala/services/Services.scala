@@ -3,10 +3,10 @@ package services
 
 import cats.effect.*
 import cats.effect.std.*
+import io.blindnet.pce.services.*
 import org.http4s.client.Client
 import db.repositories.Repositories
 import config.Config
-import io.blindnet.pce.services.*
 
 trait Services {
   val privacyRequest: PrivacyRequestService

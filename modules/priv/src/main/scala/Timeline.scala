@@ -3,8 +3,8 @@ package priv
 
 import java.time.Instant
 import java.util.UUID
-import io.blindnet.pce.priv.terms.LegalBaseTerms
-import io.blindnet.pce.priv.terms.DataCategory
+
+import io.blindnet.pce.priv.terms.{DataCategory, LegalBaseTerms}
 
 case class Timeline(
     events: List[TimelineEvent]

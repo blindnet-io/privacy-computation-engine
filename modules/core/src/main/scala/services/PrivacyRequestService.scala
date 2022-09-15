@@ -10,6 +10,7 @@ import cats.effect.implicits.*
 import cats.effect.kernel.Clock
 import cats.effect.std.*
 import cats.implicits.*
+import io.blindnet.pce.model.*
 import io.blindnet.pce.model.error.given
 import io.blindnet.pce.util.extension.*
 import io.circe.Json
@@ -22,7 +23,6 @@ import priv.DataSubject
 import priv.privacyrequest.{ Demand, PrivacyRequest, * }
 import priv.terms.*
 import util.*
-import io.blindnet.pce.model.*
 
 class PrivacyRequestService(
     repos: Repositories

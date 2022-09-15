@@ -3,9 +3,9 @@ package priv
 package terms
 
 import cats.data.Validated
+import doobie.util.Get
 import io.circe.*
 import sttp.tapir.*
-import doobie.util.Get
 
 enum Target(term: String, parent: Option[Target] = None) {
   case All          extends Target("*")

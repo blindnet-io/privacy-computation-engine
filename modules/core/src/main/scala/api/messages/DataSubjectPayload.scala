@@ -3,13 +3,11 @@ package api.endpoints.messages
 
 import java.util.UUID
 
-import sttp.tapir.generic.Configuration
-
 import io.circe.*
 import io.circe.generic.semiauto.*
-import java.util.UUID
-import priv.*
 import sttp.tapir.Schema
+import sttp.tapir.generic.Configuration
+import priv.*
 
 case class DataSubjectPayload(
     id: String,

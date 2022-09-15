@@ -6,6 +6,7 @@ import java.util.UUID
 
 import cats.data.{ NonEmptyList, * }
 import cats.effect.*
+import cats.effect.std.UUIDGen
 import cats.implicits.*
 import io.blindnet.pce.util.extension.*
 import io.circe.generic.auto.*
@@ -16,7 +17,6 @@ import priv.privacyrequest.*
 import priv.*
 import priv.terms.*
 import model.error.*
-import cats.effect.std.UUIDGen
 
 class TransparencyCalculator(
     repos: Repositories
