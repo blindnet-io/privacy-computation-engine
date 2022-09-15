@@ -93,7 +93,7 @@ When you're done, make sure to stop and clean up all associated docker container
 First, start a Postgres instance and populate it with test data:
 
 ```bash
-./scripts/start_dev.sh
+./scripts/start-dev.sh
 ```
 
 Then, define the required environment variables in your local environment with default values:
@@ -111,7 +111,7 @@ sbt "~core/reStart"
 When you're done, make sure to stop and clean up the database docker container with:
 
 ```bash
-./scripts/stop_dev.sh
+./scripts/stop-dev.sh
 ```
 
 ### Environment Variables
