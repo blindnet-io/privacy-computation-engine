@@ -42,27 +42,35 @@ class PrivacyRequestEndpoints(
       .description("Get history of privacy requests")
       .get
       .in("history")
+      // TODO: remove when auth
+      .in(header[String]("Authorization"))
       .out(jsonBody[RequestHistoryPayload])
-      .serverLogicSuccess(_ => reqService.getRequestHistory(appId, userId))
+      .serverLogicSuccess(uId => reqService.getRequestHistory(appId, uId))
 
   val getReqStatus =
     base
       .description("Get privacy request status")
       .get
       .in(path[UUID]("requestId"))
+      // TODO: remove when auth
+      .in(header[String]("Authorization"))
       .out(jsonBody[List[PrivacyResponsePayload]])
       .errorOut(statusCode(StatusCode.UnprocessableEntity))
       .errorOut(statusCode(StatusCode.NotFound))
-      .serverLogicSuccess(reqId => reqService.getResponse(PrivReqId(reqId), appId, Some(userId)))
+      .serverLogicSuccess(
+        (reqId, uId) => reqService.getResponse(PrivReqId(reqId), appId, Some(uId))
+      )
 
   val cancelDemand =
     base
       .description("Cancel a pending demand")
       .post
       .in("cancel")
+      // TODO: remove when auth
+      .in(header[String]("Authorization"))
       .in(jsonBody[CancelDemandPayload])
       .errorOut(statusCode(StatusCode.UnprocessableEntity))
-      .serverLogicSuccess(req => reqService.cancelDemand(req, appId, userId))
+      .serverLogicSuccess((uId, req) => reqService.cancelDemand(req, appId, uId))
 
   val endpoints = List(createPrivacyRequest, getRequestHistory, getReqStatus, cancelDemand)
 

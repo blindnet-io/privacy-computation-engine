@@ -57,8 +57,7 @@ object StorageInterface {
           request_id = demandId.toString(),
           DataQueryPayload(
             selectors = rec.dataCategories.map(_.term).toList,
-            // subjects = List(subject.id),
-            subjects = List("john.doe@example.com"),
+            subjects = List(subject.id),
             provenance = rec.provenance.map(_.encode),
             target = rec.target.map(_.encode),
             after = rec.dateFrom,
