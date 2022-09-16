@@ -39,7 +39,7 @@ case class CreateLegalBasePayload(
     @description("legal base description")
     @encodedExample("Collection of the contact data for advertising")
     description: Option[String],
-    @description("legal base description")
+    @description("privacy scope of the legal base")
     // format: off
     @encodedExample(Set(ScopePayload(DataCategory("CONTACT"), ProcessingCategory("COLLECTION"), Purpose("ADVERTISING"))).asJson)
     // format: on
