@@ -20,6 +20,8 @@ import sttp.tapir.swagger.*
 import sttp.tapir.swagger.bundle.*
 import endpoints.*
 import services.Services
+import sttp.apispec.Tag
+import sttp.apispec.ExternalDocumentation
 
 object AppRouter {
   def make(services: Services) = new AppRouter(services)
@@ -27,21 +29,20 @@ object AppRouter {
 
 class AppRouter(services: Services) {
 
-  val healthCheckEndpoints = new HealthCheckEndpoints().endpoints
-
-  val privacyRequestEndpoints    = new PrivacyRequestEndpoints(services.privacyRequest).endpoints
-  val consumerInterfaceEndpoints = new DataConsumerEndpoints(services.consumerInterface).endpoints
-  val configurationEndpoints     = new ConfigurationEndpoints(services.configuration).endpoints
-  val userEventsEndpoints        = new UserEventsEndpoints(services.userEvents).endpoints
-  val callbackEndpoints          = new CallbackEndpoints(services.callbacks).endpoints
+  val healthCheckEndpoints       = new HealthCheckEndpoints()
+  val privacyRequestEndpoints    = new PrivacyRequestEndpoints(services.privacyRequest)
+  val consumerInterfaceEndpoints = new DataConsumerEndpoints(services.consumerInterface)
+  val configurationEndpoints     = new ConfigurationEndpoints(services.configuration)
+  val userEventsEndpoints        = new UserEventsEndpoints(services.userEvents)
+  val callbackEndpoints          = new CallbackEndpoints(services.callbacks)
 
   val allEndpoints =
-    healthCheckEndpoints ++
-      privacyRequestEndpoints ++
-      consumerInterfaceEndpoints ++
-      configurationEndpoints ++
-      userEventsEndpoints ++
-      callbackEndpoints
+    healthCheckEndpoints.endpoints ++
+      privacyRequestEndpoints.endpoints ++
+      consumerInterfaceEndpoints.endpoints ++
+      configurationEndpoints.endpoints ++
+      userEventsEndpoints.endpoints ++
+      callbackEndpoints.endpoints
 
   // val docs: OpenAPI =
   //   OpenAPIDocsInterpreter()
@@ -53,8 +54,18 @@ class AppRouter(services: Services) {
 
   // println(docs.toYaml)
 
+  val tags = List(
+    Tag(
+      configurationEndpoints.Tag,
+      externalDocs = Some(ExternalDocumentation(configurationEndpoints.DocsUri, Some("docs")))
+    )
+  )
+
   val swagger =
-    SwaggerInterpreter(swaggerUIOptions = SwaggerUIOptions.default.pathPrefix(List("swagger")))
+    SwaggerInterpreter(
+      swaggerUIOptions = SwaggerUIOptions.default.pathPrefix(List("swagger")),
+      customiseDocsModel = _.tags(tags)
+    )
       .fromServerEndpoints[IO](
         allEndpoints,
         "Privacy computation engine",
