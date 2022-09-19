@@ -40,7 +40,9 @@ class DataConsumerInterfaceService(
         case Some(ids) => repos.privacyRequest.getRequests(ids)
       }
 
-      res = (demands.sortBy(_.reqId) zip reqs.sortBy(_.id)).map(PendingDemandPayload.fromPrivDemand)
+      res = demands.flatMap(
+        d => reqs.find(_.id == d.reqId).map(PendingDemandPayload.fromPrivDemand(d, _))
+      )
     } yield res
   }
 
