@@ -18,6 +18,7 @@ import sttp.tapir.server.http4s.*
 import services.*
 import api.endpoints.BaseEndpoint.*
 import api.endpoints.messages.configuration.*
+import io.blindnet.pce.model.DemandResolutionStrategy
 
 class ConfigurationEndpoints(
     configurationService: ConfigurationService
@@ -46,6 +47,22 @@ class ConfigurationEndpoints(
       .in("general-info")
       .in(jsonBody[GeneralInformation])
       .serverLogicSuccess(req => configurationService.updateGeneralInfo(appId, req))
+
+  val getDemandResolutionStrategy =
+    base
+      .description("Get information about demand resolution strategies")
+      .get
+      .in("demand-resolution-strategy")
+      .out(jsonBody[DemandResolutionStrategy])
+      .serverLogicSuccess(_ => configurationService.getDemandResolutionStrategy(appId))
+
+  val updateAutomaticResolution =
+    base
+      .description("Update demand resolution strategies")
+      .put
+      .in("demand-resolution-strategy")
+      .in(jsonBody[DemandResolutionStrategy])
+      .serverLogicSuccess(req => configurationService.updateDemandResolutionStrategy(appId, req))
 
   val getPrivacyScopeDimensions =
     base
@@ -178,7 +195,9 @@ class ConfigurationEndpoints(
     getAllRegulations,
     getAppRegulations,
     addRegulation,
-    deleteRegulation
+    deleteRegulation,
+    getDemandResolutionStrategy,
+    updateAutomaticResolution
   )
 
 }
