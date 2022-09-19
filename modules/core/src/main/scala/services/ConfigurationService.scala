@@ -24,6 +24,7 @@ import model.error.*
 import priv.privacyrequest.{ Demand, PrivacyRequest, * }
 import priv.*
 import priv.terms.*
+import io.blindnet.pce.model.DemandResolutionStrategy
 
 class ConfigurationService(
     repos: Repositories
@@ -36,6 +37,15 @@ class ConfigurationService(
 
   def updateGeneralInfo(appId: UUID, gi: GeneralInformation) =
     repos.generalInfo.upsert(appId, gi)
+
+  def getDemandResolutionStrategy(appId: UUID) =
+    repos.app
+      .get(appId)
+      .orFail(s"General info for app $appId not found")
+      .map(_.resolutionStrategy)
+
+  def updateDemandResolutionStrategy(appId: UUID, drs: DemandResolutionStrategy) =
+    repos.app.updateReslutionStrategy(appId, drs)
 
   def getPrivacyScopeDimensions(appId: UUID) =
     for {
