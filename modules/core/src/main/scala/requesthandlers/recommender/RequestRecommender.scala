@@ -161,12 +161,13 @@ class RequestRecommender(
   private def complete(app: PCEApp, d: Demand) =
     val auto: Boolean =
       d.action match {
-        case a if a == Transparency || a.isChildOf(Transparency) => app.autoResolve.transparency
-        case Access                                              => app.autoResolve.access
-        case Delete                                              => app.autoResolve.delete
-        case RevokeConsent                                       => app.autoResolve.consents
-        case Object | Restrict                                   => app.autoResolve.consents
-        case _                                                   => false
+        case a if a == Transparency || a.isChildOf(Transparency) =>
+          app.resolutionStrategy.isAutoTransparency
+        case Access            => app.resolutionStrategy.isAutoAccess
+        case Delete            => app.resolutionStrategy.isAutoDelete
+        case RevokeConsent     => app.resolutionStrategy.isAutoConsents
+        case Object | Restrict => app.resolutionStrategy.isAutoConsents
+        case _                 => false
       }
 
     if auto then
