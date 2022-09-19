@@ -24,7 +24,10 @@ class ConfigurationEndpoints(
 ) {
   given Configuration = Configuration.default.withSnakeCaseMemberNames
 
-  val base = baseEndpoint.in("configure").tag("Configuration")
+  val Tag     = "Configuration"
+  val DocsUri = "https://blindnet.dev/docs/computation/configuration"
+
+  val base = baseEndpoint.in("configure").tag(Tag)
 
   val appId = UUID.fromString("6f083c15-4ada-4671-a6d1-c671bc9105dc")
 
