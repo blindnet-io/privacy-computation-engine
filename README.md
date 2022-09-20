@@ -88,6 +88,18 @@ When you're done, make sure to stop and clean up all associated docker container
 >
 > Environment variables are defined in the `.env` file.
 
+### Configuration
+
+Configuration of the PCE can be achieved using its Configuration API. Refer to the [associated section of the documentation](https://blindnet.dev/docs/computation/configuration) for more information.
+
+A default configuration with example values can be found in the [`init-config.sh`](./scripts/init-config.sh) script.
+
+Change the values in this example to fit your specific needs, then run it:
+
+```bash
+./scripts/init-config.sh
+```
+
 ### Development
 
 First, start a Postgres instance and populate it with test data:
@@ -113,6 +125,11 @@ When you're done, make sure to stop and clean up the database docker container w
 ```bash
 ./scripts/stop-dev.sh
 ```
+
+> **Note**
+>
+> When run in development mode, the PCE database is automatically populated with a default configuration.
+> See [./scripts/insert-dev.sql](./scripts/insert-dev.sql) for details.
 
 ### Environment Variables
 
