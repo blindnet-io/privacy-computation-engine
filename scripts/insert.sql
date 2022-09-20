@@ -5,7 +5,7 @@ insert into dac values ('6f083c15-4ada-4671-a6d1-c671bc9105dc', true, 'https://t
 insert into automatic_responses_config values ('6f083c15-4ada-4671-a6d1-c671bc9105dc', true, true, true, false);
 
 insert into general_information values
-('0a32d896-702a-49c7-b063-ec7a76f1de0d', '6f083c15-4ada-4671-a6d1-c671bc9105dc', 'blindnet', 'dpo@fakemail.me', array ['France', 'USA'], array [['Blindnet account managers', 'Blindnet\'s DPO']], array [], 'https://blindnet.io/privacy', 'We use administrative, technical, and physical safeguards to protect your personal data, taking into account the nature of the personal data and the processing, and the threats posed.');
+('0a32d896-702a-49c7-b063-ec7a76f1de0d', '6f083c15-4ada-4671-a6d1-c671bc9105dc', 'blindnet', 'dpo@fakemail.me', array ['France', 'USA'], array ['Blindnet account managers', 'Blindnet DPO'], array [''], 'https://blindnet.io/privacy', 'We use administrative, technical, and physical safeguards to protect your personal data, taking into account the nature of the personal data and the processing, and the threats posed.');
 
 -- data subject
 
