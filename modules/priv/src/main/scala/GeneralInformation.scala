@@ -1,9 +1,12 @@
 package io.blindnet.pce
 package priv
 
+import io.blindnet.pce.util.parsing.*
 import sttp.tapir.Schema
 import sttp.tapir.Schema.annotations.*
 import sttp.tapir.generic.Configuration
+import io.circe.*
+import io.circe.generic.semiauto.*
 
 case class GeneralInformation(
     @description(
@@ -24,8 +27,6 @@ case class GeneralInformation(
     )
     @encodedExample(List("Blindnet account managers", "Blindnet's DPO"))
     dataConsumerCategories: List[String],
-    // FIXME: to be removed until it is actually used
-    accessPolicies: List[String],
     @description("public URL where your Privacy Policy can be consulted")
     @encodedExample("https://blindnet.io/privacy")
     privacyPolicyLink: Option[String],
@@ -39,6 +40,9 @@ case class GeneralInformation(
 )
 
 object GeneralInformation {
+  given Decoder[GeneralInformation] = unSnakeCaseIfy(deriveDecoder[GeneralInformation])
+  given Encoder[GeneralInformation] = snakeCaseIfy(deriveEncoder[GeneralInformation])
+
   given Schema[GeneralInformation] =
     Schema.derived[GeneralInformation](using Configuration.default.withSnakeCaseMemberNames)
 

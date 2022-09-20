@@ -27,7 +27,7 @@ object GeneralInfoRepository {
     new GeneralInfoRepository {
       def get(appId: UUID): IO[Option[GeneralInformation]] =
         sql"""
-          select countries, organization, dpo, data_consumer_categories, access_policies, privacy_policy_link, data_security_information
+          select countries, organization, dpo, data_consumer_categories, privacy_policy_link, data_security_information
           from general_information
           where appid = $appId
         """
@@ -42,7 +42,8 @@ object GeneralInfoRepository {
           sql"""
             insert into general_information
             values (gen_random_uuid(), $appId, ${gi.organization}, ${gi.dpo}, ${gi.countries},
-            ${gi.dataConsumerCategories}, ${gi.accessPolicies}, ${gi.privacyPolicyLink}, ${gi.dataSecurityInfo})
+            ${gi.dataConsumerCategories}, ${List("")}, ${gi.privacyPolicyLink},
+            ${gi.dataSecurityInfo})
           """.update.run
 
         (del *> insert).transact(xa).void
