@@ -12,6 +12,7 @@ import doobie.postgres.implicits.*
 import doobie.util.transactor.Transactor
 import priv.*
 import priv.terms.*
+import cats.data.NonEmptyList
 
 trait LegalBaseRepository {
   def get(appId: UUID, scope: Boolean = true): IO[List[LegalBase]]
@@ -19,6 +20,8 @@ trait LegalBaseRepository {
   def get(appId: UUID, ds: DataSubject): IO[List[LegalBase]]
 
   def get(appId: UUID, lbId: UUID, scope: Boolean): IO[Option[LegalBase]]
+
+  def get(appId: UUID, lbId: NonEmptyList[UUID]): IO[List[LegalBase]]
 
   def add(appId: UUID, lb: LegalBase): IO[Unit]
 
@@ -111,6 +114,23 @@ object LegalBaseRepository {
         val res = if scope then qWithPS else qNoPS
 
         res.option.transact(xa)
+      }
+
+      def get(appId: UUID, lbId: NonEmptyList[UUID]): IO[List[LegalBase]] = {
+        val q =
+          sql"""
+            select id, type, name, description, active
+            from legal_bases
+            where appid = $appId and
+          """ ++ Fragments.in(fr"id", lbId)
+
+        q.query[(UUID, LegalBaseTerms, Option[String], Option[String], Boolean)]
+          .map {
+            case (id, lbType, name, desc, active) =>
+              LegalBase(id, lbType, PrivacyScope.empty, name, desc, active)
+          }
+          .to[List]
+          .transact(xa)
       }
 
       def add(appId: UUID, lb: LegalBase): IO[Unit] = {

@@ -34,6 +34,7 @@ class AppRouter(services: Services) {
   val consumerInterfaceEndpoints = new DataConsumerEndpoints(services.consumerInterface)
   val configurationEndpoints     = new ConfigurationEndpoints(services.configuration)
   val userEventsEndpoints        = new UserEventsEndpoints(services.userEvents)
+  val userEndpoints              = new UserEndpoints(services.user)
   val callbackEndpoints          = new CallbackEndpoints(services.callbacks)
 
   val allEndpoints =
@@ -42,6 +43,7 @@ class AppRouter(services: Services) {
       consumerInterfaceEndpoints.endpoints ++
       configurationEndpoints.endpoints ++
       userEventsEndpoints.endpoints ++
+      userEndpoints.endpoints ++
       callbackEndpoints.endpoints
 
   // val docs: OpenAPI =

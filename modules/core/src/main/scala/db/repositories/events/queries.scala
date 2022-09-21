@@ -35,6 +35,21 @@ object queries {
       .query[TimelineEvent.LegalBase]
       .to[List]
 
+  def getLegalBaseEventsNoScope(ds: DataSubject) =
+    sql"""
+      select lb.id as lbid, lb."type" as lbtype, lbe."date" as "date", lbe."event" as "event"
+      from legal_base_events lbe
+        join legal_bases lb on lb.id = lbe.lbid
+      where lbe.dsid = ${ds.id} and lbe.appid = ${ds.appId}
+      order by lbe."date" asc
+    """
+      .query[(UUID, LegalBaseTerms, Instant, EventTerms)]
+      .map {
+        case (lbid, lbType, date, event) =>
+          TimelineEvent.LegalBase(lbid, event, lbType, date, PrivacyScope.empty)
+      }
+      .to[List]
+
   def getConsentGivenEvents(ds: DataSubject) =
     sql"""
       select cge.id as id, lb.id as lbid, cge."date" as "date",
@@ -51,6 +66,21 @@ object queries {
       order by cge."date" asc
     """
       .query[TimelineEvent.ConsentGiven]
+      .to[List]
+
+  def getConsentGivenEventsNoScope(ds: DataSubject) =
+    sql"""
+      select lb.id as lbid, cge."date" as "date"
+      from consent_given_events cge
+        join legal_bases lb on lb.id = cge.lbid
+      where cge.dsid = ${ds.id} and cge.appid = ${ds.appId}
+      order by cge."date" asc
+    """
+      .query[(UUID, Instant)]
+      .map {
+        case (lbid, date) =>
+          TimelineEvent.ConsentGiven(lbid, date, PrivacyScope.empty)
+      }
       .to[List]
 
   def getConsentRevokedEvents(ds: DataSubject) =

@@ -10,16 +10,16 @@ case class Timeline(
     events: List[TimelineEvent]
 ) {
 
+  import TimelineEvent.*
+  import terms.EventTerms.*
+  import terms.LegalBaseTerms.*
+
   def filteredByTime(t: Instant) = events.filter(_.getTimestamp.isBefore(t))
 
   def compiledEvents(
       timestamp: Option[Instant] = None,
       regulations: List[Regulation] = List.empty
   ): List[TimelineEvent] = {
-
-    import TimelineEvent.*
-    import terms.EventTerms.*
-    import terms.LegalBaseTerms.*
 
     case class Acc(
         objectScope: PrivacyScope,
@@ -115,6 +115,12 @@ case class Timeline(
       regulations: List[Regulation] = List.empty
   ): PrivacyScope =
     Timeline.eligiblePrivacyScope(compiledEvents(timestamp, regulations))
+
+  def getConsentGivenEvents(timestamp: Option[Instant] = None): List[ConsentGiven] =
+    compiledEvents(timestamp).flatMap {
+      case e: ConsentGiven => Some(e)
+      case _               => None
+    }
 
 }
 
