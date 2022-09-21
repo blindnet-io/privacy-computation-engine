@@ -20,6 +20,8 @@ import priv.TimelineEvent.*
 trait EventsRepository {
   def getTimeline(ds: DataSubject, ctx: PSContext): IO[Timeline]
 
+  def getTimelineNoScope(ds: DataSubject): IO[Timeline]
+
   def addConsentGiven(cId: UUID, ds: DataSubject, date: Instant): IO[Unit]
 
   def addConsentRevoked(cId: UUID, ds: DataSubject, date: Instant): IO[Unit]

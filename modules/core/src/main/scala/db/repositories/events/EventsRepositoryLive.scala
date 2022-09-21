@@ -32,6 +32,18 @@ class EventsRepositoryLive(xa: Transactor[IO]) extends EventsRepository {
     res.transact(xa)
   }
 
+  def getTimelineNoScope(ds: DataSubject): IO[Timeline] = {
+    val res =
+      for {
+        lbEvents <- queries.getLegalBaseEventsNoScope(ds)
+        cgEvents <- queries.getConsentGivenEventsNoScope(ds)
+        crEvents <- queries.getConsentRevokedEvents(ds)
+        allEvents = (lbEvents ++ cgEvents ++ crEvents).sortBy(_.getTimestamp)
+      } yield Timeline.create(allEvents)(PSContext.empty)
+
+    res.transact(xa)
+  }
+
   def addConsentGiven(cId: UUID, ds: DataSubject, date: Instant): IO[Unit] =
     queries.addConsentGiven(cId, ds, date).transact(xa).void
 
