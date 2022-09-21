@@ -34,10 +34,8 @@ services:
       - -c
       - |
         apk --no-cache add postgresql13-client
-        psql postgresql://${pg_user}:${pg_pass}@db:5432/${pg_db_name} -f /sql/insert.sql
         psql postgresql://${pg_user}:${pg_pass}@db:5432/${pg_db_name} -f /sql/insert-dev.sql
     volumes:
-      - ./scripts/insert.sql:/sql/insert.sql:ro
       - ./scripts/insert-dev.sql:/sql/insert-dev.sql:ro
     depends_on:
       migrate:

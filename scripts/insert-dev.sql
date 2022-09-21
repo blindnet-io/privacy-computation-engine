@@ -1,5 +1,17 @@
+-- app
+
+insert into apps values ('6f083c15-4ada-4671-a6d1-c671bc9105dc');
+
+insert into dac values ('6f083c15-4ada-4671-a6d1-c671bc9105dc', true, 'https://test');
+
+insert into automatic_responses_config values ('6f083c15-4ada-4671-a6d1-c671bc9105dc', true, true, true, false);
+
 insert into general_information values
 ('0a32d896-702a-49c7-b063-ec7a76f1de0d', '6f083c15-4ada-4671-a6d1-c671bc9105dc', 'blindnet', 'dpo@fakemail.me', array ['France', 'USA'], array ['dc cat 1', 'dc cat 2'], array ['policy 1', 'policy 2'], 'https://blindnet.io/privacy', 'your data is secure');
+
+-- data subject
+
+insert into data_subjects values ('fdfc95a6-8fd8-4581-91f7-b3d236a6a10e', '6f083c15-4ada-4671-a6d1-c671bc9105dc', null);
 
 -- selectors
 
@@ -60,6 +72,12 @@ values ('28b5bee0-9db8-40ec-840e-64eafbfb9ddd', (
 	join processing_purposes pp on pp.id = s.ppid
 	where dc.term = 'OTHER-DATA.PROOF' and pc.term='*' and pp.term = '*')
 );
+
+-- events
+
+insert into consent_given_events (id, lbid, dsid, appid, date) values
+(gen_random_uuid(), '28b5bee0-9db8-40ec-840e-64eafbfb9ddd', 'fdfc95a6-8fd8-4581-91f7-b3d236a6a10e', '6f083c15-4ada-4671-a6d1-c671bc9105dc',  LOCALTIMESTAMP - INTERVAL '185 DAY');
+
 
 -- regulations
 
