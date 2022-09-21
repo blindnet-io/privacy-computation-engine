@@ -22,7 +22,10 @@ case class GeneralInformation(
     )
     @encodedExample("Vuk Janosevic, www.blindnet.io/privacy-request-builder")
     dpo: String,
-    @encodedExample("Blindnet account managers, and Blindnet's DPO")
+    @description(
+      "list of unique descriptive identifiers of Data Consumer Categories"
+    )
+    @encodedExample(List("Blindnet account managers", "Blindnet's DPO"))
     dataConsumerCategories: List[String],
     @description("public URL where your Privacy Policy can be consulted")
     @encodedExample("https://blindnet.io/privacy")
