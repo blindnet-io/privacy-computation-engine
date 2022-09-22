@@ -60,23 +60,26 @@ To run the Privacy Computation Engine locally, make sure you have installed the 
 
 ### Run Locally
 
-In the root directory, run the following `sbt` command to create a docker image for the application:
+The [`scripts/start.sh`](./scripts/start.sh) script includes every required step to build and run the Privacy Configuration Engine locally:
 
-```bash
-sbt docker:publishLocal
-```
+1. build the application and create a docker image with `sbt`
+1. start a Postgres instance
+1. execute database migrations
+1. run the Privacy Computation Engine
 
-Then, run the `scripts/start.sh` script to start a Postgres instance, execute database migrations and run the Privacy Computation Engine:
+You only need to run it from the root directory:
 
 ```bash
 ./scripts/start.sh
 ```
 
-Finally, after this script has been executed successfully, you can verify the service is running and available by calling:
+After this script has been executed successfully, you can verify the service is running and available by calling:
 
 ```bash
 curl -v localhost:9000/v0/health
 ```
+
+From there, you only need to [configure](#configuration) your PCE instance.
 
 When you're done, make sure to stop and clean up all associated docker containers with:
 
