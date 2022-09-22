@@ -1,3 +1,3 @@
 #!/bin/sh
 
-docker compose -f docker-compose.yml -f docker-compose.app.yml up -d --wait
+docker compose -f docker-compose.yml up -d --wait

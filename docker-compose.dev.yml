@@ -27,36 +27,16 @@ services:
       db:
         condition: service_healthy
 
-  insert_initial_data:
+  insert_test_data:
     image: alpine:3.16
     command:
       - /bin/sh
       - -c
       - |
         apk --no-cache add postgresql13-client
-        psql postgresql://${pg_user}:${pg_pass}@db:5432/${pg_db_name} -f /sql/insert.sql
+        psql postgresql://${pg_user}:${pg_pass}@db:5432/${pg_db_name} -f /sql/insert-dev.sql
     volumes:
-      - ./scripts/insert.sql:/sql/insert.sql:ro
+      - ./scripts/insert-dev.sql:/sql/insert-dev.sql:ro
     depends_on:
       migrate:
         condition: service_completed_successfully
-  
-  pce:
-    image: pce:latest
-    ports:
-      - ${pce_api_port}:${pce_api_port}
-    environment:
-      - API_HOST=${pce_api_host}
-      - API_PORT=${pce_api_port}
-      - DB_URI=jdbc:postgresql://db:5432/${pg_db_name}
-      - DB_USER=${pg_user}
-      - DB_PASS=${pg_pass}
-      - APP_CALLBACK_URI=${pce_callback_uri}
-    depends_on:
-      insert_initial_data:
-        condition: service_completed_successfully
-    healthcheck:
-      test: curl --fail localhost:9000/v0/health || exit 1
-      interval: 5s
-      timeout: 5s
-      retries: 10
