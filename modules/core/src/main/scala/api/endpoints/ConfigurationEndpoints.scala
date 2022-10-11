@@ -2,10 +2,9 @@ package io.blindnet.pce
 package api.endpoints
 
 import java.util.UUID
-
 import cats.data.NonEmptyList
 import cats.effect.IO
-import io.blindnet.pce.priv.{ GeneralInformation, LegalBase }
+import io.blindnet.pce.priv.{GeneralInformation, LegalBase}
 import io.circe.generic.auto.*
 import org.http4s.server.Router
 import sttp.model.StatusCode
@@ -18,166 +17,167 @@ import sttp.tapir.server.http4s.*
 import services.*
 import api.endpoints.BaseEndpoint.*
 import api.endpoints.messages.configuration.*
+import io.blindnet.identityclient.auth.*
 import io.blindnet.pce.model.DemandResolutionStrategy
 
 class ConfigurationEndpoints(
+    authenticator: JwtAuthenticator[Jwt],
     configurationService: ConfigurationService
-) {
+) extends Endpoints(authenticator) {
   given Configuration = Configuration.default.withSnakeCaseMemberNames
 
   val Tag     = "Configuration"
   val DocsUri = "https://blindnet.dev/docs/computation/configuration"
 
-  val base = baseEndpoint.in("configure").tag(Tag)
-
-  val appId = UUID.fromString("6f083c15-4ada-4671-a6d1-c671bc9105dc")
+  override def mapEndpoint(endpoint: EndpointT): EndpointT =
+    endpoint.in("configure").tag(Tag)
 
   val getGeneralInfo =
-    base
+    appAuthEndpoint
       .description("Get general information about the app")
       .get
       .in("general-info")
       .out(jsonBody[GeneralInformation])
-      .serverLogicSuccess(_ => configurationService.getGeneralInfo(appId))
+      .serverLogicSuccess(configurationService.getGeneralInfo)
 
   val updateGeneralInfo =
-    base
+    appAuthEndpoint
       .description("Update general information about the app")
       .put
       .in("general-info")
       .in(jsonBody[GeneralInformation])
-      .serverLogicSuccess(req => configurationService.updateGeneralInfo(appId, req))
+      .serverLogicSuccess(configurationService.updateGeneralInfo)
 
   val getDemandResolutionStrategy =
-    base
+    appAuthEndpoint
       .description("Get information about demand resolution strategies")
       .get
       .in("demand-resolution-strategy")
       .out(jsonBody[DemandResolutionStrategy])
-      .serverLogicSuccess(_ => configurationService.getDemandResolutionStrategy(appId))
+      .serverLogicSuccess(configurationService.getDemandResolutionStrategy)
 
   val updateAutomaticResolution =
-    base
+    appAuthEndpoint
       .description("Update demand resolution strategies")
       .put
       .in("demand-resolution-strategy")
       .in(jsonBody[DemandResolutionStrategy])
-      .serverLogicSuccess(req => configurationService.updateDemandResolutionStrategy(appId, req))
+      .serverLogicSuccess(configurationService.updateDemandResolutionStrategy)
 
   val getPrivacyScopeDimensions =
-    base
+    appAuthEndpoint
       .description("Get data categories, processing categories and purposes")
       .get
       .in("privacy-scope-dimensions")
       .out(jsonBody[PrivacyScopeDimensionsPayload])
-      .serverLogicSuccess(req => configurationService.getPrivacyScopeDimensions(appId))
+      .serverLogicSuccess(configurationService.getPrivacyScopeDimensions)
 
   val addSelectors =
-    base
+    appAuthEndpoint
       .description("Add selectors")
       .put
       .in("selectors")
       .in(jsonBody[List[CreateSelectorPayload]])
-      .serverLogicSuccess(req => configurationService.addSelectors(appId, req))
+      .serverLogicSuccess(configurationService.addSelectors)
 
   val getLegalBases =
-    base
+    appAuthEndpoint
       .description("Get the list of legal bases")
       .get
       .in("legal-bases")
       .out(jsonBody[List[LegalBase]])
-      .serverLogicSuccess(req => configurationService.getLegalBases(appId))
+      .serverLogicSuccess(configurationService.getLegalBases)
 
   val getLegalBase =
-    base
+    appAuthEndpoint
       .description("Get a legal bases")
       .get
       .in("legal-bases")
       .in(path[UUID]("legalBaseId"))
       .out(jsonBody[LegalBase])
-      .serverLogicSuccess(lbId => configurationService.getLegalBase(appId, lbId))
+      .serverLogicSuccess(configurationService.getLegalBase)
 
   val createLegalBase =
-    base
+    appAuthEndpoint
       .description("Create new legal bases")
       .put
       .in("legal-bases")
       .in(jsonBody[CreateLegalBasePayload])
       .out(stringBody)
-      .serverLogicSuccess(req => configurationService.createLegalBase(appId, req))
+      .serverLogicSuccess(configurationService.createLegalBase)
 
   val addRetentionPolicies =
-    base
+    appAuthEndpoint
       .description("Create retention policies for data categories")
       .put
       .in("retention-policies")
       .in(jsonBody[List[CreateRetentionPolicyPayload]])
-      .serverLogicSuccess(req => configurationService.addRetentionPolicies(appId, req))
+      .serverLogicSuccess(configurationService.addRetentionPolicies)
 
   val deleteRetentionPolicy =
-    base
+    appAuthEndpoint
       .description("Delete retention policy")
       .delete
       .in("retention-policies")
       .in(path[UUID]("retentionPolicyId"))
-      .serverLogicSuccess(id => configurationService.deleteRetentionPolicy(appId, id))
+      .serverLogicSuccess(configurationService.deleteRetentionPolicy)
 
   val addProvenances =
-    base
+    appAuthEndpoint
       .description("Create provenances for data categories")
       .put
       .in("provenances")
       .in(jsonBody[List[CreateProvenancePayload]])
-      .serverLogicSuccess(req => configurationService.addProvenances(appId, req))
+      .serverLogicSuccess(configurationService.addProvenances)
 
   val deleteProvenance =
-    base
+    appAuthEndpoint
       .description("Delete provenance")
       .delete
       .in("provenances")
       .in(path[UUID]("provenanceId"))
-      .serverLogicSuccess(id => configurationService.deleteProvenance(appId, id))
+      .serverLogicSuccess(configurationService.deleteProvenance)
 
   def getDataCategories =
-    base
+    appAuthEndpoint
       .description("Get data categories with retention policies and provenances")
       .get
       .in("data-categories")
       .out(jsonBody[List[DataCategoryResponsePayload]])
-      .serverLogicSuccess(_ => configurationService.getDataCategories(appId))
+      .serverLogicSuccess(configurationService.getDataCategories)
 
   def getAllRegulations =
-    base
+    appAuthEndpoint
       .description("Get all regulations")
       .get
       .in("regulations")
       .out(jsonBody[List[RegulationResponsePayload]])
-      .serverLogicSuccess(_ => configurationService.getAllRegulations())
+      .serverLogicSuccess(configurationService.getAllRegulations)
 
   def getAppRegulations =
-    base
+    appAuthEndpoint
       .description("Get regulations applied to the users of the app")
       .get
       .in("regulations")
       .in("app")
       .out(jsonBody[List[RegulationResponsePayload]])
-      .serverLogicSuccess(_ => configurationService.getAppRegulations(appId))
+      .serverLogicSuccess(configurationService.getAppRegulations)
 
   val addRegulation =
-    base
+    appAuthEndpoint
       .description("Assign regulation to an app")
       .put
       .in("regulations")
       .in(jsonBody[AddRegulationsPayload])
-      .serverLogicSuccess(req => configurationService.addRegulations(appId, req))
+      .serverLogicSuccess(configurationService.addRegulations)
 
   val deleteRegulation =
-    base
+    appAuthEndpoint
       .description("Delete regulation assigned to an app")
       .delete
       .in("regulations")
       .in(path[UUID]("regulationId"))
-      .serverLogicSuccess(id => configurationService.deleteRegulation(appId, id))
+      .serverLogicSuccess(configurationService.deleteRegulation)
 
   val endpoints = List(
     getGeneralInfo,

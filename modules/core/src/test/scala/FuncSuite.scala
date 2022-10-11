@@ -2,25 +2,25 @@ package io.blindnet.pce
 
 import java.time.Instant
 import java.util.UUID
-
 import weaver.*
-import com.dimafeng.testcontainers.{ Container, ForAllTestContainer, PostgreSQLContainer }
+import com.dimafeng.testcontainers.{Container, ForAllTestContainer, PostgreSQLContainer}
 import org.testcontainers.utility.DockerImageName
 import doobie.util.transactor.Transactor
-import cats.effect.{ Resource, Sync }
+import cats.effect.{Resource, Sync}
 import cats.syntax.all.*
 import cats.effect.IO
 import org.http4s.client.*
 import org.http4s.ember.client.EmberClientBuilder
 import io.blindnet.pce.db.repositories.Repositories
 import io.blindnet.pce.db.Migrator
+
 import javax.sql.DataSource
 import doobie.*
 import doobie.implicits.*
 import doobie.postgres.*
 import doobie.postgres.implicits.*
-import fs2.{ text }
-import fs2.io.file.{ Files, Path }
+import fs2.text
+import fs2.io.file.{Files, Path}
 import io.blindnet.pce.services.Services
 import io.blindnet.pce.config.*
 import org.http4s.*
@@ -28,6 +28,8 @@ import io.blindnet.pce.priv.DataSubject
 import com.comcast.ip4s.*
 import io.blindnet.pce.api.*
 import cats.data.Kleisli
+import io.blindnet.identityclient.IdentityClientBuilder
+import io.blindnet.identityclient.auth.*
 
 trait FuncSuite extends IOSuite {
 
@@ -78,7 +80,9 @@ trait FuncSuite extends IOSuite {
       )
       services = Services.make(repos, conf)
 
-      server = AppRouter.make(services).httpApp
+      identityClient <- IdentityClientBuilder().resource
+
+      server = AppRouter.make(services, JwtAuthenticator(identityClient)).httpApp
 
     } yield Resources(xa, client, repos, services, server)
   }

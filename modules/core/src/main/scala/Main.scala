@@ -12,7 +12,9 @@ import db.repositories.*
 import requesthandlers.*
 import api.*
 import services.*
-import config.{ given, * }
+import config.{*, given}
+import io.blindnet.identityclient.IdentityClientBuilder
+import io.blindnet.identityclient.auth.JwtAuthenticator
 import services.external.StorageInterface
 
 object Main extends IOApp {
@@ -21,7 +23,7 @@ object Main extends IOApp {
   override def run(args: List[String]): IO[ExitCode] = {
 
     val app = for {
-      _    <- Resource.eval(logger.info(s"Starting app. \n ${build.BuildInfo.toString}"))
+//      _    <- Resource.eval(logger.info(s"Starting app. \n ${build.BuildInfo.toString}"))
       conf <- Resource.eval(Config.load)
       _    <- Resource.eval(logger.info(show"$conf"))
       xa   <- DbTransactor.make(conf.db)
@@ -39,7 +41,9 @@ object Main extends IOApp {
 
       _ <- Resource.eval(RequestHandlers.run(repositories, storage)).start
 
-      app = AppRouter.make(services)
+      identityClient <- IdentityClientBuilder().resource
+
+      app = AppRouter.make(services, JwtAuthenticator(identityClient))
       server <- Server.make(app.httpApp, conf.api)
 
     } yield ()

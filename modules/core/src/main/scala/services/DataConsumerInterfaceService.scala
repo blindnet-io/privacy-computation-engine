@@ -9,6 +9,7 @@ import cats.effect.*
 import cats.effect.kernel.Clock
 import cats.effect.std.*
 import cats.implicits.*
+import io.blindnet.identityclient.auth.*
 import io.blindnet.pce.api.endpoints.messages.consumerinterface.*
 import io.blindnet.pce.model.*
 import io.blindnet.pce.model.error.given
@@ -28,9 +29,9 @@ class DataConsumerInterfaceService(
     repos: Repositories
 ) {
 
-  def getPendingDemands(appId: UUID) = {
+  def getPendingDemands(jwt: AppJwt)(x: Unit) = {
     for {
-      dIds    <- repos.demandsToReview.get(appId)
+      dIds    <- repos.demandsToReview.get(jwt.appId)
       demands <- NonEmptyList.fromList(dIds) match {
         case None      => IO(List.empty[Demand])
         case Some(ids) => repos.privacyRequest.getDemands(ids)
@@ -46,9 +47,9 @@ class DataConsumerInterfaceService(
     } yield res
   }
 
-  def getPendingDemandDetails(appId: UUID, dId: UUID) =
+  def getPendingDemandDetails(jwt: AppJwt)(dId: UUID) =
     for {
-      _ <- repos.privacyRequest.demandExist(appId, dId).onFalseNotFound(s"Demand $dId not found")
+      _ <- repos.privacyRequest.demandExist(jwt.appId, dId).onFalseNotFound(s"Demand $dId not found")
       d <- repos.privacyRequest.getDemand(dId, false).orFail(s"Demand $dId not found")
       rId = d.reqId
       req <- repos.privacyRequest.getRequest(rId, false).orFail(s"Request $rId not found")
@@ -56,7 +57,7 @@ class DataConsumerInterfaceService(
       res = PendingDemandDetailsPayload.fromPrivDemand(d, req, rec)
     } yield res
 
-  def approveDemand(appId: UUID, req: ApproveDemandPayload) =
+  def approveDemand(jwt: AppJwt)(req: ApproveDemandPayload) =
     for {
       _ <- repos.demandsToReview.remove(NonEmptyList.of(req.id))
       d <- CommandCreateResponse.create(
@@ -70,7 +71,7 @@ class DataConsumerInterfaceService(
       _ <- repos.commands.addCreateResp(List(d))
     } yield ()
 
-  def denyDemand(appId: UUID, req: DenyDemandPayload) =
+  def denyDemand(jwt: AppJwt)(req: DenyDemandPayload) =
     for {
       r <- repos.privacyRequest.getRecommendation(req.id).orFail(s"No recommendation found")
       newR = r.copy(status = Some(Status.Denied), motive = Some(req.motive))

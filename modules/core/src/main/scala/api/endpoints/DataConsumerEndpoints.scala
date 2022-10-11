@@ -4,6 +4,7 @@ package api.endpoints
 import java.util.UUID
 
 import cats.effect.IO
+import io.blindnet.identityclient.auth.*
 import io.circe.generic.auto.*
 import org.http4s.server.Router
 import sttp.model.StatusCode
@@ -19,57 +20,57 @@ import api.endpoints.BaseEndpoint.*
 import api.endpoints.messages.consumerinterface.*
 
 class DataConsumerEndpoints(
+    authenticator: JwtAuthenticator[Jwt],
     consumerInterfaceService: DataConsumerInterfaceService
-) {
+) extends Endpoints(authenticator) {
   given Configuration = Configuration.default.withSnakeCaseMemberNames
 
-  val base = baseEndpoint.in("consumer-interface").tag("Data consumer interface")
-
-  val appId = UUID.fromString("6f083c15-4ada-4671-a6d1-c671bc9105dc")
+  override def mapEndpoint(endpoint: EndpointT): EndpointT =
+    endpoint.in("consumer-interface").tag("Data consumer interface")
 
   // TODO: add filtering
   val getPendingDemands =
-    base
+    appAuthEndpoint
       .description("Get the list of pending privacy request demands")
       .get
       .in("pending-requests")
       .out(jsonBody[List[PendingDemandPayload]])
-      .serverLogicSuccess(req => consumerInterfaceService.getPendingDemands(appId))
+      .serverLogicSuccess(consumerInterfaceService.getPendingDemands)
 
   val getPendingDemandDetails =
-    base
+    appAuthEndpoint
       .description("Get details of a pending privacy request")
       .get
       .in("pending-requests")
       .in(path[UUID]("demandId"))
       .out(jsonBody[PendingDemandDetailsPayload])
-      .errorOut(statusCode(StatusCode.UnprocessableEntity))
-      .errorOut(statusCode(StatusCode.NotFound))
-      .serverLogicSuccess(dId => consumerInterfaceService.getPendingDemandDetails(appId, dId))
+      .errorOutVariant(oneOfVariant(statusCode(StatusCode.UnprocessableEntity)))
+      .errorOutVariant(oneOfVariant(statusCode(StatusCode.NotFound)))
+      .serverLogicSuccess(consumerInterfaceService.getPendingDemandDetails)
 
   val approveDemand =
-    base
+    appAuthEndpoint
       .description("Approve privacy request")
       .post
       .in("pending-requests")
       .in("approve")
       .in(jsonBody[ApproveDemandPayload])
-      .errorOut(statusCode(StatusCode.BadRequest))
-      .errorOut(statusCode(StatusCode.UnprocessableEntity))
-      .errorOut(statusCode(StatusCode.NotFound))
-      .serverLogicSuccess(req => consumerInterfaceService.approveDemand(appId, req))
+      .errorOutVariant(oneOfVariant(statusCode(StatusCode.BadRequest)))
+      .errorOutVariant(oneOfVariant(statusCode(StatusCode.UnprocessableEntity)))
+      .errorOutVariant(oneOfVariant(statusCode(StatusCode.NotFound)))
+      .serverLogicSuccess(consumerInterfaceService.approveDemand)
 
   val denyDemand =
-    base
+    appAuthEndpoint
       .description("Deny privacy request")
       .post
       .in("pending-requests")
       .in("deny")
       .in(jsonBody[DenyDemandPayload])
-      .errorOut(statusCode(StatusCode.BadRequest))
-      .errorOut(statusCode(StatusCode.UnprocessableEntity))
-      .errorOut(statusCode(StatusCode.NotFound))
-      .serverLogicSuccess(req => consumerInterfaceService.denyDemand(appId, req))
+      .errorOutVariant(oneOfVariant(statusCode(StatusCode.BadRequest)))
+      .errorOutVariant(oneOfVariant(statusCode(StatusCode.UnprocessableEntity)))
+      .errorOutVariant(oneOfVariant(statusCode(StatusCode.NotFound)))
+      .serverLogicSuccess(consumerInterfaceService.denyDemand)
 
   val endpoints = List(getPendingDemands, getPendingDemandDetails, approveDemand, denyDemand)
 

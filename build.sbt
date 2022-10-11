@@ -68,6 +68,7 @@ lazy val core = (project in file("modules/core"))
     buildInfoKeys                    := Seq[BuildInfoKey](name, version, scalaVersion, sbtVersion),
     buildInfoPackage                 := "build",
     testFrameworks += new TestFramework("weaver.framework.CatsEffect"),
+    resolvers += Resolver.mavenLocal,
     libraryDependencies ++= Seq(
       dependencies.main.catsEffect,
       dependencies.main.ciris,
@@ -94,6 +95,7 @@ lazy val core = (project in file("modules/core"))
       dependencies.main.logback,
       dependencies.main.janino,
       dependencies.main.log4catsSlf4j,
+      dependencies.main.identityClient,
       dependencies.test.scalaCheck,
       dependencies.test.weaver,
       dependencies.test.testContainers,

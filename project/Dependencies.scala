@@ -42,6 +42,8 @@ object dependencies {
     val log4catsSlf4j = "org.typelevel"      %% "log4cats-slf4j"  % "2.3.1"
 
     val bouncyCastle = "org.bouncycastle" % "bcprov-jdk15on" % "1.70"
+
+    val identityClient = "io.blindnet" %% "identity-client" % "0.1.0-SNAPSHOT"
   }
 
   object test {
