@@ -43,7 +43,7 @@ object dependencies {
 
     val bouncyCastle = "org.bouncycastle" % "bcprov-jdk15on" % "1.70"
 
-    val identityClient = "io.blindnet" %% "identity-client" % "0.1.0-SNAPSHOT"
+    val identityClient = "io.blindnet" %% "identity-client" % "1.0.0-SNAPSHOT"
   }
 
   object test {

@@ -68,7 +68,7 @@ lazy val core = (project in file("modules/core"))
     buildInfoKeys                    := Seq[BuildInfoKey](name, version, scalaVersion, sbtVersion),
     buildInfoPackage                 := "build",
     testFrameworks += new TestFramework("weaver.framework.CatsEffect"),
-    resolvers += Resolver.mavenLocal,
+    resolvers += "Blindnet Snapshots" at "https://nexus.blindnet.io/repository/maven-snapshots",
     libraryDependencies ++= Seq(
       dependencies.main.catsEffect,
       dependencies.main.ciris,
