@@ -72,6 +72,15 @@ class DataConsumerEndpoints(
       .errorOutVariant(oneOfVariant(statusCode(StatusCode.NotFound)))
       .serverLogicSuccess(consumerInterfaceService.denyDemand)
 
-  val endpoints = List(getPendingDemands, getPendingDemandDetails, approveDemand, denyDemand)
+  val getCompletedDemands =
+    base
+      .description("Get the list of completed privacy request demands")
+      .get
+      .in("completed-requests")
+      .out(jsonBody[List[CompletedDemandPayload]])
+      .serverLogicSuccess(req => consumerInterfaceService.getCompletedDemands(appId))
+
+  val endpoints =
+    List(getPendingDemands, getPendingDemandDetails, approveDemand, denyDemand, getCompletedDemands)
 
 }

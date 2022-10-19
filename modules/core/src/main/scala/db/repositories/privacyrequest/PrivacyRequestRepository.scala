@@ -30,6 +30,8 @@ trait PrivacyRequestRepository {
 
   def getDemands(dIds: NonEmptyList[UUID]): IO[List[Demand]]
 
+  def getCompletedDemands(): IO[List[CompletedDemand]]
+
   def getResponsesForRequest(reqId: RequestId): IO[List[PrivacyResponse]]
 
   def getDemandResponses(dId: UUID): IO[List[PrivacyResponse]]

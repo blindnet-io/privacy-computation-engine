@@ -88,4 +88,11 @@ class DataConsumerInterfaceService(
       _ <- repos.commands.addCreateResp(List(d))
     } yield ()
 
+  def getCompletedDemands(appId: UUID) = {
+    for {
+      demands <- repos.privacyRequest.getCompletedDemands()
+      res = demands.map(CompletedDemandPayload.fromPrivCompletedDemand)
+    } yield res
+  }
+
 }
