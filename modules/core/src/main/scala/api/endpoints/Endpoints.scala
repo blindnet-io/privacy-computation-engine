@@ -10,7 +10,7 @@ abstract class Endpoints(authenticator: JwtAuthenticator[Jwt]) {
   def mapEndpoint(endpoint: EndpointT): EndpointT = endpoint
 
   val publicEndpoint = endpoint.in("v0")
-  lazy val mappedAuthenticator = authenticator.withBaseEndpoint(mapEndpoint(publicEndpoint))
+  val mappedAuthenticator = authenticator.withBaseEndpoint(mapEndpoint(publicEndpoint))
 
   val anyAuthEndpoint = mappedAuthenticator.secureEndpoint
   val appAuthEndpoint = mappedAuthenticator.requireAppJwt.secureEndpoint
