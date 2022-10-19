@@ -72,8 +72,7 @@ class AppRouter(services: Services, authenticator: JwtAuthenticator[Jwt]) {
       .fromServerEndpoints[IO](
         allEndpoints,
         "Privacy computation engine",
-        "version"
-//        build.BuildInfo.version
+        build.BuildInfo.version
       )
 
   private val http4sOptions = Http4sServerOptions
