@@ -16,6 +16,11 @@ enum Status(term: String) {
 
   def isTerm(str: String) = term == str
 
+  def isAnswered = this match {
+    case Granted | Denied | PartiallyGranted => true
+    case _                                   => false
+  }
+
   val encode = term
 }
 
