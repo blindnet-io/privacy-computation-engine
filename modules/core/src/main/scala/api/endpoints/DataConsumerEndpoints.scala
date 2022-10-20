@@ -80,7 +80,25 @@ class DataConsumerEndpoints(
       .out(jsonBody[List[CompletedDemandPayload]])
       .serverLogicSuccess(req => consumerInterfaceService.getCompletedDemands(appId))
 
+  val getCompletedDemandDetails =
+    base
+      .description("Get details of a completed demand")
+      .get
+      .in("completed-requests")
+      .in(path[UUID]("requestId"))
+      .out(jsonBody[List[CompletedDemandInfoPayload]])
+      .errorOut(statusCode(StatusCode.UnprocessableEntity))
+      .errorOut(statusCode(StatusCode.NotFound))
+      .serverLogicSuccess(dId => consumerInterfaceService.getCompletedDemandInfo(appId, dId))
+
   val endpoints =
-    List(getPendingDemands, getPendingDemandDetails, approveDemand, denyDemand, getCompletedDemands)
+    List(
+      getPendingDemands,
+      getPendingDemandDetails,
+      approveDemand,
+      denyDemand,
+      getCompletedDemands,
+      getCompletedDemandDetails
+    )
 
 }

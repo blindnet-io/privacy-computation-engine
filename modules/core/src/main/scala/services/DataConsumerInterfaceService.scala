@@ -88,11 +88,27 @@ class DataConsumerInterfaceService(
       _ <- repos.commands.addCreateResp(List(d))
     } yield ()
 
-  def getCompletedDemands(appId: UUID) = {
+  def getCompletedDemands(appId: UUID) =
     for {
       demands <- repos.privacyRequest.getCompletedDemands()
       res = demands.map(CompletedDemandPayload.fromPrivCompletedDemand)
     } yield res
-  }
+
+  // TODO: validation service
+  private def verifyDemandExists(appId: UUID, dId: UUID) =
+    repos.privacyRequest
+      .demandExist(appId, dId)
+      .onFalseNotFound("Demand not found")
+
+  def getCompletedDemandInfo(appId: UUID, dId: UUID) =
+    for {
+      _         <- verifyDemandExists(appId, dId)
+      d         <- repos.privacyRequest.getDemand(dId, false).orFail("Demand not found")
+      req       <- repos.privacyRequest.getRequest(d).orFail("Request not found")
+      responses <- repos.privacyRequest.getDemandResponses(dId)
+      resp = responses
+        .filter(_.status.isAnswered)
+        .map(r => CompletedDemandInfoPayload.fromPriv(d, req, r))
+    } yield resp
 
 }
