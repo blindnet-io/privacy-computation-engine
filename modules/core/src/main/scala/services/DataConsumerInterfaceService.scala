@@ -88,6 +88,14 @@ class DataConsumerInterfaceService(
       _ <- repos.commands.addCreateResp(List(d))
     } yield ()
 
+  def changeRecommendation(appId: UUID, req: ChangeRecommendationPayload) =
+    for {
+      _ <- verifyDemandExists(appId, req.demandId)
+      newRec = RecommendationPayload.toRecommendation(req.recommendation, req.demandId)
+      newRecV <- Recommendation.validate(newRec).toEither.orBadRequest
+      _       <- repos.privacyRequest.updateRecommendation(newRecV)
+    } yield ()
+
   def getCompletedDemands(appId: UUID) =
     for {
       demands <- repos.privacyRequest.getCompletedDemands()

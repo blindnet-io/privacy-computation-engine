@@ -72,6 +72,18 @@ class DataConsumerEndpoints(
       .errorOutVariant(oneOfVariant(statusCode(StatusCode.NotFound)))
       .serverLogicSuccess(consumerInterfaceService.denyDemand)
 
+  val changeRecommendation =
+    base
+      .description("Deny privacy request")
+      .post
+      .in("pending-requests")
+      .in("recommendation")
+      .in(jsonBody[ChangeRecommendationPayload])
+      .errorOut(statusCode(StatusCode.BadRequest))
+      .errorOut(statusCode(StatusCode.UnprocessableEntity))
+      .errorOut(statusCode(StatusCode.NotFound))
+      .serverLogicSuccess(req => consumerInterfaceService.changeRecommendation(appId, req))
+
   val getCompletedDemands =
     base
       .description("Get the list of completed privacy request demands")
@@ -97,6 +109,7 @@ class DataConsumerEndpoints(
       getPendingDemandDetails,
       approveDemand,
       denyDemand,
+      changeRecommendation,
       getCompletedDemands,
       getCompletedDemandDetails
     )
