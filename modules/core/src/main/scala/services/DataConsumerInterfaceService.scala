@@ -104,7 +104,7 @@ class DataConsumerInterfaceService(
     for {
       _         <- verifyDemandExists(appId, dId)
       d         <- repos.privacyRequest.getDemand(dId, false).orFail("Demand not found")
-      req       <- repos.privacyRequest.getRequest(d).orFail("Request not found")
+      req       <- repos.privacyRequest.getRequestFromDemand(d.id).orFail("Request not found")
       responses <- repos.privacyRequest.getDemandResponses(dId)
       resp = responses
         .filter(_.status.isAnswered)

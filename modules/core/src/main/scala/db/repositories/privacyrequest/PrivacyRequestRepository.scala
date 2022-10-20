@@ -22,7 +22,7 @@ trait PrivacyRequestRepository {
 
   def getRequest(reqId: RequestId, withDemands: Boolean = true): IO[Option[PrivacyRequest]]
 
-  def getRequest(d: Demand): IO[Option[PrivacyRequest]]
+  def getRequestFromDemand(dId: UUID): IO[Option[PrivacyRequest]]
 
   def getRequests(reqIds: NonEmptyList[RequestId]): IO[List[PrivacyRequest]]
 
