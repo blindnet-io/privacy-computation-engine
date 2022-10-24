@@ -26,8 +26,8 @@ class ConfigurationEndpoints(
 ) extends Endpoints(authenticator) {
   given Configuration = Configuration.default.withSnakeCaseMemberNames
 
-  val Tag     = "Configuration"
-  val DocsUri = "https://blindnet.dev/docs/computation/configuration"
+  lazy val Tag     = "Configuration"
+  val      DocsUri = "https://blindnet.dev/docs/computation/configuration"
 
   override def mapEndpoint(endpoint: EndpointT): EndpointT =
     endpoint.in("configure").tag(Tag)
