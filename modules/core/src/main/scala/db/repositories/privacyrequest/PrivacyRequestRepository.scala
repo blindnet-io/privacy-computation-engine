@@ -26,6 +26,8 @@ trait PrivacyRequestRepository {
 
   def getRequests(reqIds: NonEmptyList[RequestId]): IO[List[PrivacyRequest]]
 
+  def getRequestsForUser(ds: DataSubject): IO[List[PrivacyRequest]]
+
   def getDemand(dId: UUID, withRestrictions: Boolean = true): IO[Option[Demand]]
 
   def getDemands(dIds: NonEmptyList[UUID]): IO[List[Demand]]

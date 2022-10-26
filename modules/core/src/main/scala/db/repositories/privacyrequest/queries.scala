@@ -135,6 +135,25 @@ private object queries {
       .query[PrivacyRequest]
       .to[List]
 
+  def getPrivacyRequestsForUser(ds: DataSubject) =
+    sql"""
+      select id, appid, dsid, provided_dsids, date, target, email
+      from privacy_requests
+      where dsid = ${ds.id} and appid = ${ds.appId}
+    """
+      .query[PrivacyRequest]
+      .to[List]
+
+  def getDemandsForUser(ds: DataSubject) =
+    sql"""
+      select d.id, pr.id, action, message, lang
+      from demands d
+        join privacy_requests pr on pr.id = d.prid
+      where pr.dsid = ${ds.id} and pr.appid = ${ds.appId}
+    """
+      .query[Demand]
+      .to[List]
+
   def getAllDemandResponses(reqId: RequestId) =
     sql"""
       with query as (

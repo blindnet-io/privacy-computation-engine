@@ -24,6 +24,8 @@ import model.error.*
 import priv.DataSubject
 import priv.privacyrequest.{ Demand, PrivacyRequest, * }
 import priv.terms.*
+import io.blindnet.pce.priv.Timeline
+import io.blindnet.pce.priv.PSContext
 
 class DataConsumerInterfaceService(
     repos: Repositories
@@ -118,5 +120,21 @@ class DataConsumerInterfaceService(
         .filter(_.status.isAnswered)
         .map(r => CompletedDemandInfoPayload.fromPriv(d, req, r))
     } yield resp
+
+  def getTimeline(appId: UUID, uId: String) =
+    for {
+      _ <- IO.unit
+      ds = DataSubject(uId, appId)
+      reqs  <- repos.privacyRequest.getRequestsForUser(ds)
+      resps <- reqs
+        .parTraverse(r => repos.privacyRequest.getResponsesForRequest(r.id))
+        .map(_.flatten)
+        .map(rs => PrivacyResponse.group(rs))
+
+      timeline <- repos.events.getTimelineNoScope(ds)
+      lbIds = timeline.events.flatMap(_.getLbId).toNel
+      lbs <- lbIds.fold(IO(List.empty))(repos.legalBase.get(appId, _))
+      res = TimelineEventsPayload.fromPriv(List.empty, List.empty, timeline, lbs)
+    } yield res
 
 }

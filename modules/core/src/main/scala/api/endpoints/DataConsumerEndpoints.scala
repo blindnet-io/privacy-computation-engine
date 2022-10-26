@@ -103,6 +103,17 @@ class DataConsumerEndpoints(
       .errorOut(statusCode(StatusCode.NotFound))
       .serverLogicSuccess(dId => consumerInterfaceService.getCompletedDemandInfo(appId, dId))
 
+  val getTimeline =
+    base
+      .description("Get user's timeline")
+      .get
+      .in("timeline")
+      .in(path[String]("userId"))
+      .out(jsonBody[TimelineEventsPayload])
+      .errorOut(statusCode(StatusCode.UnprocessableEntity))
+      .errorOut(statusCode(StatusCode.NotFound))
+      .serverLogicSuccess(uId => consumerInterfaceService.getTimeline(appId, uId))
+
   val endpoints =
     List(
       getPendingDemands,
@@ -111,7 +122,8 @@ class DataConsumerEndpoints(
       denyDemand,
       changeRecommendation,
       getCompletedDemands,
-      getCompletedDemandDetails
+      getCompletedDemandDetails,
+      getTimeline
     )
 
 }

@@ -145,6 +145,17 @@ class PrivacyRequestRepositoryLive(xa: Transactor[IO]) extends PrivacyRequestRep
   def getRequests(reqIds: NonEmptyList[RequestId]): IO[List[PrivacyRequest]] =
     queries.getPrivacyRequests(reqIds).transact(xa)
 
+  def getRequestsForUser(ds: DataSubject): IO[List[PrivacyRequest]] = {
+    val res =
+      for {
+        reqs    <- queries.getPrivacyRequestsForUser(ds)
+        demands <- queries.getDemandsForUser(ds)
+        r = reqs.map(r => r.copy(demands = demands.filter(_.reqId == r.id)))
+      } yield r
+
+    res.transact(xa)
+  }
+
   def getDemand(dId: UUID, withRestrictions: Boolean = true): IO[Option[Demand]] = {
     val withR =
       for {
