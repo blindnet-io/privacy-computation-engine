@@ -3,10 +3,10 @@ package io.blindnet.pce
 import java.time.Instant
 import java.util.UUID
 import weaver.*
-import com.dimafeng.testcontainers.{Container, ForAllTestContainer, PostgreSQLContainer}
+import com.dimafeng.testcontainers.{ Container, ForAllTestContainer, PostgreSQLContainer }
 import org.testcontainers.utility.DockerImageName
 import doobie.util.transactor.Transactor
-import cats.effect.{Resource, Sync}
+import cats.effect.{ Resource, Sync }
 import cats.syntax.all.*
 import cats.effect.IO
 import org.http4s.client.*
@@ -20,7 +20,7 @@ import doobie.implicits.*
 import doobie.postgres.*
 import doobie.postgres.implicits.*
 import fs2.text
-import fs2.io.file.{Files, Path}
+import fs2.io.file.{ Files, Path }
 import io.blindnet.pce.services.Services
 import io.blindnet.pce.config.*
 import org.http4s.*
@@ -30,11 +30,18 @@ import io.blindnet.pce.api.*
 import cats.data.Kleisli
 import io.blindnet.identityclient.IdentityClientBuilder
 import io.blindnet.identityclient.auth.*
+import io.circe.literal.*
+import org.http4s.circe.*
+import io.blindnet.identityclient.IdentityClient
+import io.blindnet.jwt.*
 
 trait FuncSuite extends IOSuite {
 
   val appId = UUID.fromString("6f083c15-4ada-4671-a6d1-c671bc9105dc")
   val ds    = DataSubject("fdfc95a6-8fd8-4581-91f7-b3d236a6a10e", appId)
+
+  val key      = TokenPrivateKey.fromString("m+UYVxv2NTnqVz8i1J6BnJ7aZshNu9SqfPmaIMv2nwM=")
+  val appToken = TokenBuilder(appId, key).app()
 
   def populateDb(xa: Transactor[IO]) =
     for {
@@ -54,6 +61,23 @@ trait FuncSuite extends IOSuite {
       server: Kleisli[IO, Request[IO], Response[IO]]
   )
 
+  // TODO: move to identity client library
+  val identityHttpClient = Client[IO] {
+    req =>
+      val resp = req.uri.renderString match {
+        case s"$_/applications/$id" =>
+          Response[IO]().withEntity(
+            json"""{ "id": $appId, "name": "test", "key": "2FY5BrVnN29UGo4X9I34zqDeLitHhr/tNBVk/BjmNOQ=" }"""
+          )
+
+        case _ =>
+          Response[IO](status = Status.BadRequest)
+      }
+
+      Resource.make(IO(resp))(_ => IO.unit)
+  }
+
+  import org.http4s.implicits.*
   override type Res = Resources
   override def sharedResource: Resource[IO, Res] = {
     for {
@@ -80,7 +104,7 @@ trait FuncSuite extends IOSuite {
       )
       services = Services.make(repos, conf)
 
-      identityClient <- IdentityClientBuilder().resource
+      identityClient <- IdentityClientBuilder().withClient(identityHttpClient).resource
 
       server = AppRouter.make(services, JwtAuthenticator(identityClient)).httpApp
 
