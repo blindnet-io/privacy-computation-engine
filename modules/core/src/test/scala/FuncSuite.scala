@@ -40,8 +40,9 @@ trait FuncSuite extends IOSuite {
   val appId = UUID.fromString("6f083c15-4ada-4671-a6d1-c671bc9105dc")
   val ds    = DataSubject("fdfc95a6-8fd8-4581-91f7-b3d236a6a10e", appId)
 
-  val key      = TokenPrivateKey.fromString("m+UYVxv2NTnqVz8i1J6BnJ7aZshNu9SqfPmaIMv2nwM=")
-  val appToken = TokenBuilder(appId, key).app()
+  val secretKey = TokenPrivateKey.generateRandom()
+  val publicKey = secretKey.toPublicKey().toString()
+  val appToken  = TokenBuilder(appId, secretKey).app()
 
   def populateDb(xa: Transactor[IO]) =
     for {
@@ -67,7 +68,7 @@ trait FuncSuite extends IOSuite {
       val resp = req.uri.renderString match {
         case s"$_/applications/$id" =>
           Response[IO]().withEntity(
-            json"""{ "id": $appId, "name": "test", "key": "2FY5BrVnN29UGo4X9I34zqDeLitHhr/tNBVk/BjmNOQ=" }"""
+            json"""{ "id": $appId, "name": "test", "key": $publicKey }"""
           )
 
         case _ =>
