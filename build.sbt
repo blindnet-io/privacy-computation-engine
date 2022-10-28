@@ -1,3 +1,5 @@
+import scala.concurrent.duration.Duration
+import lmcoursier.definitions.CachePolicy
 import dependencies.*
 
 ThisBuild / scalaVersion                                   := "3.1.3"
@@ -9,7 +11,12 @@ ThisBuild / scalafixDependencies += "com.github.liancheng" %% "organize-imports"
 ThisBuild / semanticdbEnabled                              := true
 ThisBuild / semanticdbVersion                              := scalafixSemanticdb.revision
 
-Test / fork := true
+// https://github.com/sbt/sbt/issues/5377
+ThisBuild / csrConfiguration := csrConfiguration.value
+  .withTtl(Duration.Zero)
+  .withCachePolicies(Vector(CachePolicy.LocalOnly))
+
+Test / fork                  := true
 
 resolvers += Resolver.sonatypeRepo("snapshots")
 
