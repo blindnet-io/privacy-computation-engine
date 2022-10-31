@@ -43,17 +43,17 @@ object UserEventsEndpointsSuite extends FuncSuite {
 
   test("fail recording consent given for wrong consent id") {
     res =>
-      val req = json"""{ "data_subject": {"id": ${ds.id}}, "consent_id": $uuid, "date": $now }"""
+      val req = json"""{ "consent_id": $uuid }"""
       res.server
-        .run(post("user-events/consent", req, Some(appToken)))
+        .run(post("user-events/consent", req, Some(userToken)))
         .map(response => expect(response.status == Status.NotFound))
   }
 
   test("record consent given for known user") {
     res =>
-      val req = json"""{ "data_subject": {"id": ${ds.id}}, "consent_id": $cId, "date": $now }"""
+      val req = json"""{ "consent_id": $cId }"""
       for {
-        response <- res.server.run(post("user-events/consent", req, Some(appToken)))
+        response <- res.server.run(post("user-events/consent", req, Some(userToken)))
         _        <- expect(response.status == Status.Ok).failFast
         sql =
           sql"select exists (select lbid from consent_given_events where lbid=$cId and dsid=${ds.id})"
@@ -64,10 +64,11 @@ object UserEventsEndpointsSuite extends FuncSuite {
 
   test("record consent given for unknown user") {
     res =>
-      val uid = uuid.toString
-      val req = json"""{ "data_subject": {"id": $uid}, "consent_id": $cId, "date": $now }"""
+      val uid   = uuid.toString
+      val token = tb.user(uid)
+      val req   = json"""{ "consent_id": $cId }"""
       for {
-        response <- res.server.run(post("user-events/consent", req, Some(appToken)))
+        response <- res.server.run(post("user-events/consent", req, Some(token)))
         _        <- expect(response.status == Status.Ok).failFast
 
         sqlEv =
