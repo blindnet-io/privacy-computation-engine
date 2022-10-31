@@ -69,14 +69,14 @@ private object queries {
       .query[Demand]
       .to[List]
 
-  def getCompletedDemands() =
+  def getCompletedDemands(appId: UUID) =
     sql"""
       select d.id, pr.dsid, pr.appid, pr."date", max(pre."date"), d.action, pre.status 
       from demands d
         join privacy_requests pr on pr.id = d.prid
         join privacy_responses pr2 on pr2.did = d.id
         join privacy_response_events pre on pre.prid = pr2.id
-      where pre.status in ('GRANTED', 'DENIED', 'CANCELED')
+      where pr.appid = $appId and pre.status in ('GRANTED', 'DENIED', 'CANCELED')
       group by d.id, pr.dsid, pr.appid, pr."date", d."action", pre.status
     """
       .query[CompletedDemand]

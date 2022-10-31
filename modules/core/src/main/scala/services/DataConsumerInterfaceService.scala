@@ -102,7 +102,7 @@ class DataConsumerInterfaceService(
 
   def getCompletedDemands(jwt: AppJwt)(x: Unit) =
     for {
-      demands <- repos.privacyRequest.getCompletedDemands()
+      demands <- repos.privacyRequest.getCompletedDemands(jwt.appId)
       res = demands.map(CompletedDemandPayload.fromPrivCompletedDemand)
     } yield res
 
