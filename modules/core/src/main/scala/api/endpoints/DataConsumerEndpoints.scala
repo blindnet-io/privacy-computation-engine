@@ -72,6 +72,58 @@ class DataConsumerEndpoints(
       .errorOutVariant(oneOfVariant(statusCode(StatusCode.NotFound)))
       .serverLogicSuccess(consumerInterfaceService.denyDemand)
 
-  val endpoints = List(getPendingDemands, getPendingDemandDetails, approveDemand, denyDemand)
+  val changeRecommendation =
+    appAuthEndpoint
+      .description("Deny privacy request")
+      .post
+      .in("pending-requests")
+      .in("recommendation")
+      .in(jsonBody[ChangeRecommendationPayload])
+      .errorOutVariant(oneOfVariant(statusCode(StatusCode.BadRequest)))
+      .errorOutVariant(oneOfVariant(statusCode(StatusCode.UnprocessableEntity)))
+      .errorOutVariant(oneOfVariant(statusCode(StatusCode.NotFound)))
+      .serverLogicSuccess(consumerInterfaceService.changeRecommendation)
+
+  val getCompletedDemands =
+    appAuthEndpoint
+      .description("Get the list of completed privacy request demands")
+      .get
+      .in("completed-requests")
+      .out(jsonBody[List[CompletedDemandPayload]])
+      .serverLogicSuccess(consumerInterfaceService.getCompletedDemands)
+
+  val getCompletedDemandDetails =
+    appAuthEndpoint
+      .description("Get details of a completed demand")
+      .get
+      .in("completed-requests")
+      .in(path[UUID]("requestId"))
+      .out(jsonBody[List[CompletedDemandInfoPayload]])
+      .errorOutVariant(oneOfVariant(statusCode(StatusCode.UnprocessableEntity)))
+      .errorOutVariant(oneOfVariant(statusCode(StatusCode.NotFound)))
+      .serverLogicSuccess(consumerInterfaceService.getCompletedDemandInfo)
+
+  val getTimeline =
+    appAuthEndpoint
+      .description("Get user's timeline")
+      .get
+      .in("timeline")
+      .in(path[String]("userId"))
+      .out(jsonBody[TimelineEventsPayload])
+      .errorOutVariant(oneOfVariant(statusCode(StatusCode.UnprocessableEntity)))
+      .errorOutVariant(oneOfVariant(statusCode(StatusCode.NotFound)))
+      .serverLogicSuccess(consumerInterfaceService.getTimeline)
+
+  val endpoints =
+    List(
+      getPendingDemands,
+      getPendingDemandDetails,
+      approveDemand,
+      denyDemand,
+      changeRecommendation,
+      getCompletedDemands,
+      getCompletedDemandDetails,
+      getTimeline
+    )
 
 }

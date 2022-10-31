@@ -47,7 +47,7 @@ class ResponseCalculator(
         // TODO: rollback if fails
         for {
           d       <- repos.privacyRequest.getDemand(ccr.dId, true).map(_.get)
-          pr      <- repos.privacyRequest.getRequest(d).map(_.get)
+          pr      <- repos.privacyRequest.getRequestFromDemand(d.id).map(_.get)
           r       <- repos.privacyRequest.getRecommendation(d.id).map(_.get)
           newResp <- createResponse(pr, ccr, d, resp, r)
           _       <- repos.privacyRequest.storeNewResponse(newResp)

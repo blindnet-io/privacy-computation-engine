@@ -49,4 +49,12 @@ private object codecs {
     Read[(UUID, RequestId, Action, Option[String], Option[String])]
       .map { case (id, rid, a, m, l) => Demand(id, rid, a, m, l, List.empty, List.empty) }
 
+  given Read[CompletedDemand] =
+    Read[(UUID, Option[String], UUID, Instant, Instant, Action, Status)]
+      .map {
+        case (dId, dsid, appId, reqDate, respDate, a, status) =>
+          val ds = dsid.map(DataSubject(_, appId))
+          CompletedDemand(dId, a, ds, reqDate, respDate, status)
+      }
+
 }

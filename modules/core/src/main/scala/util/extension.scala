@@ -57,6 +57,14 @@ object extension {
 
   }
 
+  extension [A](o: Either[String, A]) {
+    def orBadRequest: IO[A] = o match {
+      case Left(msg) => BadRequestException(msg).raiseError
+      case Right(x)  => IO(x)
+    }
+
+  }
+
   extension (b: Boolean) {
     def onFalseNotFound(msg: String) =
       if b then IO.unit else NotFoundException(msg).raise

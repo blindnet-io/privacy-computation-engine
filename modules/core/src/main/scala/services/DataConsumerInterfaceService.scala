@@ -24,6 +24,8 @@ import model.error.*
 import priv.DataSubject
 import priv.privacyrequest.{ Demand, PrivacyRequest, * }
 import priv.terms.*
+import io.blindnet.pce.priv.Timeline
+import io.blindnet.pce.priv.PSContext
 
 class DataConsumerInterfaceService(
     repos: Repositories
@@ -49,7 +51,9 @@ class DataConsumerInterfaceService(
 
   def getPendingDemandDetails(jwt: AppJwt)(dId: UUID) =
     for {
-      _ <- repos.privacyRequest.demandExist(jwt.appId, dId).onFalseNotFound(s"Demand $dId not found")
+      _ <- repos.privacyRequest
+        .demandExist(jwt.appId, dId)
+        .onFalseNotFound(s"Demand $dId not found")
       d <- repos.privacyRequest.getDemand(dId, false).orFail(s"Demand $dId not found")
       rId = d.reqId
       req <- repos.privacyRequest.getRequest(rId, false).orFail(s"Request $rId not found")
@@ -87,5 +91,52 @@ class DataConsumerInterfaceService(
       _ <- repos.demandsToReview.remove(NonEmptyList.of(req.id))
       _ <- repos.commands.addCreateResp(List(d))
     } yield ()
+
+  def changeRecommendation(jwt: AppJwt)(req: ChangeRecommendationPayload) =
+    for {
+      _ <- verifyDemandExists(jwt.appId, req.demandId)
+      newRec = RecommendationPayload.toRecommendation(req.recommendation, req.demandId)
+      newRecV <- Recommendation.validate(newRec).toEither.orBadRequest
+      _       <- repos.privacyRequest.updateRecommendation(newRecV)
+    } yield ()
+
+  def getCompletedDemands(jwt: AppJwt)(x: Unit) =
+    for {
+      demands <- repos.privacyRequest.getCompletedDemands()
+      res = demands.map(CompletedDemandPayload.fromPrivCompletedDemand)
+    } yield res
+
+  // TODO: validation service
+  private def verifyDemandExists(appId: UUID, dId: UUID) =
+    repos.privacyRequest
+      .demandExist(appId, dId)
+      .onFalseNotFound("Demand not found")
+
+  def getCompletedDemandInfo(jwt: AppJwt)(dId: UUID) =
+    for {
+      _         <- verifyDemandExists(jwt.appId, dId)
+      d         <- repos.privacyRequest.getDemand(dId, false).orFail("Demand not found")
+      req       <- repos.privacyRequest.getRequestFromDemand(d.id).orFail("Request not found")
+      responses <- repos.privacyRequest.getDemandResponses(dId)
+      resp = responses
+        .filter(_.status.isAnswered)
+        .map(r => CompletedDemandInfoPayload.fromPriv(d, req, r))
+    } yield resp
+
+  def getTimeline(jwt: AppJwt)(uId: String) =
+    for {
+      _ <- IO.unit
+      ds = DataSubject(uId, jwt.appId)
+      reqs  <- repos.privacyRequest.getRequestsForUser(ds)
+      resps <- reqs
+        .parTraverse(r => repos.privacyRequest.getResponsesForRequest(r.id))
+        .map(_.flatten)
+        .map(rs => PrivacyResponse.group(rs))
+
+      timeline <- repos.events.getTimelineNoScope(ds)
+      lbIds = timeline.events.flatMap(_.getLbId).toNel
+      lbs <- lbIds.fold(IO(List.empty))(repos.legalBase.get(jwt.appId, _))
+      res = TimelineEventsPayload.fromPriv(List.empty, List.empty, timeline, lbs)
+    } yield res
 
 }

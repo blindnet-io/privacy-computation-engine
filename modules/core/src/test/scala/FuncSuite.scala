@@ -42,7 +42,9 @@ trait FuncSuite extends IOSuite {
 
   val secretKey = TokenPrivateKey.generateRandom()
   val publicKey = secretKey.toPublicKey().toString()
-  val appToken  = TokenBuilder(appId, secretKey).app()
+  val tb        = TokenBuilder(appId, secretKey)
+  val appToken  = tb.app()
+  val userToken = tb.user(ds.id)
 
   def populateDb(xa: Transactor[IO]) =
     for {

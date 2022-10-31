@@ -69,6 +69,19 @@ private object queries {
       .query[Demand]
       .to[List]
 
+  def getCompletedDemands() =
+    sql"""
+      select d.id, pr.dsid, pr.appid, pr."date", max(pre."date"), d.action, pre.status 
+      from demands d
+        join privacy_requests pr on pr.id = d.prid
+        join privacy_responses pr2 on pr2.did = d.id
+        join privacy_response_events pre on pre.prid = pr2.id
+      where pre.status in ('GRANTED', 'DENIED', 'CANCELED')
+      group by d.id, pr.dsid, pr.appid, pr."date", d."action", pre.status
+    """
+      .query[CompletedDemand]
+      .to[List]
+
   def getRequestDemands(reqId: RequestId) =
     sql"""
       select d.id, pr.id, action, message, lang
@@ -120,6 +133,25 @@ private object queries {
     """
       ++ Fragments.in(fr"id", ids))
       .query[PrivacyRequest]
+      .to[List]
+
+  def getPrivacyRequestsForUser(ds: DataSubject) =
+    sql"""
+      select id, appid, dsid, provided_dsids, date, target, email
+      from privacy_requests
+      where dsid = ${ds.id} and appid = ${ds.appId}
+    """
+      .query[PrivacyRequest]
+      .to[List]
+
+  def getDemandsForUser(ds: DataSubject) =
+    sql"""
+      select d.id, pr.id, action, message, lang
+      from demands d
+        join privacy_requests pr on pr.id = d.prid
+      where pr.dsid = ${ds.id} and pr.appid = ${ds.appId}
+    """
+      .query[Demand]
       .to[List]
 
   def getAllDemandResponses(reqId: RequestId) =

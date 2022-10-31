@@ -122,6 +122,12 @@ case class Timeline(
       case _               => None
     }
 
+  def legalBases      = events.flatMap(te => te.asLegalBase)
+  def givenConsents   = events.flatMap(te => te.asConsentGiven)
+  def revokedConsents = events.flatMap(te => te.asConsentRevoked)
+  def restricts       = events.flatMap(te => te.asRestrict)
+  def objects         = events.flatMap(te => te.asObject)
+
 }
 
 object Timeline {

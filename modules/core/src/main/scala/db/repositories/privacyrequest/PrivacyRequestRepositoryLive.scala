@@ -139,11 +139,22 @@ class PrivacyRequestRepositoryLive(xa: Transactor[IO]) extends PrivacyRequestRep
     res.transact(xa)
   }
 
-  def getRequest(d: Demand): IO[Option[PrivacyRequest]] =
-    queries.getPrivacyRequestFromDemand(d.id).transact(xa)
+  def getRequestFromDemand(dId: UUID): IO[Option[PrivacyRequest]] =
+    queries.getPrivacyRequestFromDemand(dId).transact(xa)
 
   def getRequests(reqIds: NonEmptyList[RequestId]): IO[List[PrivacyRequest]] =
     queries.getPrivacyRequests(reqIds).transact(xa)
+
+  def getRequestsForUser(ds: DataSubject): IO[List[PrivacyRequest]] = {
+    val res =
+      for {
+        reqs    <- queries.getPrivacyRequestsForUser(ds)
+        demands <- queries.getDemandsForUser(ds)
+        r = reqs.map(r => r.copy(demands = demands.filter(_.reqId == r.id)))
+      } yield r
+
+    res.transact(xa)
+  }
 
   def getDemand(dId: UUID, withRestrictions: Boolean = true): IO[Option[Demand]] = {
     val withR =
@@ -159,6 +170,9 @@ class PrivacyRequestRepositoryLive(xa: Transactor[IO]) extends PrivacyRequestRep
 
   def getDemands(dIds: NonEmptyList[UUID]): IO[List[Demand]] =
     queries.getDemands(dIds).transact(xa)
+
+  def getCompletedDemands(): IO[List[CompletedDemand]] =
+    queries.getCompletedDemands().transact(xa)
 
   def getResponsesForRequest(reqId: RequestId): IO[List[PrivacyResponse]] =
     queries.getAllDemandResponses(reqId).transact(xa)

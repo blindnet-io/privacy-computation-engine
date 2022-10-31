@@ -32,7 +32,7 @@ class RequestRecommender(
   def processDemand(c: CommandCreateRecommendation): IO[Unit] =
     for {
       d         <- repos.privacyRequest.getDemand(c.dId, true).map(_.get)
-      pr        <- repos.privacyRequest.getRequest(d).map(_.get)
+      pr        <- repos.privacyRequest.getRequestFromDemand(d.id).map(_.get)
       app       <- repos.app.get(pr.appId).map(_.get)
       responses <- repos.privacyRequest.getDemandResponses(c.dId)
       _         <- responses.traverse(r => processResponse(app, pr, d, c, r))

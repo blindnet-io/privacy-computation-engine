@@ -12,6 +12,8 @@ import sttp.tapir.*
 import sttp.tapir.generic.Configuration
 import sttp.tapir.generic.auto.*
 import terms.*
+import cats.data.Validated
+import cats.implicits.*
 
 case class Recommendation(
     id: UUID,
@@ -38,6 +40,12 @@ object Recommendation {
 
   def rejectUnknownIdentity(id: UUID, dId: UUID) =
     Recommendation(id, dId, Some(Status.Denied), Some(Motive.UserUnknown))
+
+  def validate(r: Recommendation): Validated[String, Recommendation] = {
+    if r.status == Some(Status.Denied) && r.motive == None then
+      "Motive has to be set for denied requests".invalid
+    else r.valid
+  }
 
   given Decoder[Recommendation] = unSnakeCaseIfy(deriveDecoder[Recommendation])
   given Encoder[Recommendation] = snakeCaseIfy(deriveEncoder[Recommendation])
