@@ -51,7 +51,9 @@ class DataConsumerInterfaceService(
 
   def getPendingDemandDetails(jwt: AppJwt)(dId: UUID) =
     for {
-      _ <- repos.privacyRequest.demandExist(jwt.appId, dId).onFalseNotFound(s"Demand $dId not found")
+      _ <- repos.privacyRequest
+        .demandExist(jwt.appId, dId)
+        .onFalseNotFound(s"Demand $dId not found")
       d <- repos.privacyRequest.getDemand(dId, false).orFail(s"Demand $dId not found")
       rId = d.reqId
       req <- repos.privacyRequest.getRequest(rId, false).orFail(s"Request $rId not found")
@@ -90,15 +92,15 @@ class DataConsumerInterfaceService(
       _ <- repos.commands.addCreateResp(List(d))
     } yield ()
 
-  def changeRecommendation(appId: UUID, req: ChangeRecommendationPayload) =
+  def changeRecommendation(jwt: AppJwt)(req: ChangeRecommendationPayload) =
     for {
-      _ <- verifyDemandExists(appId, req.demandId)
+      _ <- verifyDemandExists(jwt.appId, req.demandId)
       newRec = RecommendationPayload.toRecommendation(req.recommendation, req.demandId)
       newRecV <- Recommendation.validate(newRec).toEither.orBadRequest
       _       <- repos.privacyRequest.updateRecommendation(newRecV)
     } yield ()
 
-  def getCompletedDemands(appId: UUID) =
+  def getCompletedDemands(jwt: AppJwt)(x: Unit) =
     for {
       demands <- repos.privacyRequest.getCompletedDemands()
       res = demands.map(CompletedDemandPayload.fromPrivCompletedDemand)
@@ -110,9 +112,9 @@ class DataConsumerInterfaceService(
       .demandExist(appId, dId)
       .onFalseNotFound("Demand not found")
 
-  def getCompletedDemandInfo(appId: UUID, dId: UUID) =
+  def getCompletedDemandInfo(jwt: AppJwt)(dId: UUID) =
     for {
-      _         <- verifyDemandExists(appId, dId)
+      _         <- verifyDemandExists(jwt.appId, dId)
       d         <- repos.privacyRequest.getDemand(dId, false).orFail("Demand not found")
       req       <- repos.privacyRequest.getRequestFromDemand(d.id).orFail("Request not found")
       responses <- repos.privacyRequest.getDemandResponses(dId)
@@ -121,10 +123,10 @@ class DataConsumerInterfaceService(
         .map(r => CompletedDemandInfoPayload.fromPriv(d, req, r))
     } yield resp
 
-  def getTimeline(appId: UUID, uId: String) =
+  def getTimeline(jwt: AppJwt)(uId: String) =
     for {
       _ <- IO.unit
-      ds = DataSubject(uId, appId)
+      ds = DataSubject(uId, jwt.appId)
       reqs  <- repos.privacyRequest.getRequestsForUser(ds)
       resps <- reqs
         .parTraverse(r => repos.privacyRequest.getResponsesForRequest(r.id))
@@ -133,7 +135,7 @@ class DataConsumerInterfaceService(
 
       timeline <- repos.events.getTimelineNoScope(ds)
       lbIds = timeline.events.flatMap(_.getLbId).toNel
-      lbs <- lbIds.fold(IO(List.empty))(repos.legalBase.get(appId, _))
+      lbs <- lbIds.fold(IO(List.empty))(repos.legalBase.get(jwt.appId, _))
       res = TimelineEventsPayload.fromPriv(List.empty, List.empty, timeline, lbs)
     } yield res
 

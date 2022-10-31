@@ -73,46 +73,46 @@ class DataConsumerEndpoints(
       .serverLogicSuccess(consumerInterfaceService.denyDemand)
 
   val changeRecommendation =
-    base
+    appAuthEndpoint
       .description("Deny privacy request")
       .post
       .in("pending-requests")
       .in("recommendation")
       .in(jsonBody[ChangeRecommendationPayload])
-      .errorOut(statusCode(StatusCode.BadRequest))
-      .errorOut(statusCode(StatusCode.UnprocessableEntity))
-      .errorOut(statusCode(StatusCode.NotFound))
-      .serverLogicSuccess(req => consumerInterfaceService.changeRecommendation(appId, req))
+      .errorOutVariant(oneOfVariant(statusCode(StatusCode.BadRequest)))
+      .errorOutVariant(oneOfVariant(statusCode(StatusCode.UnprocessableEntity)))
+      .errorOutVariant(oneOfVariant(statusCode(StatusCode.NotFound)))
+      .serverLogicSuccess(consumerInterfaceService.changeRecommendation)
 
   val getCompletedDemands =
-    base
+    appAuthEndpoint
       .description("Get the list of completed privacy request demands")
       .get
       .in("completed-requests")
       .out(jsonBody[List[CompletedDemandPayload]])
-      .serverLogicSuccess(req => consumerInterfaceService.getCompletedDemands(appId))
+      .serverLogicSuccess(consumerInterfaceService.getCompletedDemands)
 
   val getCompletedDemandDetails =
-    base
+    appAuthEndpoint
       .description("Get details of a completed demand")
       .get
       .in("completed-requests")
       .in(path[UUID]("requestId"))
       .out(jsonBody[List[CompletedDemandInfoPayload]])
-      .errorOut(statusCode(StatusCode.UnprocessableEntity))
-      .errorOut(statusCode(StatusCode.NotFound))
-      .serverLogicSuccess(dId => consumerInterfaceService.getCompletedDemandInfo(appId, dId))
+      .errorOutVariant(oneOfVariant(statusCode(StatusCode.UnprocessableEntity)))
+      .errorOutVariant(oneOfVariant(statusCode(StatusCode.NotFound)))
+      .serverLogicSuccess(consumerInterfaceService.getCompletedDemandInfo)
 
   val getTimeline =
-    base
+    appAuthEndpoint
       .description("Get user's timeline")
       .get
       .in("timeline")
       .in(path[String]("userId"))
       .out(jsonBody[TimelineEventsPayload])
-      .errorOut(statusCode(StatusCode.UnprocessableEntity))
-      .errorOut(statusCode(StatusCode.NotFound))
-      .serverLogicSuccess(uId => consumerInterfaceService.getTimeline(appId, uId))
+      .errorOutVariant(oneOfVariant(statusCode(StatusCode.UnprocessableEntity)))
+      .errorOutVariant(oneOfVariant(statusCode(StatusCode.NotFound)))
+      .serverLogicSuccess(consumerInterfaceService.getTimeline)
 
   val endpoints =
     List(
