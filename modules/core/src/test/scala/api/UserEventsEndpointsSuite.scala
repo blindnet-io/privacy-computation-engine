@@ -9,32 +9,31 @@ import cats.effect.*
 import cats.effect.kernel.Clock
 import cats.effect.std.*
 import cats.implicits.*
+import doobie.*
+import doobie.implicits.*
+import doobie.postgres.*
+import doobie.postgres.implicits.*
 import io.blindnet.pce.api.endpoints.messages.consumerinterface.*
+import io.blindnet.pce.priv.*
+import io.blindnet.pce.services.*
+import io.blindnet.pce.util.*
 import io.blindnet.pce.util.extension.*
-import io.circe.Json
 import io.circe.generic.auto.*
+import io.circe.literal.*
+import io.circe.parser.*
 import io.circe.syntax.*
+import io.circe.{ Json, * }
+import org.http4s.*
+import org.http4s.circe.*
+import org.http4s.implicits.*
+import weaver.*
 import api.endpoints.messages.privacyrequest.*
 import db.repositories.*
 import model.error.*
 import priv.DataSubject
 import priv.privacyrequest.{ Demand, PrivacyRequest, * }
-import util.*
 import priv.LegalBase
-import io.blindnet.pce.services.*
 import testutil.*
-import weaver.*
-import io.blindnet.pce.priv.*
-import doobie.*
-import doobie.implicits.*
-import doobie.postgres.*
-import doobie.postgres.implicits.*
-import org.http4s.*
-import org.http4s.circe.*
-import org.http4s.implicits.*
-import io.circe.*
-import io.circe.parser.*
-import io.circe.literal.*
 import httputil.*
 
 object UserEventsEndpointsSuite extends FuncSuite {
@@ -46,7 +45,7 @@ object UserEventsEndpointsSuite extends FuncSuite {
     res =>
       val req = json"""{ "data_subject": {"id": ${ds.id}}, "consent_id": $uuid, "date": $now }"""
       res.server
-        .run(post("user-events/consent", req))
+        .run(post("user-events/consent", req, Some(appToken)))
         .map(response => expect(response.status == Status.NotFound))
   }
 
@@ -54,7 +53,7 @@ object UserEventsEndpointsSuite extends FuncSuite {
     res =>
       val req = json"""{ "data_subject": {"id": ${ds.id}}, "consent_id": $cId, "date": $now }"""
       for {
-        response <- res.server.run(post("user-events/consent", req))
+        response <- res.server.run(post("user-events/consent", req, Some(appToken)))
         _        <- expect(response.status == Status.Ok).failFast
         sql =
           sql"select exists (select lbid from consent_given_events where lbid=$cId and dsid=${ds.id})"
@@ -68,7 +67,7 @@ object UserEventsEndpointsSuite extends FuncSuite {
       val uid = uuid.toString
       val req = json"""{ "data_subject": {"id": $uid}, "consent_id": $cId, "date": $now }"""
       for {
-        response <- res.server.run(post("user-events/consent", req))
+        response <- res.server.run(post("user-events/consent", req, Some(appToken)))
         _        <- expect(response.status == Status.Ok).failFast
 
         sqlEv =
@@ -87,7 +86,7 @@ object UserEventsEndpointsSuite extends FuncSuite {
     res =>
       val req = json"""{ "data_subject": {"id": ${ds.id}}, "contract_id": $uuid, "date": $now }"""
       res.server
-        .run(post("user-events/contract/start", req))
+        .run(post("user-events/contract/start", req, Some(appToken)))
         .map(response => expect(response.status == Status.NotFound))
   }
 

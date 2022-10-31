@@ -14,6 +14,8 @@ import io.circe.*
 import io.circe.parser.*
 import io.circe.literal.*
 import cats.effect.IO
+import org.http4s.headers.Authorization
+import org.typelevel.ci.*
 
 object testutil {
 
@@ -33,22 +35,24 @@ object testutil {
 
 object httputil {
 
-  // TODO: add auth
-  def req(method: Method, path: String) =
+  def req(method: Method, path: String, token: Option[String] = None) =
     Request[IO]()
       .withUri(uri"/v0".addPath(path))
       .withMethod(method)
+      .putHeaders(
+        token.map(t => List(Header.Raw(ci"Authorization", s"Bearer $t"))).getOrElse(List.empty)
+      )
 
-  def get(path: String) =
-    req(Method.GET, path)
+  def get(path: String, token: Option[String] = None) =
+    req(Method.GET, path, token)
 
-  def post(path: String, body: Json) =
-    req(Method.POST, path).withEntity(body)
+  def post(path: String, body: Json, token: Option[String] = None) =
+    req(Method.POST, path, token).withEntity(body)
 
-  def put(path: String, body: String) =
-    req(Method.PUT, path).withEntity(body)
+  def put(path: String, body: String, token: Option[String] = None) =
+    req(Method.PUT, path, token).withEntity(body)
 
-  def delete(path: String, body: String) =
-    req(Method.DELETE, path)
+  def delete(path: String, body: String, token: Option[String] = None) =
+    req(Method.DELETE, path, token)
 
 }

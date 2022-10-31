@@ -12,7 +12,9 @@ import db.repositories.*
 import requesthandlers.*
 import api.*
 import services.*
-import config.{ given, * }
+import config.{*, given}
+import io.blindnet.identityclient.IdentityClientBuilder
+import io.blindnet.identityclient.auth.JwtAuthenticator
 import services.external.StorageInterface
 
 object Main extends IOApp {
@@ -39,7 +41,9 @@ object Main extends IOApp {
 
       _ <- Resource.eval(RequestHandlers.run(repositories, storage)).start
 
-      app = AppRouter.make(services)
+      identityClient <- IdentityClientBuilder().withClient(httpClient).resource
+
+      app = AppRouter.make(services, JwtAuthenticator(identityClient))
       server <- Server.make(app.httpApp, conf.api)
 
     } yield ()

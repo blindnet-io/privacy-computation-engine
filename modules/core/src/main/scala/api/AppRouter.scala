@@ -19,22 +19,23 @@ import sttp.tapir.server.http4s.*
 import sttp.tapir.swagger.*
 import sttp.tapir.swagger.bundle.*
 import endpoints.*
+import io.blindnet.identityclient.auth.*
 import services.Services
 import sttp.apispec.Tag
 import sttp.apispec.ExternalDocumentation
 
 object AppRouter {
-  def make(services: Services) = new AppRouter(services)
+  def make(services: Services, authenticator: JwtAuthenticator[Jwt]) = new AppRouter(services, authenticator)
 }
 
-class AppRouter(services: Services) {
+class AppRouter(services: Services, authenticator: JwtAuthenticator[Jwt]) {
 
   val healthCheckEndpoints       = new HealthCheckEndpoints()
-  val privacyRequestEndpoints    = new PrivacyRequestEndpoints(services.privacyRequest)
-  val consumerInterfaceEndpoints = new DataConsumerEndpoints(services.consumerInterface)
-  val configurationEndpoints     = new ConfigurationEndpoints(services.configuration)
-  val userEventsEndpoints        = new UserEventsEndpoints(services.userEvents)
-  val userEndpoints              = new UserEndpoints(services.user)
+  val privacyRequestEndpoints    = new PrivacyRequestEndpoints(authenticator, services.privacyRequest)
+  val consumerInterfaceEndpoints = new DataConsumerEndpoints(authenticator, services.consumerInterface)
+  val configurationEndpoints     = new ConfigurationEndpoints(authenticator, services.configuration)
+  val userEventsEndpoints        = new UserEventsEndpoints(authenticator, services.userEvents)
+  val userEndpoints              = new UserEndpoints(authenticator, services.user)
   val callbackEndpoints          = new CallbackEndpoints(services.callbacks)
 
   val allEndpoints =

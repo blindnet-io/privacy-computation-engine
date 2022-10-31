@@ -10,6 +10,7 @@ import cats.effect.implicits.*
 import cats.effect.kernel.Clock
 import cats.effect.std.*
 import cats.implicits.*
+import io.blindnet.identityclient.auth.*
 import io.blindnet.pce.model.*
 import io.blindnet.pce.model.error.given
 import io.blindnet.pce.util.extension.*
@@ -28,7 +29,7 @@ class PrivacyRequestService(
     repos: Repositories
 ) {
 
-  private def validateRequest(appId: UUID, req: PrivacyRequest) = {
+  private def validateRequest(jwt: AnyUserJwt)(req: PrivacyRequest) = {
     for {
       _ <- IO.unit
       // TODO: rethink if/how to handle duplicate action types
@@ -47,7 +48,7 @@ class PrivacyRequestService(
               case Some(r) =>
                 val cId = r.asInstanceOf[Restriction.Consent].consentId
                 for {
-                  lbOpt <- repos.legalBase.get(appId, cId, false)
+                  lbOpt <- repos.legalBase.get(jwt.appId, cId, false)
                   isConsent = lbOpt.map(_.isConsent).getOrElse(false)
                 } yield isConsent
               case None    => IO(true)
@@ -60,7 +61,7 @@ class PrivacyRequestService(
 
   }
 
-  def createPrivacyRequest(req: CreatePrivacyRequestPayload, appId: UUID) = {
+  def createPrivacyRequest(jwt: AnyUserJwt)(req: CreatePrivacyRequestPayload) = {
     for {
       reqId     <- UUIDGen.randomUUID[IO].map(RequestId.apply)
       demandIds <- UUIDGen.randomUUID[IO].replicateA(req.demands.length)
@@ -70,13 +71,13 @@ class PrivacyRequestService(
 
       timestamp <- Clock[IO].realTimeInstant
       ds        <-
-        NonEmptyList.fromList(req.dataSubject.map(dsp => dsp.toPrivDataSubject(appId))) match {
+        NonEmptyList.fromList(req.dataSubject.map(dsp => dsp.toPrivDataSubject(jwt.appId))) match {
           case None             => IO(None)
-          case Some(identities) => repos.dataSubject.get(appId, identities)
+          case Some(identities) => repos.dataSubject.get(jwt.appId, identities)
         }
       pr = PrivacyRequest(
         reqId,
-        appId,
+        jwt.appId,
         timestamp,
         req.target.getOrElse(Target.System),
         req.email,
@@ -84,7 +85,7 @@ class PrivacyRequestService(
         req.dataSubject.map(_.id),
         demands
       )
-      _         <- validateRequest(appId, pr)
+      _         <- validateRequest(jwt)(pr)
 
       responses <- PrivacyResponse.fromPrivacyRequest[IO](pr)
       _         <- repos.privacyRequest.store(pr, responses)
@@ -116,9 +117,9 @@ class PrivacyRequestService(
     PrItem(req.id.value, req.timestamp, req.demands.length, status)
   }
 
-  def getRequestHistory(appId: UUID, userId: String) =
+  def getRequestHistory(jwt: UserJwt)(x: Unit) =
     for {
-      ds     <- IO(DataSubject(userId, appId))
+      ds     <- IO(DataSubject(jwt.userId, jwt.appId))
       reqIds <- repos.privacyRequest.getAllUserRequestIds(ds)
       // TODO: this can be optimized in the db
       reqs   <- reqIds
@@ -138,9 +139,9 @@ class PrivacyRequestService(
       .requestExist(requestId, appId, userId)
       .onFalseNotFound("Request not found")
 
-  def getResponse(requestId: RequestId, appId: UUID, userId: Option[String]) =
+  def getResponse(jwt: AnyUserJwt)(requestId: RequestId) =
     for {
-      _             <- verifyReqExists(requestId, appId, userId)
+      _             <- verifyReqExists(requestId, jwt.appId, jwt.asUser.map(_.userId))
       privResponses <- repos.privacyRequest.getResponsesForRequest(requestId)
       resp = PrivacyResponse
         .group(privResponses)
@@ -152,10 +153,10 @@ class PrivacyRequestService(
       .demandExist(appId, dId, userId)
       .onFalseNotFound("Demand not found")
 
-  def cancelDemand(req: CancelDemandPayload, appId: UUID, userId: String) =
+  def cancelDemand(jwt: UserJwt)(req: CancelDemandPayload) =
     val dId = req.demandId
     for {
-      _     <- verifyDemandExists(appId, dId, userId)
+      _     <- verifyDemandExists(jwt.appId, dId, jwt.userId)
       resps <- repos.privacyRequest.getDemandResponses(dId)
       underReviewROpt = resps.filter(_.status == Status.UnderReview).toNel
       underReviewR <- underReviewROpt.orBadRequest(s"Responses for demand $dId not UNDER-REVIEW")

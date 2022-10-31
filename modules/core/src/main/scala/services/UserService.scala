@@ -10,6 +10,7 @@ import cats.effect.implicits.*
 import cats.effect.kernel.Clock
 import cats.effect.std.*
 import cats.implicits.*
+import io.blindnet.identityclient.auth.*
 import io.blindnet.pce.model.*
 import io.blindnet.pce.model.error.given
 import io.blindnet.pce.util.extension.*
@@ -27,15 +28,15 @@ import util.*
 class UserService(
     repos: Repositories
 ) {
-  def getGivenConsents(appId: UUID, userId: String) =
+  def getGivenConsents(jwt: UserJwt)(x: Unit) =
     for {
-      timeline <- repos.events.getTimelineNoScope(DataSubject(userId, appId))
+      timeline <- repos.events.getTimelineNoScope(DataSubject(jwt.userId, jwt.appId))
       givenConsents = timeline.getConsentGivenEvents()
       res <- givenConsents.toNel match {
         case None      => IO(List.empty)
         case Some(gcs) =>
           for {
-            lbEvents <- repos.legalBase.get(appId, gcs.map(_.lbId))
+            lbEvents <- repos.legalBase.get(jwt.appId, gcs.map(_.lbId))
             res = lbEvents.map(
               e => GivenConsentsPayload(e.id, e.name, gcs.find(_.lbId == e.id).map(_.timestamp).get)
             )

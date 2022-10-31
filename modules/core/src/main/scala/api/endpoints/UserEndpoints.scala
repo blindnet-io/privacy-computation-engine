@@ -4,6 +4,7 @@ package api.endpoints
 import java.util.UUID
 
 import cats.effect.IO
+import io.blindnet.identityclient.auth.*
 import io.circe.generic.auto.*
 import org.http4s.server.Router
 import sttp.model.StatusCode
@@ -19,23 +20,21 @@ import api.endpoints.BaseEndpoint.*
 import priv.privacyrequest.{ RequestId as PrivReqId }
 
 class UserEndpoints(
+    authenticator: JwtAuthenticator[Jwt],
     userService: UserService
-) {
+) extends Endpoints(authenticator) {
   given Configuration = Configuration.default.withSnakeCaseMemberNames
 
-  val base = baseEndpoint.in("user").tag("User info")
-
-  val appId = UUID.fromString("6f083c15-4ada-4671-a6d1-c671bc9105dc")
+  override def mapEndpoint(endpoint: EndpointT): EndpointT =
+    endpoint.in("user").tag("User info")
 
   val getGivenConsents =
-    base
+    userAuthEndpoint
       .description("Get a list of consents user has given")
       .get
       .in("consents")
-      // TODO: remove when auth
-      .in(header[String]("Authorization"))
       .out(jsonBody[List[GivenConsentsPayload]])
-      .serverLogicSuccess(userId => userService.getGivenConsents(appId, userId))
+      .serverLogicSuccess(userService.getGivenConsents)
 
   val endpoints: List[ServerEndpoint[Any, IO]] = List(getGivenConsents)
 

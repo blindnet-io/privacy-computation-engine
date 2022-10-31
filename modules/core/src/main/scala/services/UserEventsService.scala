@@ -9,6 +9,7 @@ import cats.effect.*
 import cats.effect.kernel.Clock
 import cats.effect.std.*
 import cats.implicits.*
+import io.blindnet.identityclient.auth.*
 import io.blindnet.pce.api.endpoints.messages.consumerinterface.*
 import io.blindnet.pce.model.error.given
 import io.blindnet.pce.util.extension.*
@@ -38,49 +39,49 @@ class UserEventsService(
   def handleUser(appId: UUID, ds: DataSubject) =
     repos.dataSubject.exist(appId, ds.id).ifM(IO.unit, repos.dataSubject.insert(appId, ds))
 
-  def addConsentGivenEvent(appId: UUID, req: GiveConsentPayload) =
+  def addConsentGivenEvent(jwt: AppJwt)(req: GiveConsentPayload) =
     for {
-      _ <- verifyLbExists(appId, req.consentId, _.isConsent)
-      ds = req.dataSubject.toPrivDataSubject(appId)
-      _ <- handleUser(appId, ds)
+      _ <- verifyLbExists(jwt.appId, req.consentId, _.isConsent)
+      ds = req.dataSubject.toPrivDataSubject(jwt.appId)
+      _ <- handleUser(jwt.appId, ds)
 
       _ <- repos.events.addConsentGiven(req.consentId, ds, req.date)
     } yield ()
 
-  def addStartContractEvent(appId: UUID, req: StartContractPayload) =
+  def addStartContractEvent(jwt: AppJwt)(req: StartContractPayload) =
     for {
-      _ <- verifyLbExists(appId, req.contractId, _.isContract)
-      ds = req.dataSubject.toPrivDataSubject(appId)
-      _ <- handleUser(appId, ds)
+      _ <- verifyLbExists(jwt.appId, req.contractId, _.isContract)
+      ds = req.dataSubject.toPrivDataSubject(jwt.appId)
+      _ <- handleUser(jwt.appId, ds)
 
       _ <- repos.events.addLegalBaseEvent(req.contractId, ds, ServiceStart, req.date)
     } yield ()
 
-  def addEndContractEvent(appId: UUID, req: EndContractPayload) =
+  def addEndContractEvent(jwt: AppJwt)(req: EndContractPayload) =
     for {
-      _ <- verifyLbExists(appId, req.contractId, _.isContract)
-      ds = req.dataSubject.toPrivDataSubject(appId)
-      _ <- handleUser(appId, ds)
+      _ <- verifyLbExists(jwt.appId, req.contractId, _.isContract)
+      ds = req.dataSubject.toPrivDataSubject(jwt.appId)
+      _ <- handleUser(jwt.appId, ds)
 
       _ <- repos.events.addLegalBaseEvent(req.contractId, ds, ServiceEnd, req.date)
     } yield ()
 
-  def addStartLegitimateInterestEvent(appId: UUID, req: StartLegitimateInterestPayload) =
+  def addStartLegitimateInterestEvent(jwt: AppJwt)(req: StartLegitimateInterestPayload) =
     val id = req.legitimateInterestId
     for {
-      _ <- verifyLbExists(appId, req.legitimateInterestId, _.isLegitimateInterest)
-      ds = req.dataSubject.toPrivDataSubject(appId)
-      _ <- handleUser(appId, ds)
+      _ <- verifyLbExists(jwt.appId, req.legitimateInterestId, _.isLegitimateInterest)
+      ds = req.dataSubject.toPrivDataSubject(jwt.appId)
+      _ <- handleUser(jwt.appId, ds)
 
       _ <- repos.events.addLegalBaseEvent(id, ds, ServiceStart, req.date)
     } yield ()
 
-  def addEndLegitimateInterestEvent(appId: UUID, req: EndLegitimateInterestPayload) =
+  def addEndLegitimateInterestEvent(jwt: AppJwt)(req: EndLegitimateInterestPayload) =
     val id = req.legitimateInterestId
     for {
-      _ <- verifyLbExists(appId, req.legitimateInterestId, _.isLegitimateInterest)
-      ds = req.dataSubject.toPrivDataSubject(appId)
-      _ <- handleUser(appId, ds)
+      _ <- verifyLbExists(jwt.appId, req.legitimateInterestId, _.isLegitimateInterest)
+      ds = req.dataSubject.toPrivDataSubject(jwt.appId)
+      _ <- handleUser(jwt.appId, ds)
 
       _ <- repos.events.addLegalBaseEvent(id, ds, ServiceEnd, req.date)
     } yield ()
