@@ -111,6 +111,8 @@ lazy val core = (project in file("modules/core"))
     assembly / mainClass             := Some("io.blindnet.pce.Main"),
     assembly / assemblyJarName       := "devkit_pce.jar",
     assembly / assemblyMergeStrategy := {
+      case PathList(ps @ _*) if ps.last == "module-info.class"                          =>
+        MergeStrategy.discard
       case PathList("META-INF", "maven", "org.webjars", "swagger-ui", "pom.properties") =>
         MergeStrategy.singleOrError
       case x                                                                            =>
