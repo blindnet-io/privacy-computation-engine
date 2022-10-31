@@ -28,13 +28,23 @@ class UserEventsEndpoints(
     endpoint.in("user-events").tag("User events")
 
   val giveConsent =
-    appAuthEndpoint
-      .description("Add consent for a user")
+    userAuthEndpoint
+      .description("Give consent")
       .post
       .in("consent")
       .in(jsonBody[GiveConsentPayload])
       .errorOutVariant(oneOfVariant(statusCode(StatusCode.UnprocessableEntity)))
       .serverLogicSuccess(userEventsService.addConsentGivenEvent)
+
+  val storeGivenConsent =
+    appAuthEndpoint
+      .description("Store given consent for a user")
+      .post
+      .in("consent")
+      .in("store")
+      .in(jsonBody[StoreGivenConsentPayload])
+      .errorOutVariant(oneOfVariant(statusCode(StatusCode.UnprocessableEntity)))
+      .serverLogicSuccess(userEventsService.storeGivenConsentEvent)
 
   val startContract =
     appAuthEndpoint
@@ -78,6 +88,7 @@ class UserEventsEndpoints(
 
   val endpoints = List(
     giveConsent,
+    storeGivenConsent,
     startContract,
     endContract,
     startLegitimateInterest,

@@ -19,13 +19,15 @@ import priv.privacyrequest.*
 import priv.terms.*
 import api.endpoints.messages.*
 
-case class GiveConsentPayload(
-    consentId: UUID
+case class StoreGivenConsentPayload(
+    dataSubject: DataSubjectPayload,
+    consentId: UUID,
+    date: Instant
 )
 
-object GiveConsentPayload {
-  given Decoder[GiveConsentPayload] = unSnakeCaseIfy(deriveDecoder[GiveConsentPayload])
-  given Encoder[GiveConsentPayload] = snakeCaseIfy(deriveEncoder[GiveConsentPayload])
+object StoreGivenConsentPayload {
+  given Decoder[StoreGivenConsentPayload] = unSnakeCaseIfy(deriveDecoder[StoreGivenConsentPayload])
+  given Encoder[StoreGivenConsentPayload] = snakeCaseIfy(deriveEncoder[StoreGivenConsentPayload])
 
-  given Schema[GiveConsentPayload] = Schema.derived[GiveConsentPayload]
+  given Schema[StoreGivenConsentPayload] = Schema.derived[StoreGivenConsentPayload]
 }
