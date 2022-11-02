@@ -39,6 +39,16 @@ class UserEventsService(
   def handleUser(appId: UUID, ds: DataSubject) =
     repos.dataSubject.exist(appId, ds.id).ifM(IO.unit, repos.dataSubject.insert(appId, ds))
 
+  def addConsentGivenEvent(req: GiveConsentUnsafePayload) =
+    for {
+      _ <- verifyLbExists(req.appId, req.consentId, _.isConsent)
+      ds = req.dataSubject.toPrivDataSubject(req.appId)
+      _         <- handleUser(req.appId, ds)
+      timestamp <- Clock[IO].realTimeInstant
+
+      _ <- repos.events.addConsentGiven(req.consentId, ds, timestamp)
+    } yield ()
+
   def addConsentGivenEvent(jwt: UserJwt)(req: GiveConsentPayload) =
     for {
       _ <- verifyLbExists(jwt.appId, req.consentId, _.isConsent)

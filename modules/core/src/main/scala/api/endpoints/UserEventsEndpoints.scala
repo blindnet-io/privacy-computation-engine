@@ -27,6 +27,16 @@ class UserEventsEndpoints(
   override def mapEndpoint(endpoint: EndpointT): EndpointT =
     endpoint.in("user-events").tag("User events")
 
+  val giveConsentUnsafe =
+    publicEndpoint
+      .description("Give consent")
+      .post
+      .in("consent")
+      .in("unsafe")
+      .in(jsonBody[GiveConsentUnsafePayload])
+      .errorOutVariant(oneOfVariant(statusCode(StatusCode.UnprocessableEntity)))
+      .serverLogicSuccess(req => userEventsService.addConsentGivenEvent(req))
+
   val giveConsent =
     userAuthEndpoint
       .description("Give consent")
@@ -87,6 +97,7 @@ class UserEventsEndpoints(
       .serverLogicSuccess(userEventsService.addEndLegitimateInterestEvent)
 
   val endpoints = List(
+    giveConsentUnsafe,
     giveConsent,
     storeGivenConsent,
     startContract,
