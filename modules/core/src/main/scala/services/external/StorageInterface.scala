@@ -67,17 +67,19 @@ object StorageInterface {
           callback = (conf.callbackUri / "callback" / callbackId.toString).toString
         )
 
-        def req(uri: Uri) = Request[IO](
+        def req(uri: Uri, token: String) = Request[IO](
           method = Method.POST,
-          uri = uri / "v1" / "requests"
+          uri = uri / "v1" / "requests",
+          headers = Headers("Authorization" -> s"Bearer $token")
         )
           .withEntity(payload)
 
         for {
           // TODO: exception
-          uri <- app.dac.uri.fold(IO.raiseError(new Exception("DAC uri not found")))(IO(_))
-          _   <- logger.info(s"Sending request to $uri \n ${payload.asJson}")
-          res <- c.successful(req(uri))
+          uri   <- app.dac.uri.fold(IO.raiseError(new Exception("DAC uri not found")))(IO(_))
+          token <- app.dac.token.fold(IO.raiseError(new Exception("DAC token not found")))(IO(_))
+          _     <- logger.info(s"Sending request to $uri \n ${payload.asJson}")
+          res   <- c.successful(req(uri, token))
           _ = if res then IO.unit else IO.raiseError(InternalException("Non 200 response from DAC"))
         } yield ()
       }
@@ -103,17 +105,19 @@ object StorageInterface {
           callback = (conf.callbackUri / "callback" / callbackId.toString).toString
         )
 
-        def req(uri: Uri) = Request[IO](
+        def req(uri: Uri, token: String) = Request[IO](
           method = Method.POST,
-          uri = uri / "v1" / "requests"
+          uri = uri / "v1" / "requests",
+          headers = Headers("Authorization" -> s"Bearer $token")
         )
           .withEntity(payload)
 
         for {
           // TODO: exception
-          uri <- app.dac.uri.fold(IO.raiseError(new Exception("DAC uri not found")))(IO(_))
-          _   <- logger.info(s"Sending request to $uri \n ${payload.asJson}")
-          res <- c.successful(req(uri))
+          uri   <- app.dac.uri.fold(IO.raiseError(new Exception("DAC uri not found")))(IO(_))
+          token <- app.dac.token.fold(IO.raiseError(new Exception("DAC token not found")))(IO(_))
+          _     <- logger.info(s"Sending request to $uri \n ${payload.asJson}")
+          res   <- c.successful(req(uri, token))
           _ = if res then IO.unit else IO.raiseError(InternalException("Non 200 response from DAC"))
         } yield ()
       }
