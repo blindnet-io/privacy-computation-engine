@@ -12,10 +12,12 @@ import db.repositories.*
 import requesthandlers.*
 import api.*
 import services.*
-import config.{*, given}
+import config.{ *, given }
 import io.blindnet.identityclient.IdentityClientBuilder
 import io.blindnet.identityclient.auth.JwtAuthenticator
 import services.external.StorageInterface
+import dev.profunktor.redis4cats.*
+import dev.profunktor.redis4cats.effect.Log.Stdout.*
 
 object Main extends IOApp {
   val logger: Logger[IO] = Slf4jLogger.getLogger[IO]
@@ -29,10 +31,12 @@ object Main extends IOApp {
       xa   <- DbTransactor.make(conf.db)
       _    <- Resource.eval(xa.configure(Migrator.migrateDatabase))
 
+      redis <- Redis[IO].utf8("redis://localhost")
+
       cpuPool <- Pools.cpu
       pools = Pools(cpuPool)
 
-      repositories <- Resource.eval(Repositories.live(xa, pools))
+      repositories = Repositories.live(xa, redis, pools)
 
       httpClient <- EmberClientBuilder.default[IO].build
       storage = StorageInterface.live(httpClient, repositories, conf)

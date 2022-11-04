@@ -3,43 +3,38 @@ package db.repositories
 
 import java.util.UUID
 
-import cats.data.NonEmptyList
 import cats.effect.IO
-import cats.effect.kernel.Ref
-import cats.effect.std.Queue
-import doobie.*
-import doobie.implicits.*
-import doobie.postgres.*
-import doobie.postgres.implicits.*
-import doobie.util.transactor.Transactor
-import io.blindnet.pce.db.DbUtil
-import io.blindnet.pce.util.extension.*
-import priv.*
 import priv.privacyrequest.*
-import priv.terms.*
+import dev.profunktor.redis4cats.*
+import io.circe.*
+import io.circe.generic.semiauto.*
+import io.circe.syntax.*
+import io.circe.parser.*
+
+case class CBData(aid: UUID, rid: ResponseEventId)
+object CBData:
+  given Codec[CBData] = deriveCodec
 
 trait CallbacksRepository {
-  def set(id: UUID, appId: UUID, respEvId: ResponseEventId): IO[Unit]
+  def set(id: UUID, d: CBData): IO[Unit]
 
-  def get(id: UUID): IO[Option[(UUID, ResponseEventId)]]
+  def get(id: UUID): IO[Option[CBData]]
 
   def remove(id: UUID): IO[Unit]
 }
 
 object CallbacksRepository {
-  def live(): IO[CallbacksRepository] =
-    for {
-      callbacks <- Ref.of[IO, Map[UUID, (UUID, ResponseEventId)]](Map.empty)
-    } yield new CallbacksRepository {
+  def live(redis: RedisCommands[IO, String, String]): CallbacksRepository =
+    new CallbacksRepository {
 
-      def set(id: UUID, appId: UUID, respEvId: ResponseEventId): IO[Unit] =
-        callbacks.update(_.updated(id, (appId, respEvId)))
+      def set(id: UUID, d: CBData): IO[Unit] =
+        redis.set(s"callbacks:$id", d.asJson.noSpaces).void
 
-      def get(id: UUID): IO[Option[(UUID, ResponseEventId)]] =
-        callbacks.get.map(_.get(id))
+      def get(id: UUID): IO[Option[CBData]] =
+        redis.get(s"callbacks:$id").map(_.flatMap(decode[CBData](_).toOption))
 
       def remove(id: UUID): IO[Unit] =
-        callbacks.update(_.removed(id))
+        redis.del(s"callbacks:$id", id.toString).void
 
     }
 

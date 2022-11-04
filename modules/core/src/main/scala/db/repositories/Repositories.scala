@@ -6,6 +6,7 @@ import doobie.util.transactor.Transactor
 import db.repositories.privacyrequest.*
 import db.repositories.privacyscope.*
 import db.repositories.events.*
+import dev.profunktor.redis4cats.*
 
 trait Repositories {
   val app: AppRepository
@@ -26,7 +27,11 @@ trait Repositories {
 }
 
 object Repositories {
-  def live(xa: Transactor[IO], pools: Pools): IO[Repositories] = {
+  def live(
+      xa: Transactor[IO],
+      redis: RedisCommands[IO, String, String],
+      pools: Pools
+  ): Repositories = {
 
     val appRepo             = AppRepository.live(xa)
     val generalInfoRepo     = GeneralInfoRepository.live(xa)
@@ -42,9 +47,9 @@ object Repositories {
     val commandsRepo        = CommandsRepository.live(xa)
     val demandsToReviewRepo = DemandsToReviewRepository.live(xa)
 
-    for {
-      callbacksRepo <- CallbacksRepository.live()
-    } yield new Repositories {
+    val callbacksRepo = CallbacksRepository.live(redis)
+
+    new Repositories {
       val app             = appRepo
       val generalInfo     = generalInfoRepo
       val dataSubject     = dataSubjectRepo

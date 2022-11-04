@@ -14,6 +14,7 @@ case class Config(
     env: AppEnvironment,
     callbackUri: Uri,
     db: DbConfig,
+    redis: RedisConfig,
     api: ApiConfig,
     components: ComponentsConfig
 )
@@ -30,6 +31,9 @@ given Show[Config] =
           |db
           |${show"${c.db}"}
           |
+          |redis
+          |${show"${c.redis}"}
+          |
           |api
           |${show"${c.api}"}
           |
@@ -44,6 +48,7 @@ object Config {
       env("APP_ENV").as[AppEnvironment].default(AppEnvironment.Development),
       env("APP_CALLBACK_URI").as[Uri].default(uri"localhost"),
       DbConfig.load,
+      RedisConfig.load,
       ApiConfig.load,
       ComponentsConfig.load
     )

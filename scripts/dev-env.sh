@@ -8,3 +8,5 @@ export DB_USER="postgres"
 export DB_PASS="mysecretpassword"
 # callback api prefix
 export APP_CALLBACK_URI="localhost:9000/v0"
+# redis
+export REDIS_URI="redis://localhost"
