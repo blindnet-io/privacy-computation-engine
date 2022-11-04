@@ -9,7 +9,8 @@ import org.http4s.Uri
 
 case class DacConfig(
     usingDac: Boolean,
-    uri: Option[Uri]
+    uri: Option[Uri],
+    token: Option[String]
 )
 
 case class PCEApp(
@@ -20,12 +21,12 @@ case class PCEApp(
 
 object PCEApp {
   given Read[PCEApp] =
-    Read[(UUID, Boolean, Option[String], Boolean, Boolean, Boolean, Boolean)]
+    Read[(UUID, Boolean, Option[String], Option[String], Boolean, Boolean, Boolean, Boolean)]
       .map {
-        case (id, usingDac, dacUri, t, a, d, c) =>
+        case (id, usingDac, dacUri, dacToken, t, a, d, c) =>
           PCEApp(
             id,
-            DacConfig(usingDac, dacUri.map(Uri.unsafeFromString)),
+            DacConfig(usingDac, dacUri.map(Uri.unsafeFromString), dacToken),
             DemandResolutionStrategy.simple(t, a, d, c)
           )
       }

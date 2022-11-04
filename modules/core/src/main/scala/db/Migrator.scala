@@ -15,12 +15,6 @@ object Migrator {
 
   private def migrate(flywayConf: FluentConfiguration) =
     for {
-      validation <- IO(flywayConf.load().validateWithResult())
-
-      _ <-
-        if validation.validationSuccessful then IO.unit
-        else IO.raiseError(MigrationError(validation.getAllErrorMessages()))
-
       res <- IO(flywayConf.load().migrate())
 
       _ <-
