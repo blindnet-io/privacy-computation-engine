@@ -97,11 +97,13 @@ trait FuncSuite extends IOSuite {
 
       client <- EmberClientBuilder.default[IO].build
 
-      repos <- Resource.eval(Repositories.live(xa, Pools(scala.concurrent.ExecutionContext.global)))
+      repos = Repositories.live(xa, null, Pools(scala.concurrent.ExecutionContext.global))
+
       conf     = Config(
         env = AppEnvironment.Development,
         callbackUri = Uri.unsafeFromString("localhost"),
         db = null,
+        redis = null,
         api = ApiConfig(ipv4"0.0.0.0", port"9009"),
         components = ComponentsConfig()
       )
