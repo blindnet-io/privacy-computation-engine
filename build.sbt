@@ -87,6 +87,7 @@ lazy val core = (project in file("modules/core"))
       dependencies.main.doobieHikari,
       dependencies.main.doobiePostgres,
       dependencies.main.doobiePostgresCirce,
+      dependencies.main.redis4cats,
       dependencies.main.tapir,
       dependencies.main.tapirHttp4s,
       dependencies.main.tapirJsonCirce,

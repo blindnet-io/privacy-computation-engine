@@ -34,6 +34,9 @@ import io.circe.literal.*
 import org.http4s.circe.*
 import io.blindnet.identityclient.IdentityClient
 import io.blindnet.jwt.*
+import org.testcontainers.containers.GenericContainer
+import dev.profunktor.redis4cats.*
+import dev.profunktor.redis4cats.effect.Log.Stdout.*
 
 trait FuncSuite extends IOSuite {
 
@@ -84,24 +87,35 @@ trait FuncSuite extends IOSuite {
   override type Res = Resources
   override def sharedResource: Resource[IO, Res] = {
     for {
-      container <- Resource.make {
+      pgContainer <- Resource.make {
         val container = PostgreSQLContainer(DockerImageName.parse("postgres:13"))
         IO.blocking(container.start()).as(container)
       }(c => IO.blocking(c.stop()))
-      
+
+      // redisContainer <- Resource.make {
+      //   import scala.collection.JavaConverters.*
+      //   val redisContainer = GenericContainer(DockerImageName.parse("redis:6.2.7-alpine"))
+      //   redisContainer.setExposedPorts(List(Integer.valueOf(6379)).asJava)
+      //   IO.blocking(redisContainer.start()).as(redisContainer)
+      // }(c => IO.blocking(c.stop()))
+
       // format: off
-      xa = Transactor.fromDriverManager[IO]("org.postgresql.Driver", container.jdbcUrl, container.username, container.password)
-      _ <- Resource.eval(Migrator.migrateDatabase(container.jdbcUrl, container.username, container.password))
+      xa = Transactor.fromDriverManager[IO]("org.postgresql.Driver", pgContainer.jdbcUrl, pgContainer.username, pgContainer.password)
+      _ <- Resource.eval(Migrator.migrateDatabase(pgContainer.jdbcUrl, pgContainer.username, pgContainer.password))
       // format: on
       _ <- Resource.eval(populateDb(xa))
 
+      // redis = Redis[IO].utf8(s"redis://localhost:${redisContainer.getMappedPort(6379)}")
+
       client <- EmberClientBuilder.default[IO].build
 
-      repos <- Resource.eval(Repositories.live(xa, Pools(scala.concurrent.ExecutionContext.global)))
+      repos = Repositories.live(xa, null, Pools(scala.concurrent.ExecutionContext.global))
+
       conf     = Config(
         env = AppEnvironment.Development,
         callbackUri = Uri.unsafeFromString("localhost"),
         db = null,
+        redis = null,
         api = ApiConfig(ipv4"0.0.0.0", port"9009"),
         components = ComponentsConfig()
       )
@@ -109,7 +123,7 @@ trait FuncSuite extends IOSuite {
 
       identityClient <- IdentityClientBuilder().withClient(identityHttpClient).resource
 
-      server = AppRouter.make(services, JwtAuthenticator(identityClient)).httpApp
+      server = AppRouter.make(services, repos, JwtAuthenticator(identityClient)).httpApp
 
     } yield Resources(xa, client, repos, services, server)
   }

@@ -20,6 +20,7 @@ import priv.Recommendation
 import priv.privacyrequest.*
 import priv.terms.*
 import db.repositories.Repositories
+import io.blindnet.pce.db.repositories.CBData
 
 // TODO: refactor
 class ResponseCalculator(
@@ -117,13 +118,13 @@ class ResponseCalculator(
       case (Access, Some(ds)) =>
         for {
           cbId <- UUIDGen.randomUUID[IO]
-          _    <- repos.callbacks.set(cbId, app.id, rEventId)
+          _    <- repos.callbacks.set(cbId, CBData(app.id, rEventId))
           _    <- storage.requestAccess(app, cbId, d.id, ds, r)
         } yield ()
       case (Delete, Some(ds)) =>
         for {
           cbId <- UUIDGen.randomUUID[IO]
-          _    <- repos.callbacks.set(cbId, app.id, rEventId)
+          _    <- repos.callbacks.set(cbId, CBData(app.id, rEventId))
           _    <- storage.requestDeletion(app, cbId, d.id, ds, r)
         } yield ()
       case _                  => IO.unit

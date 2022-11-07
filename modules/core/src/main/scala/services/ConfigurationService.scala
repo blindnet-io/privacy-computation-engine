@@ -31,64 +31,64 @@ class ConfigurationService(
     repos: Repositories
 ) {
 
-  def getGeneralInfo(jwt: AppJwt)(x: Unit) =
+  def getGeneralInfo(appId: UUID)(x: Unit) =
     repos.generalInfo
-      .get(jwt.appId)
-      .orFail(s"General info for app ${jwt.appId} not found")
+      .get(appId)
+      .orFail(s"General info for app ${appId} not found")
 
-  def updateGeneralInfo(jwt: AppJwt)(gi: GeneralInformation) =
-    repos.generalInfo.upsert(jwt.appId, gi)
+  def updateGeneralInfo(appId: UUID)(gi: GeneralInformation) =
+    repos.generalInfo.upsert(appId, gi)
 
-  def getDemandResolutionStrategy(jwt: AppJwt)(x: Unit) =
+  def getDemandResolutionStrategy(appId: UUID)(x: Unit) =
     repos.app
-      .get(jwt.appId)
-      .orFail(s"General info for app ${jwt.appId} not found")
+      .get(appId)
+      .orFail(s"General info for app ${appId} not found")
       .map(_.resolutionStrategy)
 
-  def updateDemandResolutionStrategy(jwt: AppJwt)(drs: DemandResolutionStrategy) =
-    repos.app.updateReslutionStrategy(jwt.appId, drs)
+  def updateDemandResolutionStrategy(appId: UUID)(drs: DemandResolutionStrategy) =
+    repos.app.updateReslutionStrategy(appId, drs)
 
-  def getPrivacyScopeDimensions(jwt: AppJwt)(x: Unit) =
+  def getPrivacyScopeDimensions(appId: UUID)(x: Unit) =
     for {
-      dcs <- repos.privacyScope.getDataCategories(jwt.appId, withSelectors = false)
-      pcs <- repos.privacyScope.getProcessingCategories(jwt.appId)
-      pps <- repos.privacyScope.getPurposes(jwt.appId)
+      dcs <- repos.privacyScope.getDataCategories(appId, withSelectors = false)
+      pcs <- repos.privacyScope.getProcessingCategories(appId)
+      pps <- repos.privacyScope.getPurposes(appId)
       resp = PrivacyScopeDimensionsPayload(dcs, pcs, pps)
     } yield resp
 
-  def addSelectors(jwt: AppJwt)(req: List[CreateSelectorPayload]) =
+  def addSelectors(appId: UUID)(req: List[CreateSelectorPayload]) =
     for {
       _ <- req.forall(_.dataCategory.term != "*").onFalseBadRequest("Selector can't be top level")
       reqNel <- NonEmptyList.fromList(req).fold("Add at least one selector".failBadRequest)(IO(_))
       ids    <- reqNel.traverse(_ => UUIDGen.randomUUID[IO])
       selectors = reqNel.map(p => p.dataCategory.copy(term = s"${p.dataCategory.term}.${p.name}"))
-      _ <- repos.privacyScope.addSelectors(jwt.appId, ids zip selectors)
+      _ <- repos.privacyScope.addSelectors(appId, ids zip selectors)
     } yield ()
 
-  def getLegalBases(jwt: AppJwt)(x: Unit) =
-    repos.legalBase.get(jwt.appId, scope = false)
+  def getLegalBases(appId: UUID)(x: Unit) =
+    repos.legalBase.get(appId, scope = false)
 
   // TODO: granular privacy scope
-  def getLegalBase(jwt: AppJwt)(lbId: UUID) =
+  def getLegalBase(appId: UUID)(lbId: UUID) =
     repos.legalBase
-      .get(jwt.appId, lbId, true)
+      .get(appId, lbId, true)
       .orNotFound(s"Legal base with id $lbId not found")
 
-  def createLegalBase(jwt: AppJwt)(req: CreateLegalBasePayload) =
+  def createLegalBase(appId: UUID)(req: CreateLegalBasePayload) =
     for {
       id        <- UUIDGen.randomUUID[IO]
-      selectors <- repos.privacyScope.getSelectors(jwt.appId, active = true)
+      selectors <- repos.privacyScope.getSelectors(appId, active = true)
       ctx   = PSContext(selectors)
       scope = req.getPrivPrivacyScope.zoomIn(ctx)
       lb    = LegalBase(id, req.lbType, scope, req.name, req.description, true)
       // TODO: handling error
-      _ <- repos.legalBase.add(jwt.appId, lb).start
+      _ <- repos.legalBase.add(appId, lb).start
     } yield id.toString
 
-  def addRetentionPolicies(jwt: AppJwt)(req: List[CreateRetentionPolicyPayload]) =
+  def addRetentionPolicies(appId: UUID)(req: List[CreateRetentionPolicyPayload]) =
     for {
       reqNel    <- req.toNel.orBadRequest("Add at least one policy")
-      selectors <- repos.privacyScope.getSelectors(jwt.appId, active = true)
+      selectors <- repos.privacyScope.getSelectors(appId, active = true)
       _         <- reqNel
         .forall(r => DataCategory.exists(r.dataCategory, selectors))
         .onFalseBadRequest("Unknown data category")
@@ -108,18 +108,18 @@ class ConfigurationService(
                 } yield res
             )
       }
-      _   <- repos.retentionPolicy.add(jwt.appId, rps)
+      _   <- repos.retentionPolicy.add(appId, rps)
     } yield ()
 
-  def deleteRetentionPolicy(jwt: AppJwt)(id: UUID) =
+  def deleteRetentionPolicy(appId: UUID)(id: UUID) =
     for {
-      _ <- repos.retentionPolicy.delete(jwt.appId, id)
+      _ <- repos.retentionPolicy.delete(appId, id)
     } yield ()
 
-  def addProvenances(jwt: AppJwt)(req: List[CreateProvenancePayload]) =
+  def addProvenances(appId: UUID)(req: List[CreateProvenancePayload]) =
     for {
       reqNel    <- req.toNel.orBadRequest("Add at least one provenance")
-      selectors <- repos.privacyScope.getSelectors(jwt.appId, active = true)
+      selectors <- repos.privacyScope.getSelectors(appId, active = true)
       _         <- reqNel
         .forall(r => DataCategory.exists(r.dataCategory, selectors))
         .onFalseBadRequest("Unknown data category")
@@ -139,19 +139,19 @@ class ConfigurationService(
                 } yield res
             )
       }
-      _  <- repos.provenance.add(jwt.appId, ps)
+      _  <- repos.provenance.add(appId, ps)
     } yield ()
 
-  def deleteProvenance(jwt: AppJwt)(id: UUID) =
+  def deleteProvenance(appId: UUID)(id: UUID) =
     for {
-      _ <- repos.provenance.delete(jwt.appId, id)
+      _ <- repos.provenance.delete(appId, id)
     } yield ()
 
-  def getDataCategories(jwt: AppJwt)(x: Unit) =
+  def getDataCategories(appId: UUID)(x: Unit) =
     for {
-      dcs <- repos.privacyScope.getAllDataCategories(jwt.appId)
-      ps  <- repos.provenance.get(jwt.appId)
-      rps <- repos.retentionPolicy.get(jwt.appId)
+      dcs <- repos.privacyScope.getAllDataCategories(appId)
+      ps  <- repos.provenance.get(appId)
+      rps <- repos.retentionPolicy.get(appId)
 
       res = dcs.toList.map(
         dc => {
@@ -162,25 +162,25 @@ class ConfigurationService(
       )
     } yield res
 
-  def getAllRegulations(jwt: AppJwt)(x: Unit) =
+  def getAllRegulations(appId: UUID)(x: Unit) =
     repos.regulations.getInfo().map(_.map(RegulationResponsePayload.fromRegulationInfo))
 
-  def getAppRegulations(jwt: AppJwt)(x: Unit) =
+  def getAppRegulations(appId: UUID)(x: Unit) =
     for {
-      regs <- repos.regulations.getInfo(jwt.appId)
+      regs <- repos.regulations.getInfo(appId)
       resp = regs.map(RegulationResponsePayload.fromRegulationInfo)
     } yield resp
 
-  def addRegulations(jwt: AppJwt)(req: AddRegulationsPayload) =
+  def addRegulations(appId: UUID)(req: AddRegulationsPayload) =
     for {
       idsNel <- req.regulationIds.distinct.toNel.orBadRequest("Add at least one regulation")
       idsOk  <- repos.regulations.exists(idsNel).onFalseBadRequest("Unknown regulation id")
-      _      <- repos.regulations.add(jwt.appId, idsNel)
+      _      <- repos.regulations.add(appId, idsNel)
     } yield ()
 
-  def deleteRegulation(jwt: AppJwt)(regId: UUID) =
+  def deleteRegulation(appId: UUID)(regId: UUID) =
     for {
-      _ <- repos.regulations.delete(jwt.appId, regId)
+      _ <- repos.regulations.delete(appId, regId)
     } yield ()
 
 }

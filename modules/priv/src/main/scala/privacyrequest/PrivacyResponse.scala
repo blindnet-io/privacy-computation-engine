@@ -11,7 +11,8 @@ import cats.implicits.*
 import doobie.*
 import doobie.postgres.implicits.*
 import doobie.util.Get
-import io.circe.Json
+import io.circe.*
+import io.circe.generic.semiauto.*
 import terms.*
 
 opaque type ResponseId = UUID
@@ -23,6 +24,8 @@ opaque type ResponseEventId = UUID
 object ResponseEventId:
   def apply(uuid: UUID): ResponseEventId          = uuid
   extension (id: ResponseEventId) def value: UUID = id
+  given Decoder[ResponseEventId]                  = Decoder.decodeUUID.map(ResponseEventId.apply)
+  given Encoder[ResponseEventId]                  = Encoder.encodeUUID.contramap(_.value)
 
 case class PrivacyResponse(
     id: ResponseId,

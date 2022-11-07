@@ -35,6 +35,8 @@ object dependencies {
     val doobiePostgres      = "org.tpolecat" %% "doobie-postgres"       % doobieV
     val doobiePostgresCirce = "org.tpolecat" %% "doobie-postgres-circe" % doobieV
 
+    val redis4cats = "dev.profunktor" %% "redis4cats-effects" % "1.2.0"
+
     val flyway = "org.flywaydb" % "flyway-core" % "8.5.12"
 
     val logback       = "ch.qos.logback"      % "logback-classic" % "1.2.11"

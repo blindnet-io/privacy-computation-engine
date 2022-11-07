@@ -5,6 +5,7 @@ import java.util.UUID
 
 import cats.effect.*
 import cats.effect.std.UUIDGen
+import cats.implicits.*
 import io.blindnet.pce.db.repositories.Repositories
 import io.blindnet.pce.util.extension.*
 import io.circe.*
@@ -32,14 +33,10 @@ class CallbackHandler(repos: Repositories) {
       cbData <- repos.callbacks.get(cbId).orFail(s"Wrong callback id ${cbId}")
       _      <- repos.callbacks.remove(cbId)
 
-      (appId2, rId) = cbData
-      _ <-
-        if appId == appId2
-        then IO.unit
-        // TODO: msg
-        else "Error".failBadRequest
+      // TODO: msg
+      _ <- "Error".failBadRequest.whenA(appId == cbData.aid)
 
-      _ <- repos.privacyRequest.storeResponseData(rId, req.data_url)
+      _ <- repos.privacyRequest.storeResponseData(cbData.rid, req.data_url)
     } yield ()
 
 }

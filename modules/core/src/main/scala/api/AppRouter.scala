@@ -23,20 +23,38 @@ import io.blindnet.identityclient.auth.*
 import services.Services
 import sttp.apispec.Tag
 import sttp.apispec.ExternalDocumentation
+import io.blindnet.pce.db.repositories.DashboardToken
+import io.blindnet.pce.db.repositories.Repositories
 
 object AppRouter {
-  def make(services: Services, authenticator: JwtAuthenticator[Jwt]) = new AppRouter(services, authenticator)
+  def make(
+      services: Services,
+      repositories: Repositories,
+      authenticator: JwtAuthenticator[Jwt]
+  ) =
+    new AppRouter(services, repositories, authenticator)
+
 }
 
-class AppRouter(services: Services, authenticator: JwtAuthenticator[Jwt]) {
+class AppRouter(
+    services: Services,
+    repositories: Repositories,
+    authenticator: JwtAuthenticator[Jwt]
+) {
 
-  val healthCheckEndpoints       = new HealthCheckEndpoints()
-  val privacyRequestEndpoints    = new PrivacyRequestEndpoints(authenticator, services.privacyRequest)
-  val consumerInterfaceEndpoints = new DataConsumerEndpoints(authenticator, services.consumerInterface)
-  val configurationEndpoints     = new ConfigurationEndpoints(authenticator, services.configuration)
-  val userEventsEndpoints        = new UserEventsEndpoints(authenticator, services.userEvents)
-  val userEndpoints              = new UserEndpoints(authenticator, services.user)
-  val callbackEndpoints          = new CallbackEndpoints(services.callbacks)
+  val dashboardAuthenticator = StAuthenticator(repositories.dashboardTokens)
+
+  val healthCheckEndpoints    = new HealthCheckEndpoints()
+  val privacyRequestEndpoints = new PrivacyRequestEndpoints(authenticator, services.privacyRequest)
+  val consumerInterfaceEndpoints =
+    new DataConsumerEndpoints(authenticator, services.consumerInterface)
+
+  val configurationEndpoints =
+    new ConfigurationEndpoints(authenticator, dashboardAuthenticator, services.configuration)
+
+  val userEventsEndpoints = new UserEventsEndpoints(authenticator, services.userEvents)
+  val userEndpoints       = new UserEndpoints(authenticator, services.user)
+  val callbackEndpoints   = new CallbackEndpoints(services.callbacks)
 
   val allEndpoints =
     healthCheckEndpoints.endpoints ++
