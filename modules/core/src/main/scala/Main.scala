@@ -18,6 +18,7 @@ import io.blindnet.identityclient.auth.JwtAuthenticator
 import services.external.StorageInterface
 import dev.profunktor.redis4cats.*
 import dev.profunktor.redis4cats.effect.Log.Stdout.*
+import io.blindnet.identityclient.auth.*
 
 object Main extends IOApp {
   val logger: Logger[IO] = Slf4jLogger.getLogger[IO]
@@ -31,7 +32,7 @@ object Main extends IOApp {
       xa   <- DbTransactor.make(conf.db)
       _    <- Resource.eval(xa.configure(Migrator.migrateDatabase))
 
-      redis <- Redis[IO].utf8("redis://localhost")
+      redis <- Redis[IO].utf8(conf.redis.uri.value)
 
       cpuPool <- Pools.cpu
       pools = Pools(cpuPool)
@@ -47,7 +48,7 @@ object Main extends IOApp {
 
       identityClient <- IdentityClientBuilder().withClient(httpClient).resource
 
-      app = AppRouter.make(services, JwtAuthenticator(identityClient))
+      app = AppRouter.make(services, repositories, JwtAuthenticator(identityClient))
       server <- Server.make(app.httpApp, conf.api)
 
     } yield ()

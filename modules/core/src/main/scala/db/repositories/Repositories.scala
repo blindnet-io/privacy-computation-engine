@@ -23,6 +23,8 @@ trait Repositories {
   val commands: CommandsRepository
   val demandsToReview: DemandsToReviewRepository
 
+  val dashboardTokens: DashboardTokensRepository
+
   val callbacks: CallbacksRepository
 }
 
@@ -47,6 +49,8 @@ object Repositories {
     val commandsRepo        = CommandsRepository.live(xa)
     val demandsToReviewRepo = DemandsToReviewRepository.live(xa)
 
+    val dashboardTokensRepo = DashboardTokensRepository.live(redis)
+
     val callbacksRepo = CallbacksRepository.live(redis)
 
     new Repositories {
@@ -63,6 +67,8 @@ object Repositories {
 
       val commands        = commandsRepo
       val demandsToReview = demandsToReviewRepo
+
+      val dashboardTokens = dashboardTokensRepo
 
       val callbacks = callbacksRepo
     }
