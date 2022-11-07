@@ -25,15 +25,13 @@ class CallbackEndpoints(
 
   val base = baseEndpoint.in("callback").tag("Callbacks")
 
-  val appId = UUID.fromString("6f083c15-4ada-4671-a6d1-c671bc9105dc")
-
   val cb =
     base
       .description("Link to access data in the storage created")
       .post
       .in(path[UUID]("callbackId"))
       .in(jsonBody[DataCallbackPayload])
-      .serverLogicSuccess((id, req) => callbacksService.handleAccessResponse(appId, id, req))
+      .serverLogicSuccess((id, req) => callbacksService.handleAccessResponse(id, req))
 
   val endpoints = List(cb)
 

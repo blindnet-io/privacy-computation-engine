@@ -27,14 +27,14 @@ class CallbackHandler(repos: Repositories) {
   val logger: Logger[IO] = Slf4jLogger.getLogger[IO]
 
   // TODO: handle errors
-  def handleAccessResponse(appId: UUID, cbId: UUID, req: DataCallbackPayload): IO[Unit] =
+  def handleAccessResponse(cbId: UUID, req: DataCallbackPayload): IO[Unit] =
     for {
       _      <- logger.info(s"Received callback for id $cbId. req:\n${req.asJson}")
       cbData <- repos.callbacks.get(cbId).orFail(s"Wrong callback id ${cbId}")
       _      <- repos.callbacks.remove(cbId)
 
       // TODO: msg
-      _ <- "Error".failBadRequest.whenA(appId == cbData.aid)
+      _ <- "Error".failBadRequest.whenA(req.app_id != cbData.aid)
 
       _ <- repos.privacyRequest.storeResponseData(cbData.rid, req.data_url)
     } yield ()

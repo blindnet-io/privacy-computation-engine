@@ -17,6 +17,7 @@ import priv.privacyrequest.*
 import priv.terms.*
 
 case class DataCallbackPayload(
+    app_id: UUID,
     request_id: String,
     accepted: Boolean,
     data_url: Option[String]
