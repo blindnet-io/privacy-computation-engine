@@ -63,6 +63,13 @@ class PrivacyRequestService(
 
   def createPrivacyRequest(jwt: AnyUserJwt)(req: CreatePrivacyRequestPayload) = {
     for {
+      _ <- "Can't make request for other data subjects".failBadRequest.whenA {
+        jwt match {
+          case AnonymousJwt(_)    => req.dataSubject.nonEmpty
+          case UserJwt(_, userId) => req.dataSubject.find(_.id == userId).isEmpty
+        }
+      }
+
       reqId     <- UUIDGen.randomUUID[IO].map(RequestId.apply)
       demandIds <- UUIDGen.randomUUID[IO].replicateA(req.demands.length)
       demands = req.demands.zip(demandIds).map {
