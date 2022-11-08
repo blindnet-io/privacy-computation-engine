@@ -15,7 +15,6 @@ import sttp.tapir.json.circe.*
 import sttp.tapir.server.*
 import sttp.tapir.server.http4s.*
 import services.*
-import api.endpoints.BaseEndpoint.*
 import api.endpoints.messages.configuration.*
 import io.blindnet.identityclient.auth.*
 import io.blindnet.pce.model.DemandResolutionStrategy

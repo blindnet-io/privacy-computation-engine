@@ -1,10 +1,9 @@
 package io.blindnet.pce
 package api.endpoints
 
-import api.endpoints.BaseEndpoint.*
 import api.endpoints.Endpoints
 import api.endpoints.messages.privacyrequest.*
-import priv.privacyrequest.{RequestId as PrivReqId}
+import priv.privacyrequest.{ RequestId as PrivReqId }
 import services.*
 import cats.effect.IO
 import io.blindnet.identityclient.auth.*

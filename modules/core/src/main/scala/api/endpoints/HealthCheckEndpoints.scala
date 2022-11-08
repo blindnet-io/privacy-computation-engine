@@ -4,10 +4,9 @@ package api.endpoints
 import cats.effect.*
 import sttp.tapir.*
 import sttp.tapir.server.http4s.*
-import api.endpoints.BaseEndpoint.*
 
 class HealthCheckEndpoints() {
-  val base = baseEndpoint.tag("Health")
+  val base = util.baseEndpoint.tag("Health")
 
   val health =
     base

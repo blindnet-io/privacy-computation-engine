@@ -15,7 +15,6 @@ import sttp.tapir.server.*
 import sttp.tapir.server.http4s.*
 import services.*
 import api.endpoints.messages.privacyrequest.*
-import api.endpoints.BaseEndpoint.*
 import api.endpoints.messages.callback.*
 
 class CallbackEndpoints(
@@ -23,7 +22,7 @@ class CallbackEndpoints(
 ) {
   given Configuration = Configuration.default.withSnakeCaseMemberNames
 
-  val base = baseEndpoint.in("callback").tag("Callbacks")
+  val base = util.baseEndpoint.in("callback").tag("Callbacks")
 
   val cb =
     base

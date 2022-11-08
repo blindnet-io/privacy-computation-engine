@@ -9,7 +9,6 @@ type EndpointT = PublicEndpoint[Unit, Unit, Unit, Any]
 abstract class Endpoints(authenticator: JwtAuthenticator[Jwt]) extends EndpointsUtil {
   def mapEndpoint(endpoint: EndpointT): EndpointT = endpoint
 
-  val baseEndpoint        = endpoint.in("v0")
   val mappedAuthenticator = authenticator.withBaseEndpoint(mapEndpoint(baseEndpoint))
 
   val publicEndpoint        = mapEndpoint(baseEndpoint)

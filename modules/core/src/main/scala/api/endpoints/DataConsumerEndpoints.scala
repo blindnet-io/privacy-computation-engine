@@ -16,7 +16,6 @@ import sttp.tapir.server.*
 import sttp.tapir.server.http4s.*
 import services.*
 import api.endpoints.messages.privacyrequest.*
-import api.endpoints.BaseEndpoint.*
 import api.endpoints.messages.consumerinterface.*
 
 class DataConsumerEndpoints(

@@ -16,11 +16,12 @@ import sttp.tapir.server.*
 import sttp.tapir.server.http4s.*
 import services.*
 import api.endpoints.messages.privacyrequest.*
-import api.endpoints.BaseEndpoint.*
 import io.blindnet.pce.model.error.*
 import cats.implicits.*
 
 trait EndpointsUtil {
+  val baseEndpoint = endpoint.in("v0")
+
   val unprocessable =
     oneOfVariant(
       statusCode(StatusCode.UnprocessableEntity).and(stringBody.mapTo[BadRequestException])
