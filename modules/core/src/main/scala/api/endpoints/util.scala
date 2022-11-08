@@ -30,9 +30,19 @@ trait EndpointsUtil {
     statusCode(StatusCode.NotFound).and(stringBody.mapTo[NotFoundException])
   )
 
+  def runLogicNoPrincipal[Req, Resp](f: Req => IO[Resp])(r: Req) =
+    f(r).map(Right(_)).handleError {
+      case e: Exception => Left(e)
+    }
+
   def runLogic[T, Req, Resp](f: T => Req => IO[Resp])(t: T)(r: Req) =
     f(t)(r).map(Right(_)).handleError {
       case e: Exception => Left(e)
+    }
+
+  def runLogicOnlyAuth[T, Req, Resp](f: T => Req => IO[Resp])(t: T)(r: Req) =
+    f(t)(r).map(Right(_)).handleError {
+      case e: AuthException => Left(e)
     }
 
 }
