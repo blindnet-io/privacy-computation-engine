@@ -33,10 +33,14 @@ import model.error.*
 import priv.DataSubject
 import priv.privacyrequest.{ Demand, PrivacyRequest, * }
 import priv.LegalBase
+import SharedResources.*
 import testutil.*
 import httputil.*
 
-object UserEventsEndpointsSuite extends FuncSuite {
+class UserEventsEndpointsSuite(global: GlobalRead) extends IOSuite {
+
+  type Res = Resources
+  def sharedResource: Resource[IO, Resources] = global.getOrFailR[Resources]()
 
   val consent1  = "28b5bee0-9db8-40ec-840e-64eafbfb9ddd".uuid
   val consent2  = "b25c1c0c-d375-4a5c-8500-6918f2888435".uuid

@@ -37,17 +37,10 @@ import io.blindnet.jwt.*
 import org.testcontainers.containers.GenericContainer
 import dev.profunktor.redis4cats.*
 import dev.profunktor.redis4cats.effect.Log.Stdout.*
+import testutil.*
+import httputil.*
 
-trait FuncSuite extends IOSuite {
-
-  val appId = UUID.fromString("6f083c15-4ada-4671-a6d1-c671bc9105dc")
-  val ds    = DataSubject("fdfc95a6-8fd8-4581-91f7-b3d236a6a10e", appId)
-
-  val secretKey = TokenPrivateKey.generateRandom()
-  val publicKey = secretKey.toPublicKey().toString()
-  val tb        = TokenBuilder(appId, secretKey)
-  val appToken  = tb.app()
-  val userToken = tb.user(ds.id)
+object SharedResources extends GlobalResource {
 
   def populateDb(xa: Transactor[IO]) =
     for {
@@ -83,9 +76,7 @@ trait FuncSuite extends IOSuite {
       Resource.make(IO(resp))(_ => IO.unit)
   }
 
-  import org.http4s.implicits.*
-  override type Res = Resources
-  override def sharedResource: Resource[IO, Res] = {
+  def sharedResources(global: GlobalWrite): Resource[IO, Unit] =
     for {
       pgContainer <- Resource.make {
         val container = PostgreSQLContainer(DockerImageName.parse("postgres:13"))
@@ -125,7 +116,9 @@ trait FuncSuite extends IOSuite {
 
       server = AppRouter.make(services, repos, JwtAuthenticator(identityClient)).httpApp
 
-    } yield Resources(xa, client, repos, services, server)
-  }
+      resources = Resources(xa, client, repos, services, server)
+
+      _ <- global.putR(resources)
+    } yield ()
 
 }

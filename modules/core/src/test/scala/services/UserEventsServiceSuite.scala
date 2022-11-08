@@ -31,8 +31,14 @@ import doobie.*
 import doobie.implicits.*
 import doobie.postgres.*
 import doobie.postgres.implicits.*
+import SharedResources.*
+import testutil.*
+import httputil.*
 
-object UserEventsSuite extends FuncSuite {
+class UserEventsSuite(global: GlobalRead) extends IOSuite {
+
+  type Res = Resources
+  def sharedResource: Resource[IO, Resources] = global.getOrFailR[Resources]()
 
   val cId = UUID.fromString("28b5bee0-9db8-40ec-840e-64eafbfb9ddd")
 

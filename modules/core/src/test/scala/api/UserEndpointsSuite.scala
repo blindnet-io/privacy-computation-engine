@@ -33,10 +33,14 @@ import model.error.*
 import priv.DataSubject
 import priv.privacyrequest.{ Demand, PrivacyRequest, * }
 import priv.LegalBase
+import SharedResources.*
 import testutil.*
 import httputil.*
 
-object UserEndpointsSuite extends FuncSuite {
+class UserEndpointsSuite(global: GlobalRead) extends IOSuite {
+
+  type Res = Resources
+  def sharedResource: Resource[IO, Resources] = global.getOrFailR[Resources]()
 
   val consent1 = "28b5bee0-9db8-40ec-840e-64eafbfb9ddd".uuid
   val consent2 = "b25c1c0c-d375-4a5c-8500-6918f2888435".uuid
@@ -64,7 +68,6 @@ object UserEndpointsSuite extends FuncSuite {
           """.update.run.transact(res.xa)
 
         resp     <- res.server.run(get("user/consents", Some(token)))
-        _        <- resp.asJson.map(println)
         consents <- resp.asJson.map(_.as[List[GivenConsentsPayload]].toOption.get)
         _        <- expect(consents.map(_.id).sorted == List(consent2, consent1)).failFast
       } yield success

@@ -34,7 +34,7 @@ class ConfigurationService(
   def getGeneralInfo(appId: UUID)(x: Unit) =
     repos.generalInfo
       .get(appId)
-      .orFail(s"General info for app ${appId} not found")
+      .orNotFound("General info for app ${appId} not found")
 
   def updateGeneralInfo(appId: UUID)(gi: GeneralInformation) =
     repos.generalInfo.upsert(appId, gi)
@@ -42,7 +42,7 @@ class ConfigurationService(
   def getDemandResolutionStrategy(appId: UUID)(x: Unit) =
     repos.app
       .get(appId)
-      .orFail(s"General info for app ${appId} not found")
+      .orNotFound(s"App ${appId} not found")
       .map(_.resolutionStrategy)
 
   def updateDemandResolutionStrategy(appId: UUID)(drs: DemandResolutionStrategy) =

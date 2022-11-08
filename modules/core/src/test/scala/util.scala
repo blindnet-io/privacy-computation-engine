@@ -16,6 +16,7 @@ import io.circe.literal.*
 import cats.effect.IO
 import org.http4s.headers.Authorization
 import org.typelevel.ci.*
+import io.blindnet.jwt.*
 
 object testutil {
 
@@ -33,6 +34,14 @@ object testutil {
     t.toSet.map(tt => PrivacyScopeTriple.unsafe(tt._1, tt._2, tt._3))
   )
 
+  val appId = "6f083c15-4ada-4671-a6d1-c671bc9105dc".uuid
+  val ds    = DataSubject("fdfc95a6-8fd8-4581-91f7-b3d236a6a10e", appId)
+
+  val secretKey = TokenPrivateKey.generateRandom()
+  val publicKey = secretKey.toPublicKey().toString()
+  val tb        = TokenBuilder(appId, secretKey)
+  val appToken  = tb.app()
+  val userToken = tb.user(ds.id)
 }
 
 object httputil {
