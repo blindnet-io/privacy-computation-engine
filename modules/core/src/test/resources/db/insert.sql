@@ -71,6 +71,21 @@ values ('28b5bee0-9db8-40ec-840e-64eafbfb9ddd', (
 	where dc.term = 'OTHER-DATA.PROOF' and pc.term='*' and pp.term = '*')
 );
 
+insert into legal_bases (id, appid, type, name, description, active) values
+('b25c1c0c-d375-4a5c-8500-6918f2888435', '6f083c15-4ada-4671-a6d1-c671bc9105dc', 'CONSENT', 'test consent 1', '', true);
+
+insert into legal_bases (id, appid, type, name, description, active) values
+('b52f8b4b-590c-4dcb-b572-f4a890ea330b', '6f083c15-4ada-4671-a6d1-c671bc9105dc', 'CONSENT', 'test consent 2', '', true);
+
+insert into legal_bases (id, appid, type, name, description, active) values
+('0e3bcc80-09a0-45c2-9e3f-454f953e3cfb', '6f083c15-4ada-4671-a6d1-c671bc9105dc', 'CONTRACT', 'test contract 1', '', true);
+
+insert into legal_bases (id, appid, type, name, description, active) values
+('ff370b18-346e-4ca4-91b4-49bc5c0645ab', '6f083c15-4ada-4671-a6d1-c671bc9105dc', 'NECESSARY', 'test necessary 1', '', true);
+
+insert into legal_bases (id, appid, type, name, description, active) values
+('db8db4ab-0ac2-4528-a333-576e8d0e10fe', '6f083c15-4ada-4671-a6d1-c671bc9105dc', 'LEGITIMATE-INTEREST', 'test legitimate interest 1', '', true);
+
 -- events
 
 insert into consent_given_events (id, lbid, dsid, appid, date) values

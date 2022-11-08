@@ -16,7 +16,6 @@ object ValidationException {
 case class BadRequestException(message: String)       extends Exception(message)
 case class ForbiddenException(message: String = null) extends Exception(message)
 case class NotFoundException(message: String = null)  extends Exception(message)
-case class AuthException(message: String = null)      extends Exception(message)
 case class InternalException(message: String = null)  extends Exception(message)
 case class MigrationError(message: String)            extends Error(message)
 

@@ -17,6 +17,8 @@ import sttp.tapir.server.http4s.*
 import services.*
 import api.endpoints.messages.privacyrequest.*
 import api.endpoints.BaseEndpoint.*
+import io.blindnet.pce.model.error.*
+import cats.implicits.*
 
 class UserEventsEndpoints(
     authenticator: JwtAuthenticator[Jwt],
@@ -34,8 +36,8 @@ class UserEventsEndpoints(
       .in("consent")
       .in("unsafe")
       .in(jsonBody[GiveConsentUnsafePayload])
-      .errorOutVariant(oneOfVariant(statusCode(StatusCode.UnprocessableEntity)))
-      .serverLogicSuccess(req => userEventsService.addConsentGivenEvent(req))
+      .errorOutVariants(notFound)
+      .serverLogic(req => userEventsService.addConsentGivenEvent(req).attempt)
 
   val giveConsent =
     userAuthEndpoint
@@ -43,8 +45,8 @@ class UserEventsEndpoints(
       .post
       .in("consent")
       .in(jsonBody[GiveConsentPayload])
-      .errorOutVariant(oneOfVariant(statusCode(StatusCode.UnprocessableEntity)))
-      .serverLogicSuccess(userEventsService.addConsentGivenEvent)
+      .errorOutVariants(notFound)
+      .serverLogic(runLogic(userEventsService.addConsentGivenEvent))
 
   val storeGivenConsent =
     appAuthEndpoint
@@ -53,8 +55,8 @@ class UserEventsEndpoints(
       .in("consent")
       .in("store")
       .in(jsonBody[StoreGivenConsentPayload])
-      .errorOutVariant(oneOfVariant(statusCode(StatusCode.UnprocessableEntity)))
-      .serverLogicSuccess(userEventsService.storeGivenConsentEvent)
+      .errorOutVariants(notFound)
+      .serverLogic(runLogic(userEventsService.storeGivenConsentEvent))
 
   val startContract =
     appAuthEndpoint
@@ -63,8 +65,8 @@ class UserEventsEndpoints(
       .in("contract")
       .in("start")
       .in(jsonBody[StartContractPayload])
-      .errorOutVariant(oneOfVariant(statusCode(StatusCode.UnprocessableEntity)))
-      .serverLogicSuccess(userEventsService.addStartContractEvent)
+      .errorOutVariants(notFound)
+      .serverLogic(runLogic(userEventsService.addStartContractEvent))
 
   val endContract =
     appAuthEndpoint
@@ -73,8 +75,8 @@ class UserEventsEndpoints(
       .in("contract")
       .in("end")
       .in(jsonBody[EndContractPayload])
-      .errorOutVariant(oneOfVariant(statusCode(StatusCode.UnprocessableEntity)))
-      .serverLogicSuccess(userEventsService.addEndContractEvent)
+      .errorOutVariants(notFound)
+      .serverLogic(runLogic(userEventsService.addEndContractEvent))
 
   val startLegitimateInterest =
     appAuthEndpoint
@@ -83,8 +85,8 @@ class UserEventsEndpoints(
       .in("legitimate-interest")
       .in("start")
       .in(jsonBody[StartLegitimateInterestPayload])
-      .errorOutVariant(oneOfVariant(statusCode(StatusCode.UnprocessableEntity)))
-      .serverLogicSuccess(userEventsService.addStartLegitimateInterestEvent)
+      .errorOutVariants(notFound)
+      .serverLogic(runLogic(userEventsService.addStartLegitimateInterestEvent))
 
   val endLegitimateInterest =
     appAuthEndpoint
@@ -93,8 +95,8 @@ class UserEventsEndpoints(
       .in("legitimate-interest")
       .in("end")
       .in(jsonBody[EndLegitimateInterestPayload])
-      .errorOutVariant(oneOfVariant(statusCode(StatusCode.UnprocessableEntity)))
-      .serverLogicSuccess(userEventsService.addEndLegitimateInterestEvent)
+      .errorOutVariants(notFound)
+      .serverLogic(runLogic(userEventsService.addEndLegitimateInterestEvent))
 
   val endpoints = List(
     giveConsentUnsafe,

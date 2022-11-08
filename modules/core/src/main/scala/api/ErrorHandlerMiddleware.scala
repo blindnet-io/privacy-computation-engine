@@ -9,6 +9,7 @@ import org.http4s.server.middleware.ErrorHandling
 import org.typelevel.log4cats.*
 import org.typelevel.log4cats.slf4j.*
 import model.error.*
+import io.blindnet.identityclient.auth.AuthException
 
 // TODO: env
 object ErrorHandlerMiddleware {

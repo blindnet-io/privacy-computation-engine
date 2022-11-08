@@ -32,8 +32,7 @@ class UserEventsService(
   def verifyLbExists(appId: UUID, id: UUID, check: LegalBase => Boolean) =
     for {
       lbOpt <- repos.legalBase.get(appId, id, false)
-      isConsent = lbOpt.map(check).getOrElse(false)
-      _ <- isConsent.onFalseNotFound(s"Legal base $id not found")
+      _     <- lbOpt.map(check).getOrElse(false).onFalseNotFound(s"Legal base $id not found")
     } yield ()
 
   def handleUser(appId: UUID, ds: DataSubject) =
@@ -45,8 +44,7 @@ class UserEventsService(
       ds = req.dataSubject.toPrivDataSubject(req.appId)
       _         <- handleUser(req.appId, ds)
       timestamp <- Clock[IO].realTimeInstant
-
-      _ <- repos.events.addConsentGiven(req.consentId, ds, timestamp)
+      _         <- repos.events.addConsentGiven(req.consentId, ds, timestamp)
     } yield ()
 
   def addConsentGivenEvent(jwt: UserJwt)(req: GiveConsentPayload) =
@@ -55,8 +53,7 @@ class UserEventsService(
       ds = DataSubject(jwt.userId, jwt.appId)
       _         <- handleUser(jwt.appId, ds)
       timestamp <- Clock[IO].realTimeInstant
-
-      _ <- repos.events.addConsentGiven(req.consentId, ds, timestamp)
+      _         <- repos.events.addConsentGiven(req.consentId, ds, timestamp)
     } yield ()
 
   def storeGivenConsentEvent(jwt: AppJwt)(req: StoreGivenConsentPayload) =
@@ -64,7 +61,6 @@ class UserEventsService(
       _ <- verifyLbExists(jwt.appId, req.consentId, _.isConsent)
       ds = req.dataSubject.toPrivDataSubject(jwt.appId)
       _ <- handleUser(jwt.appId, ds)
-
       _ <- repos.events.addConsentGiven(req.consentId, ds, req.date)
     } yield ()
 
@@ -73,7 +69,6 @@ class UserEventsService(
       _ <- verifyLbExists(jwt.appId, req.contractId, _.isContract)
       ds = req.dataSubject.toPrivDataSubject(jwt.appId)
       _ <- handleUser(jwt.appId, ds)
-
       _ <- repos.events.addLegalBaseEvent(req.contractId, ds, ServiceStart, req.date)
     } yield ()
 
@@ -82,28 +77,23 @@ class UserEventsService(
       _ <- verifyLbExists(jwt.appId, req.contractId, _.isContract)
       ds = req.dataSubject.toPrivDataSubject(jwt.appId)
       _ <- handleUser(jwt.appId, ds)
-
       _ <- repos.events.addLegalBaseEvent(req.contractId, ds, ServiceEnd, req.date)
     } yield ()
 
   def addStartLegitimateInterestEvent(jwt: AppJwt)(req: StartLegitimateInterestPayload) =
-    val id = req.legitimateInterestId
     for {
       _ <- verifyLbExists(jwt.appId, req.legitimateInterestId, _.isLegitimateInterest)
       ds = req.dataSubject.toPrivDataSubject(jwt.appId)
       _ <- handleUser(jwt.appId, ds)
-
-      _ <- repos.events.addLegalBaseEvent(id, ds, ServiceStart, req.date)
+      _ <- repos.events.addLegalBaseEvent(req.legitimateInterestId, ds, ServiceStart, req.date)
     } yield ()
 
   def addEndLegitimateInterestEvent(jwt: AppJwt)(req: EndLegitimateInterestPayload) =
-    val id = req.legitimateInterestId
     for {
       _ <- verifyLbExists(jwt.appId, req.legitimateInterestId, _.isLegitimateInterest)
       ds = req.dataSubject.toPrivDataSubject(jwt.appId)
       _ <- handleUser(jwt.appId, ds)
-
-      _ <- repos.events.addLegalBaseEvent(id, ds, ServiceEnd, req.date)
+      _ <- repos.events.addLegalBaseEvent(req.legitimateInterestId, ds, ServiceEnd, req.date)
     } yield ()
 
 }

@@ -23,6 +23,8 @@ object testutil {
 
   extension (i: Instant) def -(n: Int) = i.minus(1, ChronoUnit.DAYS)
 
+  extension (s: String) def uuid = UUID.fromString(s)
+
   def uuid = java.util.UUID.randomUUID
 
   def now = Instant.now()
