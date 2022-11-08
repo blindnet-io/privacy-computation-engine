@@ -1,4 +1,4 @@
-import scala.concurrent.duration.Duration
+import scala.concurrent.duration.*
 import lmcoursier.definitions.CachePolicy
 import dependencies.*
 
@@ -11,14 +11,7 @@ ThisBuild / scalafixDependencies += "com.github.liancheng" %% "organize-imports"
 ThisBuild / semanticdbEnabled                              := true
 ThisBuild / semanticdbVersion                              := scalafixSemanticdb.revision
 
-// https://github.com/sbt/sbt/issues/5377
-ThisBuild / csrConfiguration := csrConfiguration.value
-  .withTtl(Duration.Zero)
-  .withCachePolicies(Vector(CachePolicy.LocalOnly))
-
-Test / fork                  := true
-
-resolvers += Resolver.sonatypeRepo("snapshots")
+Test / fork := true
 
 // hooks are added after sbt has started for the first time
 Global / onLoad ~= (_ andThen ("writeHooks" :: _))
@@ -41,6 +34,7 @@ lazy val util = (project in file("modules/util"))
   .settings(
     name := "pce-util",
     testFrameworks += new TestFramework("weaver.framework.CatsEffect"),
+    csrConfiguration := csrConfiguration.value.withTtl(Some(0.seconds)),
     libraryDependencies ++= Seq(
       dependencies.main.circe,
       dependencies.main.circeGeneric
@@ -52,6 +46,7 @@ lazy val priv = (project in file("modules/priv"))
   .settings(
     name := "pce-priv",
     testFrameworks += new TestFramework("weaver.framework.CatsEffect"),
+    csrConfiguration := csrConfiguration.value.withTtl(Some(0.seconds)),
     libraryDependencies ++= Seq(
       dependencies.main.cats,
       dependencies.main.circe,
@@ -76,6 +71,8 @@ lazy val core = (project in file("modules/core"))
     buildInfoPackage                 := "build",
     testFrameworks += new TestFramework("weaver.framework.CatsEffect"),
     resolvers += "Blindnet Snapshots" at "https://nexus.blindnet.io/repository/maven-snapshots",
+    // https://github.com/sbt/sbt/issues/5377
+    csrConfiguration := csrConfiguration.value.withTtl(Some(0.seconds)),
     libraryDependencies ++= Seq(
       dependencies.main.catsEffect,
       dependencies.main.ciris,
