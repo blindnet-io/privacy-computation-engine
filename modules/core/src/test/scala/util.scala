@@ -26,6 +26,8 @@ object testutil {
 
   extension (s: String) def uuid = UUID.fromString(s)
 
+  extension (r: Response[IO]) def to[T: Decoder] = r.asJson.map(_.as[T].toOption.get)
+
   def uuid = java.util.UUID.randomUUID
 
   def now = Instant.now()
@@ -37,11 +39,11 @@ object testutil {
   val appId = "6f083c15-4ada-4671-a6d1-c671bc9105dc".uuid
   val ds    = DataSubject("fdfc95a6-8fd8-4581-91f7-b3d236a6a10e", appId)
 
-  val secretKey = TokenPrivateKey.generateRandom()
-  val publicKey = secretKey.toPublicKey().toString()
-  val tb        = TokenBuilder(appId, secretKey)
-  val appToken  = tb.app()
-  val userToken = tb.user(ds.id)
+  val secretKey                      = TokenPrivateKey.generateRandom()
+  val publicKey                      = secretKey.toPublicKey().toString()
+  def tb(appId: UUID = appId)        = TokenBuilder(appId, secretKey)
+  def appToken(appId: UUID = appId)  = tb(appId).app()
+  def userToken(appId: UUID = appId) = tb(appId).user(ds.id)
 }
 
 object httputil {

@@ -40,7 +40,7 @@ import httputil.*
 class UserEventsEndpointsSuite(global: GlobalRead) extends IOSuite {
 
   type Res = Resources
-  def sharedResource: Resource[IO, Resources] = global.getOrFailR[Resources]()
+  def sharedResource: Resource[IO, Resources] = sharedResourceOrFallback(global)
 
   val consent1  = "28b5bee0-9db8-40ec-840e-64eafbfb9ddd".uuid
   val consent2  = "b25c1c0c-d375-4a5c-8500-6918f2888435".uuid
@@ -52,7 +52,7 @@ class UserEventsEndpointsSuite(global: GlobalRead) extends IOSuite {
     res =>
       val req = json"""{ "consent_id": $uuid }"""
       res.server
-        .run(post("user-events/consent", req, Some(userToken)))
+        .run(post("user-events/consent", req, Some(userToken())))
         .map(response => expect(response.status == Status.NotFound))
   }
 
@@ -60,7 +60,7 @@ class UserEventsEndpointsSuite(global: GlobalRead) extends IOSuite {
     res =>
       val req = json"""{ "consent_id": $consent1 }"""
       for {
-        response <- res.server.run(post("user-events/consent", req, Some(userToken)))
+        response <- res.server.run(post("user-events/consent", req, Some(userToken())))
         _        <- expect(response.status == Status.Ok).failFast
         sql =
           sql"select exists (select lbid from consent_given_events where lbid=$consent1 and dsid=${ds.id})"
@@ -72,7 +72,7 @@ class UserEventsEndpointsSuite(global: GlobalRead) extends IOSuite {
   test("record given consent for unknown user") {
     res =>
       val uid   = uuid.toString
-      val token = tb.user(uid)
+      val token = tb().user(uid)
       val req   = json"""{ "consent_id": $consent1 }"""
       for {
         response <- res.server.run(post("user-events/consent", req, Some(token)))
@@ -100,7 +100,7 @@ class UserEventsEndpointsSuite(global: GlobalRead) extends IOSuite {
       }
       """
       res.server
-        .run(post("user-events/consent/store", req, Some(appToken)))
+        .run(post("user-events/consent/store", req, Some(appToken())))
         .map(response => expect(response.status == Status.NotFound))
   }
 
@@ -114,7 +114,7 @@ class UserEventsEndpointsSuite(global: GlobalRead) extends IOSuite {
       }
       """
       for {
-        response <- res.server.run(post("user-events/consent/store", req, Some(appToken)))
+        response <- res.server.run(post("user-events/consent/store", req, Some(appToken())))
         _        <- expect(response.status == Status.Ok).failFast
         sql =
           sql"select exists (select lbid from consent_given_events where lbid=$consent2 and dsid=${ds.id})"
@@ -134,7 +134,7 @@ class UserEventsEndpointsSuite(global: GlobalRead) extends IOSuite {
       }
       """
       for {
-        response <- res.server.run(post("user-events/consent/store", req, Some(appToken)))
+        response <- res.server.run(post("user-events/consent/store", req, Some(appToken())))
         _        <- expect(response.status == Status.Ok).failFast
 
         sqlEv =
@@ -153,7 +153,7 @@ class UserEventsEndpointsSuite(global: GlobalRead) extends IOSuite {
     res =>
       val req = json"""{ "data_subject": {"id": ${ds.id}}, "contract_id": $uuid, "date": $now }"""
       res.server
-        .run(post("user-events/contract/start", req, Some(appToken)))
+        .run(post("user-events/contract/start", req, Some(appToken())))
         .map(response => expect(response.status == Status.NotFound))
   }
 
@@ -162,7 +162,7 @@ class UserEventsEndpointsSuite(global: GlobalRead) extends IOSuite {
       val req =
         json"""{ "data_subject": {"id": ${ds.id}}, "contract_id": $contract1, "date": $now }"""
       for {
-        response <- res.server.run(post("user-events/contract/start", req, Some(appToken)))
+        response <- res.server.run(post("user-events/contract/start", req, Some(appToken())))
         _        <- expect(response.status == Status.Ok).failFast
         sql =
           sql"select exists (select lbid from legal_base_events where lbid=$contract1 and dsid=${ds.id} and event='SERVICE-START')"
@@ -177,7 +177,7 @@ class UserEventsEndpointsSuite(global: GlobalRead) extends IOSuite {
       val req =
         json"""{ "data_subject": {"id": $uid}, "contract_id": $contract1, "date": $now }"""
       for {
-        response <- res.server.run(post("user-events/contract/start", req, Some(appToken)))
+        response <- res.server.run(post("user-events/contract/start", req, Some(appToken())))
         _        <- expect(response.status == Status.Ok).failFast
 
         sqlEv =
@@ -196,7 +196,7 @@ class UserEventsEndpointsSuite(global: GlobalRead) extends IOSuite {
     res =>
       val req = json"""{ "data_subject": {"id": ${ds.id}}, "contract_id": $uuid, "date": $now }"""
       res.server
-        .run(post("user-events/contract/end", req, Some(appToken)))
+        .run(post("user-events/contract/end", req, Some(appToken())))
         .map(response => expect(response.status == Status.NotFound))
   }
 
@@ -205,7 +205,7 @@ class UserEventsEndpointsSuite(global: GlobalRead) extends IOSuite {
       val req =
         json"""{ "data_subject": {"id": ${ds.id}}, "contract_id": $contract1, "date": $now }"""
       for {
-        response <- res.server.run(post("user-events/contract/end", req, Some(appToken)))
+        response <- res.server.run(post("user-events/contract/end", req, Some(appToken())))
         _        <- expect(response.status == Status.Ok).failFast
         sql =
           sql"select exists (select lbid from legal_base_events where lbid=$contract1 and dsid=${ds.id} and event='SERVICE-END')"
@@ -220,7 +220,7 @@ class UserEventsEndpointsSuite(global: GlobalRead) extends IOSuite {
       val req =
         json"""{ "data_subject": {"id": $uid}, "contract_id": $contract1, "date": $now }"""
       for {
-        response <- res.server.run(post("user-events/contract/end", req, Some(appToken)))
+        response <- res.server.run(post("user-events/contract/end", req, Some(appToken())))
         _        <- expect(response.status == Status.Ok).failFast
 
         sqlEv =
@@ -240,7 +240,7 @@ class UserEventsEndpointsSuite(global: GlobalRead) extends IOSuite {
       val req =
         json"""{ "data_subject": {"id": ${ds.id}}, "legitimate_interest_id": $uuid, "date": $now }"""
       res.server
-        .run(post("user-events/legitimate-interest/start", req, Some(appToken)))
+        .run(post("user-events/legitimate-interest/start", req, Some(appToken())))
         .map(response => expect(response.status == Status.NotFound))
   }
 
@@ -250,7 +250,7 @@ class UserEventsEndpointsSuite(global: GlobalRead) extends IOSuite {
         json"""{ "data_subject": {"id": ${ds.id}}, "legitimate_interest_id": $legInter1, "date": $now }"""
       for {
         response <- res.server.run(
-          post("user-events/legitimate-interest/start", req, Some(appToken))
+          post("user-events/legitimate-interest/start", req, Some(appToken()))
         )
         _        <- expect(response.status == Status.Ok).failFast
         sql =
@@ -267,7 +267,7 @@ class UserEventsEndpointsSuite(global: GlobalRead) extends IOSuite {
         json"""{ "data_subject": {"id": $uid}, "legitimate_interest_id": $legInter1, "date": $now }"""
       for {
         response <- res.server.run(
-          post("user-events/legitimate-interest/start", req, Some(appToken))
+          post("user-events/legitimate-interest/start", req, Some(appToken()))
         )
         _        <- expect(response.status == Status.Ok).failFast
 
@@ -288,7 +288,7 @@ class UserEventsEndpointsSuite(global: GlobalRead) extends IOSuite {
       val req =
         json"""{ "data_subject": {"id": ${ds.id}}, "legitimate_interest_id": $uuid, "date": $now }"""
       res.server
-        .run(post("user-events/legitimate-interest/end", req, Some(appToken)))
+        .run(post("user-events/legitimate-interest/end", req, Some(appToken())))
         .map(response => expect(response.status == Status.NotFound))
   }
 
@@ -297,7 +297,9 @@ class UserEventsEndpointsSuite(global: GlobalRead) extends IOSuite {
       val req =
         json"""{ "data_subject": {"id": ${ds.id}}, "legitimate_interest_id": $legInter1, "date": $now }"""
       for {
-        response <- res.server.run(post("user-events/legitimate-interest/end", req, Some(appToken)))
+        response <- res.server.run(
+          post("user-events/legitimate-interest/end", req, Some(appToken()))
+        )
         _        <- expect(response.status == Status.Ok).failFast
         sql =
           sql"select exists (select lbid from legal_base_events where lbid=$legInter1 and dsid=${ds.id} and event='SERVICE-END')"
@@ -312,7 +314,9 @@ class UserEventsEndpointsSuite(global: GlobalRead) extends IOSuite {
       val req =
         json"""{ "data_subject": {"id": $uid}, "legitimate_interest_id": $legInter1, "date": $now }"""
       for {
-        response <- res.server.run(post("user-events/legitimate-interest/end", req, Some(appToken)))
+        response <- res.server.run(
+          post("user-events/legitimate-interest/end", req, Some(appToken()))
+        )
         _        <- expect(response.status == Status.Ok).failFast
 
         sqlEv =

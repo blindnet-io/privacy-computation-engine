@@ -40,7 +40,7 @@ import httputil.*
 class UserEndpointsSuite(global: GlobalRead) extends IOSuite {
 
   type Res = Resources
-  def sharedResource: Resource[IO, Resources] = global.getOrFailR[Resources]()
+  def sharedResource: Resource[IO, Resources] = sharedResourceOrFallback(global)
 
   val consent1 = "28b5bee0-9db8-40ec-840e-64eafbfb9ddd".uuid
   val consent2 = "b25c1c0c-d375-4a5c-8500-6918f2888435".uuid
@@ -49,7 +49,7 @@ class UserEndpointsSuite(global: GlobalRead) extends IOSuite {
   test("return users active consents") {
     res =>
       val uid   = uuid
-      val token = tb.user(uid.toString)
+      val token = tb().user(uid.toString)
       for {
         _ <- sql"""insert into data_subjects values ($uid, $appId)""".update.run.transact(res.xa)
         _ <- sql"""
@@ -68,7 +68,7 @@ class UserEndpointsSuite(global: GlobalRead) extends IOSuite {
           """.update.run.transact(res.xa)
 
         resp     <- res.server.run(get("user/consents", Some(token)))
-        consents <- resp.asJson.map(_.as[List[GivenConsentsPayload]].toOption.get)
+        consents <- resp.to[List[GivenConsentsPayload]]
         _        <- expect(consents.map(_.id).sorted == List(consent2, consent1)).failFast
       } yield success
   }

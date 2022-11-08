@@ -76,7 +76,7 @@ object SharedResources extends GlobalResource {
       Resource.make(IO(resp))(_ => IO.unit)
   }
 
-  def sharedResources(global: GlobalWrite): Resource[IO, Unit] =
+  val baseResources: Resource[IO, Resources] =
     for {
       pgContainer <- Resource.make {
         val container = PostgreSQLContainer(DockerImageName.parse("postgres:13"))
@@ -118,7 +118,16 @@ object SharedResources extends GlobalResource {
 
       resources = Resources(xa, client, repos, services, server)
 
-      _ <- global.putR(resources)
-    } yield ()
+    } yield resources
+
+  override def sharedResources(global: GlobalWrite): Resource[IO, Unit] =
+    baseResources.flatMap(global.putR(_))
+
+  // Provides a fallback to support running individual tests via testOnly
+  def sharedResourceOrFallback(read: GlobalRead): Resource[IO, Resources] =
+    read.getR[Resources]().flatMap {
+      case Some(value) => Resource.eval(IO(value))
+      case None        => baseResources
+    }
 
 }
