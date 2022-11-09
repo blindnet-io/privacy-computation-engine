@@ -23,8 +23,11 @@ trait LegalBaseRepository {
 
   def get(appId: UUID, lbId: NonEmptyList[UUID]): IO[List[LegalBase]]
 
-  def add(appId: UUID, lb: LegalBase): IO[Unit]
+  def getByScope(appId: UUID, scope: PrivacyScope): IO[Option[UUID]]
 
+  def add(appId: UUID, lb: LegalBase, proactive: Boolean = false): IO[Unit]
+
+  def addScope(appId: UUID, lbId: UUID, scope: PrivacyScope): IO[Unit]
 }
 
 object LegalBaseRepository {
@@ -133,28 +136,50 @@ object LegalBaseRepository {
           .transact(xa)
       }
 
-      def add(appId: UUID, lb: LegalBase): IO[Unit] = {
+      def getByScope(appId: UUID, scope: PrivacyScope): IO[Option[UUID]] = {
+        val s =
+          scope.triples
+            .map(t => s"${t.dataCategory.term} ${t.processingCategory.term} ${t.purpose.term}")
+            .toList
 
-        val insertLb =
-          sql"""
-            insert into legal_bases (id, appid, type, name, description, active)
-            values (${lb.id}, $appId, ${lb.lbType.encode}::legal_base_terms, ${lb.name}, ${lb.description}, ${lb.active})
-          """
+        // TODO: this is probably inefficient. optimize or find a better way
+        val q = sql"""
+          select lb.id from legal_bases lb
+            join legal_bases_scope lbs on lbs.lbid = lb.id
+            join scope s on s.id = lbs.scid
+            join data_categories dc on dc.id = s.dcid
+            join processing_categories pc on pc.id = s.pcid
+            join processing_purposes pp on pp.id = s.ppid
+          where lb.appid = $appId and lb.proactive = true
+          group by lb.id
+          having (SELECT ARRAY(SELECT unnest(array_agg(concat(dc.term, ' ', pc.term, ' ', pp.term))::varchar[]) ORDER BY 1)) =
+            (SELECT ARRAY(SELECT unnest($s::varchar[]) order by 1))
+        """
 
+        q.query[UUID].option.transact(xa)
+      }
+
+      def add(appId: UUID, lb: LegalBase, proactive: Boolean = false): IO[Unit] =
+        sql"""
+          insert into legal_bases (id, appid, type, name, description, active, proactive)
+          values (${lb.id}, $appId, ${lb.lbType.encode}::legal_base_terms, ${lb.name}, ${lb.description}, ${lb.active}, $proactive)
+        """.update.run.transact(xa).void
+
+      def addScope(appId: UUID, lbId: UUID, scope: PrivacyScope): IO[Unit] = {
         // this can be slow for big scopes so shifting
         // to a different pool not to block the main one
         val insertLbScope =
           IO {
             fr"""
               insert into legal_bases_scope
-                select ${lb.id}, s.id
+                select $lbId, s.id
                 from "scope" s
                 join data_categories dc ON dc.id = s.dcid
                 join processing_categories pc ON pc.id = s.pcid
                 join processing_purposes pp ON pp.id = s.ppid
                 where
             """ ++ Fragments.or(
-              lb.scope.triples
+              scope.triples
                 .map(
                   t =>
                     fr"dc.term = ${t.dataCategory.term} and" ++
@@ -165,11 +190,7 @@ object LegalBaseRepository {
             )
           }.evalOn(pools.cpu)
 
-        for {
-          q <- insertLbScope
-          _ <- (insertLb.update.run *> q.update.run).transact(xa)
-        } yield ()
-
+        insertLbScope.flatMap(_.update.run.transact(xa).void)
       }
 
     }

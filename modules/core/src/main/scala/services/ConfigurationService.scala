@@ -89,8 +89,9 @@ class ConfigurationService(
       ctx   = PSContext(selectors)
       scope = req.getPrivPrivacyScope.zoomIn(ctx)
       lb    = LegalBase(id, req.lbType, scope, req.name, req.description, true)
+      _ <- repos.legalBase.add(appId, lb)
       // TODO: handling error
-      _ <- repos.legalBase.add(appId, lb).start
+      _ <- repos.legalBase.addScope(appId, lb.id, lb.scope).start
     } yield id.toString
 
   def addRetentionPolicies(appId: UUID)(req: List[CreateRetentionPolicyPayload]) =
