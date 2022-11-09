@@ -22,10 +22,10 @@ import io.circe.syntax.*
 import api.endpoints.messages.privacyrequest.*
 import db.repositories.*
 import model.error.*
+import model.*
 import priv.privacyrequest.{ Demand, PrivacyRequest, * }
 import priv.*
 import priv.terms.*
-import io.blindnet.pce.model.DemandResolutionStrategy
 
 class ConfigurationService(
     repos: Repositories
@@ -34,10 +34,12 @@ class ConfigurationService(
   def getGeneralInfo(appId: UUID)(x: Unit) =
     repos.generalInfo
       .get(appId)
-      .orNotFound("General info for app ${appId} not found")
+      .orNotFound(s"General info for app ${appId} not found")
 
   def updateGeneralInfo(appId: UUID)(gi: GeneralInformation) =
-    repos.generalInfo.upsert(appId, gi)
+    repos.generalInfo
+      .upsert(appId, gi)
+      .handleErrorWith(_ => s"General info for app ${appId} not found".failNotFound)
 
   def getDemandResolutionStrategy(appId: UUID)(x: Unit) =
     repos.app
@@ -46,33 +48,39 @@ class ConfigurationService(
       .map(_.resolutionStrategy)
 
   def updateDemandResolutionStrategy(appId: UUID)(drs: DemandResolutionStrategy) =
-    repos.app.updateReslutionStrategy(appId, drs)
+    repos.app
+      .updateReslutionStrategy(appId, drs)
+      .handleErrorWith(_ => s"General info for app ${appId} not found".failNotFound)
 
   def getPrivacyScopeDimensions(appId: UUID)(x: Unit) =
-    for {
-      dcs <- repos.privacyScope.getDataCategories(appId, withSelectors = false)
-      pcs <- repos.privacyScope.getProcessingCategories(appId)
-      pps <- repos.privacyScope.getPurposes(appId)
-      resp = PrivacyScopeDimensionsPayload(dcs, pcs, pps)
-    } yield resp
+    val dcs = DataCategory.getAllDataCategories
+    val pcs = ProcessingCategory.getAllProcessingCategories
+    val pps = Purpose.getAllPurposes
+    IO(PrivacyScopeDimensionsPayload(dcs, pcs, pps))
 
+  // TODO: copy parents retention policies and provenances
   def addSelectors(appId: UUID)(req: List[CreateSelectorPayload]) =
     for {
       _ <- req.forall(_.dataCategory.term != "*").onFalseBadRequest("Selector can't be top level")
-      reqNel <- NonEmptyList.fromList(req).fold("Add at least one selector".failBadRequest)(IO(_))
-      ids    <- reqNel.traverse(_ => UUIDGen.randomUUID[IO])
-      selectors = reqNel.map(p => p.dataCategory.copy(term = s"${p.dataCategory.term}.${p.name}"))
-      _ <- repos.privacyScope.addSelectors(appId, ids zip selectors)
+      dist = req.distinct
+      reqNel <- NonEmptyList.fromList(dist).fold("Add at least one selector".failBadRequest)(IO(_))
+      validated = reqNel.traverse(p => DataCategory.parseOnlyTerm(p.dataCategory.term).map(_ => p))
+      s <- validated.toEither.left.map(_ => "Unknown data category").orBadRequest
+      selectors = s.map(s => s.dataCategory.copy(term = s"${s.dataCategory.term}.${s.name}"))
+      ids <- reqNel.traverse(_ => UUIDGen.randomUUID[IO])
+      _   <- repos.privacyScope
+        .addSelectors(appId, ids zip selectors)
+        .handleErrorWith(_ => "Selector already exists".failBadRequest)
     } yield ()
 
   def getLegalBases(appId: UUID)(x: Unit) =
     repos.legalBase.get(appId, scope = false)
 
-  // TODO: granular privacy scope
   def getLegalBase(appId: UUID)(lbId: UUID) =
     repos.legalBase
       .get(appId, lbId, true)
       .orNotFound(s"Legal base with id $lbId not found")
+      .map(lb => lb.copy(scope = lb.scope.zoomIn()))
 
   def createLegalBase(appId: UUID)(req: CreateLegalBasePayload) =
     for {
@@ -96,7 +104,7 @@ class ConfigurationService(
       rps <- reqNel.flatTraverse {
         r =>
           DataCategory
-            .granularize(r.dataCategory, selectors)
+            .granularizeKeepParents(r.dataCategory, selectors)
             .toList
             .toNel
             .get
@@ -112,9 +120,7 @@ class ConfigurationService(
     } yield ()
 
   def deleteRetentionPolicy(appId: UUID)(id: UUID) =
-    for {
-      _ <- repos.retentionPolicy.delete(appId, id)
-    } yield ()
+    repos.retentionPolicy.delete(appId, id)
 
   def addProvenances(appId: UUID)(req: List[CreateProvenancePayload]) =
     for {
@@ -127,7 +133,7 @@ class ConfigurationService(
       ps <- reqNel.flatTraverse {
         r =>
           DataCategory
-            .granularize(r.dataCategory, selectors)
+            .granularizeKeepParents(r.dataCategory, selectors)
             .toList
             .toNel
             .get
@@ -179,8 +185,6 @@ class ConfigurationService(
     } yield ()
 
   def deleteRegulation(appId: UUID)(regId: UUID) =
-    for {
-      _ <- repos.regulations.delete(appId, regId)
-    } yield ()
+    repos.regulations.delete(appId, regId)
 
 }

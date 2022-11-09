@@ -62,10 +62,10 @@ object httputil {
   def post(path: String, body: Json, token: Option[String] = None) =
     req(Method.POST, path, token).withEntity(body)
 
-  def put(path: String, body: String, token: Option[String] = None) =
+  def put(path: String, body: Json, token: Option[String] = None) =
     req(Method.PUT, path, token).withEntity(body)
 
-  def delete(path: String, body: String, token: Option[String] = None) =
+  def delete(path: String, token: Option[String] = None) =
     req(Method.DELETE, path, token)
 
 }

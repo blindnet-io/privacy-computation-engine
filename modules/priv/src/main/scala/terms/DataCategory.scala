@@ -16,12 +16,35 @@ object DataCategory {
       "Unknown data category"
     )
 
+  def parseOnlyTerm(s: String): Validated[String, ProcessingCategory] =
+    Validated.fromOption(
+      terms.find(_ == s).map(_ => ProcessingCategory(s)),
+      "Unknown data category"
+    )
+
   def granularize(dc: DataCategory, selectors: Set[DataCategory] = Set.empty): Set[DataCategory] = {
     val allterms = terms ++ selectors.map(_.term)
 
     def granularize(term: String): List[String] =
       val n = allterms.filter(t => t.startsWith(s"$term."))
       if n.length == 0 then List(term) else n.flatMap(t => granularize(t))
+
+    val res =
+      if dc.term == "*" then allterms.tail.flatMap(t => granularize(t))
+      else granularize(dc.term)
+
+    res.toSet.map(DataCategory(_))
+  }
+
+  def granularizeKeepParents(
+      dc: DataCategory,
+      selectors: Set[DataCategory] = Set.empty
+  ): Set[DataCategory] = {
+    val allterms = terms ++ selectors.map(_.term)
+
+    def granularize(term: String): List[String] =
+      val n = allterms.filter(t => t.startsWith(s"$term."))
+      if n.length == 0 then List(term) else term :: n.flatMap(t => granularize(t))
 
     val res =
       if dc.term == "*" then allterms.tail.flatMap(t => granularize(t))
@@ -76,6 +99,8 @@ object DataCategory {
     "UID.SOCIAL-MEDIA",
     "OTHER-DATA"
   )
+
+  def getAllDataCategories = terms.map(DataCategory(_)).toSet
 
   given Decoder[DataCategory] =
     Decoder.decodeString.emap(DataCategory.parse(_).toEither)

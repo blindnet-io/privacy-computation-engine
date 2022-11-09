@@ -33,7 +33,7 @@ class UserEndpoints(
       .get
       .in("consents")
       .out(jsonBody[List[GivenConsentsPayload]])
-      .serverLogic(runLogicOnlyAuth(userService.getGivenConsents))
+      .serverLogic(runLogicSuccess(userService.getGivenConsents))
 
   val endpoints: List[ServerEndpoint[Any, IO]] = List(getGivenConsents)
 

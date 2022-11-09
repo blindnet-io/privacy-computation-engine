@@ -41,7 +41,7 @@ trait EndpointsUtil {
       case e: Exception => Left(e)
     }
 
-  def runLogicOnlyAuth[T, Req, Resp](f: T => Req => IO[Resp])(t: T)(r: Req) =
+  def runLogicSuccess[T, Req, Resp](f: T => Req => IO[Resp])(t: T)(r: Req) =
     f(t)(r).map(Right(_)).handleError {
       case e: AuthException => Left(e)
     }

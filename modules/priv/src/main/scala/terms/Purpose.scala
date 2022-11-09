@@ -53,6 +53,8 @@ object Purpose {
     "OTHER-PURPOSE"
   )
 
+  def getAllPurposes = terms.map(Purpose(_)).toSet
+
   given Decoder[Purpose] =
     Decoder.decodeString.emap(Purpose.parse(_).toEither)
 

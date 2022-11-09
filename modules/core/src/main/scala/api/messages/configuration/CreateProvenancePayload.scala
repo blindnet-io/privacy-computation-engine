@@ -24,7 +24,7 @@ case class CreateProvenancePayload(
     provenance: ProvenanceTerms,
     @description("id of the system data category originated from. null for own system")
     @encodedExample("https://blindnet.io")
-    system: Option[String]
+    system: String
 )
 
 object CreateProvenancePayload {

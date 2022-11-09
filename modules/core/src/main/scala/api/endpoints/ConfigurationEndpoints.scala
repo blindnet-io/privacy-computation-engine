@@ -37,11 +37,7 @@ class ConfigurationEndpoints(
   val authEndpoint =
     mapEndpoint(baseEndpoint)
       .securityIn(header[Option[String]]("Authorization"))
-      .errorOut(
-        oneOf[Exception](
-          oneOfVariant(StatusCode.Unauthorized, jsonBody[String].mapTo[AuthException])
-        )
-      )
+      .errorOut(statusCode(StatusCode.Unauthorized).and(jsonBody[String].mapTo[AuthException]))
       .serverSecurityLogic(
         t =>
           jwtAuthenticator
@@ -60,7 +56,8 @@ class ConfigurationEndpoints(
       .get
       .in("general-info")
       .out(jsonBody[GeneralInformation])
-      .serverLogicSuccess(configurationService.getGeneralInfo)
+      .errorOutVariants(notFound)
+      .serverLogic(runLogic(configurationService.getGeneralInfo))
 
   val updateGeneralInfo =
     authEndpoint
@@ -68,7 +65,8 @@ class ConfigurationEndpoints(
       .put
       .in("general-info")
       .in(jsonBody[GeneralInformation])
-      .serverLogicSuccess(configurationService.updateGeneralInfo)
+      .errorOutVariants(notFound)
+      .serverLogic(runLogic(configurationService.updateGeneralInfo))
 
   val getDemandResolutionStrategy =
     authEndpoint
@@ -76,7 +74,8 @@ class ConfigurationEndpoints(
       .get
       .in("demand-resolution-strategy")
       .out(jsonBody[DemandResolutionStrategy])
-      .serverLogicSuccess(configurationService.getDemandResolutionStrategy)
+      .errorOutVariants(notFound)
+      .serverLogic(runLogic(configurationService.getDemandResolutionStrategy))
 
   val updateAutomaticResolution =
     authEndpoint
@@ -84,7 +83,8 @@ class ConfigurationEndpoints(
       .put
       .in("demand-resolution-strategy")
       .in(jsonBody[DemandResolutionStrategy])
-      .serverLogicSuccess(configurationService.updateDemandResolutionStrategy)
+      .errorOutVariants(notFound)
+      .serverLogic(runLogic(configurationService.updateDemandResolutionStrategy))
 
   val getPrivacyScopeDimensions =
     authEndpoint
@@ -92,7 +92,7 @@ class ConfigurationEndpoints(
       .get
       .in("privacy-scope-dimensions")
       .out(jsonBody[PrivacyScopeDimensionsPayload])
-      .serverLogicSuccess(configurationService.getPrivacyScopeDimensions)
+      .serverLogic(runLogicSuccess(configurationService.getPrivacyScopeDimensions))
 
   val addSelectors =
     authEndpoint
@@ -100,7 +100,8 @@ class ConfigurationEndpoints(
       .put
       .in("selectors")
       .in(jsonBody[List[CreateSelectorPayload]])
-      .serverLogicSuccess(configurationService.addSelectors)
+      .errorOutVariants(unprocessable)
+      .serverLogic(runLogic(configurationService.addSelectors))
 
   val getLegalBases =
     authEndpoint
@@ -108,7 +109,7 @@ class ConfigurationEndpoints(
       .get
       .in("legal-bases")
       .out(jsonBody[List[LegalBase]])
-      .serverLogicSuccess(configurationService.getLegalBases)
+      .serverLogic(runLogicSuccess(configurationService.getLegalBases))
 
   val getLegalBase =
     authEndpoint
@@ -117,7 +118,8 @@ class ConfigurationEndpoints(
       .in("legal-bases")
       .in(path[UUID]("legalBaseId"))
       .out(jsonBody[LegalBase])
-      .serverLogicSuccess(configurationService.getLegalBase)
+      .errorOutVariants(notFound)
+      .serverLogic(runLogic(configurationService.getLegalBase))
 
   val createLegalBase =
     authEndpoint
@@ -126,7 +128,7 @@ class ConfigurationEndpoints(
       .in("legal-bases")
       .in(jsonBody[CreateLegalBasePayload])
       .out(stringBody)
-      .serverLogicSuccess(configurationService.createLegalBase)
+      .serverLogic(runLogicSuccess(configurationService.createLegalBase))
 
   val addRetentionPolicies =
     authEndpoint
@@ -134,7 +136,8 @@ class ConfigurationEndpoints(
       .put
       .in("retention-policies")
       .in(jsonBody[List[CreateRetentionPolicyPayload]])
-      .serverLogicSuccess(configurationService.addRetentionPolicies)
+      .errorOutVariants(unprocessable)
+      .serverLogic(runLogic(configurationService.addRetentionPolicies))
 
   val deleteRetentionPolicy =
     authEndpoint
@@ -142,7 +145,7 @@ class ConfigurationEndpoints(
       .delete
       .in("retention-policies")
       .in(path[UUID]("retentionPolicyId"))
-      .serverLogicSuccess(configurationService.deleteRetentionPolicy)
+      .serverLogic(runLogicSuccess(configurationService.deleteRetentionPolicy))
 
   val addProvenances =
     authEndpoint
@@ -150,7 +153,8 @@ class ConfigurationEndpoints(
       .put
       .in("provenances")
       .in(jsonBody[List[CreateProvenancePayload]])
-      .serverLogicSuccess(configurationService.addProvenances)
+      .errorOutVariants(unprocessable)
+      .serverLogic(runLogic(configurationService.addProvenances))
 
   val deleteProvenance =
     authEndpoint
@@ -158,7 +162,7 @@ class ConfigurationEndpoints(
       .delete
       .in("provenances")
       .in(path[UUID]("provenanceId"))
-      .serverLogicSuccess(configurationService.deleteProvenance)
+      .serverLogic(runLogicSuccess(configurationService.deleteProvenance))
 
   def getDataCategories =
     authEndpoint
@@ -166,7 +170,7 @@ class ConfigurationEndpoints(
       .get
       .in("data-categories")
       .out(jsonBody[List[DataCategoryResponsePayload]])
-      .serverLogicSuccess(configurationService.getDataCategories)
+      .serverLogic(runLogicSuccess(configurationService.getDataCategories))
 
   def getAllRegulations =
     authEndpoint
@@ -174,7 +178,7 @@ class ConfigurationEndpoints(
       .get
       .in("regulations")
       .out(jsonBody[List[RegulationResponsePayload]])
-      .serverLogicSuccess(configurationService.getAllRegulations)
+      .serverLogic(runLogicSuccess(configurationService.getAllRegulations))
 
   def getAppRegulations =
     authEndpoint
@@ -183,7 +187,7 @@ class ConfigurationEndpoints(
       .in("regulations")
       .in("app")
       .out(jsonBody[List[RegulationResponsePayload]])
-      .serverLogicSuccess(configurationService.getAppRegulations)
+      .serverLogic(runLogicSuccess(configurationService.getAppRegulations))
 
   val addRegulation =
     authEndpoint
@@ -191,7 +195,8 @@ class ConfigurationEndpoints(
       .put
       .in("regulations")
       .in(jsonBody[AddRegulationsPayload])
-      .serverLogicSuccess(configurationService.addRegulations)
+      .errorOutVariants(unprocessable)
+      .serverLogic(runLogic(configurationService.addRegulations))
 
   val deleteRegulation =
     authEndpoint
@@ -199,7 +204,7 @@ class ConfigurationEndpoints(
       .delete
       .in("regulations")
       .in(path[UUID]("regulationId"))
-      .serverLogicSuccess(configurationService.deleteRegulation)
+      .serverLogic(runLogicSuccess(configurationService.deleteRegulation))
 
   val endpoints = List(
     getGeneralInfo,

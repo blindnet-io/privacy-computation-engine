@@ -15,7 +15,7 @@ import terms.*
 case class Provenance(
     id: UUID,
     provenance: ProvenanceTerms,
-    system: Option[String]
+    system: String
 )
 
 object Provenance {

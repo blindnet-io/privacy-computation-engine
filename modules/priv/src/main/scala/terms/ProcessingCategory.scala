@@ -44,6 +44,8 @@ object ProcessingCategory {
     "OTHER-PROCESSING"
   )
 
+  def getAllProcessingCategories = terms.map(ProcessingCategory(_)).toSet
+
   given Decoder[ProcessingCategory] =
     Decoder.decodeString.emap(ProcessingCategory.parse(_).toEither)
 
