@@ -16,18 +16,7 @@ import sttp.tapir.generic.auto.*
 import priv.*
 import priv.privacyrequest.*
 import priv.terms.*
-
-case class ScopePayload(
-    dc: DataCategory,
-    pc: ProcessingCategory,
-    pp: Purpose
-)
-
-object ScopePayload {
-  given Decoder[ScopePayload] = deriveDecoder[ScopePayload]
-  given Encoder[ScopePayload] = deriveEncoder[ScopePayload]
-  given Schema[ScopePayload]  = Schema.derived[ScopePayload]
-}
+import io.blindnet.pce.api.endpoints.messages.ScopePayload
 
 case class CreateLegalBasePayload(
     @description("type of the legal base")

@@ -38,6 +38,16 @@ class UserEventsEndpoints(
       .errorOutVariants(notFound)
       .serverLogic(req => userEventsService.addConsentGivenEvent(req).attempt)
 
+  val giveConsentProactive =
+    userAuthEndpoint
+      .description("Give consent")
+      .post
+      .in("consent")
+      .in("proactive")
+      .in(jsonBody[GiveConsentProactive])
+      .errorOutVariants(unprocessable)
+      .serverLogic(runLogic(userEventsService.giveConsentProactive))
+
   val giveConsent =
     userAuthEndpoint
       .description("Give consent")
@@ -99,6 +109,7 @@ class UserEventsEndpoints(
 
   val endpoints = List(
     giveConsentUnsafe,
+    giveConsentProactive,
     giveConsent,
     storeGivenConsent,
     startContract,

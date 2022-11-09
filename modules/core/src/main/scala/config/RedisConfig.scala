@@ -15,7 +15,7 @@ object RedisConfig {
     env("REDIS_URI").as[String].secret.map(RedisConfig.apply)
 
   given Show[RedisConfig] =
-    Show.show(c => s"""|uri: ${c.uri}
+    Show.show(c => s"""|uri: ${c.uri.valueHash}
                        """.stripMargin('|'))
 
 }

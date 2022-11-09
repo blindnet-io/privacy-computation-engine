@@ -25,6 +25,7 @@ import priv.terms.*
 import util.*
 import priv.LegalBase
 import priv.terms.EventTerms.*
+import io.blindnet.pce.priv.PSContext
 
 class UserEventsService(
     repos: Repositories
@@ -38,13 +39,45 @@ class UserEventsService(
   def handleUser(appId: UUID, ds: DataSubject) =
     repos.dataSubject.exist(appId, ds.id).ifM(IO.unit, repos.dataSubject.insert(appId, ds))
 
+  def storeConsent(id: UUID, ds: DataSubject, t: Instant) =
+    repos.events.addConsentGiven(id, ds, t)
+
   def addConsentGivenEvent(req: GiveConsentUnsafePayload) =
     for {
       _ <- verifyLbExists(req.appId, req.consentId, _.isConsent)
       ds = req.dataSubject.toPrivDataSubject(req.appId)
       _         <- handleUser(req.appId, ds)
       timestamp <- Clock[IO].realTimeInstant
-      _         <- repos.events.addConsentGiven(req.consentId, ds, timestamp)
+      _         <- storeConsent(req.consentId, ds, timestamp)
+    } yield ()
+
+  def giveConsentProactive(jwt: UserJwt)(req: GiveConsentProactive) =
+    for {
+      selectors <- repos.privacyScope.getSelectors(jwt.appId, active = true)
+      ctx   = PSContext(selectors)
+      scope = req.getPrivPrivacyScope.zoomIn(ctx)
+      // TODO
+      _ <- "Scope too large".failBadRequest.whenA(scope.triples.size > 1000)
+      ds = DataSubject(jwt.userId, jwt.appId)
+      _         <- handleUser(jwt.appId, ds)
+      timestamp <- Clock[IO].realTimeInstant
+      lbOpt     <- repos.legalBase.getByScope(jwt.appId, scope)
+      _         <- lbOpt match {
+        case None     =>
+          for {
+            id <- UUIDGen.randomUUID[IO]
+            lb = LegalBase(id, LegalBaseTerms.Consent, scope, None, None, true)
+            _ <- repos.legalBase.add(jwt.appId, lb, true)
+            _ <- storeConsent(id, ds, timestamp)
+            // TODO: handling error
+            _ <- repos.legalBase.addScope(jwt.appId, lb.id, lb.scope).start
+          } yield ()
+        case Some(id) => {
+          for {
+            _ <- storeConsent(id, ds, timestamp)
+          } yield ()
+        }
+      }
     } yield ()
 
   def addConsentGivenEvent(jwt: UserJwt)(req: GiveConsentPayload) =
@@ -53,7 +86,7 @@ class UserEventsService(
       ds = DataSubject(jwt.userId, jwt.appId)
       _         <- handleUser(jwt.appId, ds)
       timestamp <- Clock[IO].realTimeInstant
-      _         <- repos.events.addConsentGiven(req.consentId, ds, timestamp)
+      _         <- storeConsent(req.consentId, ds, timestamp)
     } yield ()
 
   def storeGivenConsentEvent(jwt: AppJwt)(req: StoreGivenConsentPayload) =
@@ -61,7 +94,7 @@ class UserEventsService(
       _ <- verifyLbExists(jwt.appId, req.consentId, _.isConsent)
       ds = req.dataSubject.toPrivDataSubject(jwt.appId)
       _ <- handleUser(jwt.appId, ds)
-      _ <- repos.events.addConsentGiven(req.consentId, ds, req.date)
+      _ <- storeConsent(req.consentId, ds, req.date)
     } yield ()
 
   def addStartContractEvent(jwt: AppJwt)(req: StartContractPayload) =
