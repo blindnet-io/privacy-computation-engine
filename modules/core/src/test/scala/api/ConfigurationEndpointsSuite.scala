@@ -255,7 +255,7 @@ class ConfigurationEndpointsSuite(global: GlobalRead) extends IOSuite {
   def waitUntilLbInserted(xa: Transactor[IO], id: UUID, n: Int = 0): IO[Unit] =
     if n == 10 then failure("Could not find legal base in db")
     for {
-      inserted <- sql"""select exists (select id from legal_bases where id=$id)"""
+      inserted <- sql"""select exists (select lbid from legal_bases_scope where lbid=$id)"""
         .query[Boolean]
         .unique
         .transact(xa)
