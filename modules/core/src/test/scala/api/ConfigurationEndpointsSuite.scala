@@ -142,17 +142,25 @@ class ConfigurationEndpointsSuite(global: GlobalRead) extends IOSuite {
       """
       for {
         _ <- res._1.server.run(put("configure/selectors", req, Some(appToken(appId))))
-        s <- sql"""select term from data_categories where selector=true"""
+
+        dcs <- sql"""select term from data_categories where selector=true"""
           .query[String]
           .to[List]
           .transact(res._1.xa)
-        _ <- expect
+        _   <- expect
           .all(
-            s.contains("AFFILIATION.selector_1"),
-            s.contains("BIOMETRIC.selector_2"),
-            s.contains("CONTACT.PHONE.selector_3")
+            dcs.contains("AFFILIATION.selector_1"),
+            dcs.contains("BIOMETRIC.selector_2"),
+            dcs.contains("CONTACT.PHONE.selector_3")
           )
           .failFast
+
+        rows <-
+          sql"""select count(*) from scope where dcid = (select id from data_categories where term='BIOMETRIC')"""
+            .query[Int]
+            .unique
+            .transact(res._1.xa)
+        _    <- expect(rows == 209).failFast
       } yield success
   }
 
