@@ -17,7 +17,7 @@ import io.blindnet.pce.util.extension.*
 import io.circe.Json
 import io.circe.generic.auto.*
 import io.circe.syntax.*
-import api.endpoints.messages.privacyrequest.*
+import api.endpoints.messages.user.*
 import db.repositories.*
 import model.error.*
 import priv.DataSubject

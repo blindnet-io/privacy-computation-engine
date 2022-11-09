@@ -15,7 +15,7 @@ import sttp.tapir.json.circe.*
 import sttp.tapir.server.*
 import sttp.tapir.server.http4s.*
 import services.*
-import api.endpoints.messages.privacyrequest.*
+import api.endpoints.messages.user.*
 import priv.privacyrequest.{ RequestId as PrivReqId }
 
 class UserEndpoints(

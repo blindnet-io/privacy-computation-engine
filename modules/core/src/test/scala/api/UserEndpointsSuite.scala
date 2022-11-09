@@ -27,7 +27,7 @@ import org.http4s.*
 import org.http4s.circe.*
 import org.http4s.implicits.*
 import weaver.*
-import api.endpoints.messages.privacyrequest.*
+import api.endpoints.messages.user.*
 import db.repositories.*
 import model.error.*
 import priv.DataSubject

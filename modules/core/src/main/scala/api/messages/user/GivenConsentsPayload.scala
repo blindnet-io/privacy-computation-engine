@@ -1,5 +1,5 @@
 package io.blindnet.pce
-package api.endpoints.messages.privacyrequest
+package api.endpoints.messages.user
 
 import java.util.UUID
 
