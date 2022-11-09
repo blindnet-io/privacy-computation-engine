@@ -39,11 +39,11 @@ object testutil {
   val appId = "6f083c15-4ada-4671-a6d1-c671bc9105dc".uuid
   val ds    = DataSubject("fdfc95a6-8fd8-4581-91f7-b3d236a6a10e", appId)
 
-  val secretKey                      = TokenPrivateKey.generateRandom()
-  val publicKey                      = secretKey.toPublicKey().toString()
-  def tb(appId: UUID = appId)        = TokenBuilder(appId, secretKey)
-  def appToken(appId: UUID = appId)  = tb(appId).app()
-  def userToken(appId: UUID = appId) = tb(appId).user(ds.id)
+  val secretKey                                              = TokenPrivateKey.generateRandom()
+  val publicKey                                              = secretKey.toPublicKey().toString()
+  def tb(appId: UUID = appId)                                = TokenBuilder(appId, secretKey)
+  def appToken(appId: UUID = appId)                          = tb(appId).app()
+  def userToken(appId: UUID = appId, userId: String = ds.id) = tb(appId).user(userId)
 }
 
 object httputil {

@@ -45,6 +45,7 @@ class UserEventsEndpoints(
       .in("consent")
       .in("proactive")
       .in(jsonBody[GiveConsentProactive])
+      .out(stringBody)
       .errorOutVariants(unprocessable)
       .serverLogic(runLogic(userEventsService.giveConsentProactive))
 

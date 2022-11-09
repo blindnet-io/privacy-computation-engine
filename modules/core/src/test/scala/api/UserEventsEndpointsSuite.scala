@@ -4,6 +4,7 @@ package api
 import java.time.Instant
 import java.util.UUID
 
+import scala.concurrent.duration.*
 import cats.data.{ NonEmptyList, * }
 import cats.effect.*
 import cats.effect.kernel.Clock
@@ -48,6 +49,132 @@ class UserEventsEndpointsSuite(global: GlobalRead) extends IOSuite {
   val contract1 = "0e3bcc80-09a0-45c2-9e3f-454f953e3cfb".uuid
   val legInter1 = "db8db4ab-0ac2-4528-a333-576e8d0e10fe".uuid
 
+  test("fail proactively giving consent for large scope") {
+    res =>
+      val req = json"""
+      {
+          "scope": [
+            { "dc": "*", "pc": "*", "pp": "*" }
+          ]
+      }
+      """
+      for {
+        response <- res.server.run(post("user-events/consent/proactive", req, Some(userToken())))
+        _        <- expect(response.status == Status.UnprocessableEntity).failFast
+      } yield success
+  }
+
+  def waitUntilLbInserted(xa: Transactor[IO], id: UUID, n: Int = 0): IO[Unit] =
+    if n == 10 then failure("Could not find legal base in db")
+    for {
+      inserted <- sql"""select exists (select lbid from legal_bases_scope where lbid=$id)"""
+        .query[Boolean]
+        .unique
+        .transact(xa)
+      _        <- (IO.sleep(1.seconds) *> waitUntilLbInserted(xa, id, n + 1)).unlessA(inserted)
+    } yield ()
+
+  test("create and record proactively given consent for known user") {
+    res =>
+      val req = json"""
+      {
+          "scope": [
+            { "dc": "CONTACT", "pc": "*", "pp": "ADVERTISING" },
+            { "dc": "NAME", "pc": "GENERATING", "pp": "RESEARCH" }
+          ]
+      }
+      """
+      for {
+        add       <- res.server.run(post("user-events/consent/proactive", req, Some(userToken())))
+        consentId <- add.as[String].map(_.uuid)
+
+        q1 = sql"select exists (select id from legal_bases where id=$consentId)"
+        lbInDb <- q1.query[Boolean].unique.transact(res.xa)
+        _      <- expect(lbInDb).failFast
+
+        _ <- waitUntilLbInserted(res.xa, consentId)
+        q2 = sql"""select count(*) from legal_bases_scope where lbid = $consentId"""
+        rows <- q2.query[Int].unique.transact(res.xa)
+        _    <- expect(rows == 31).failFast
+
+        q3 =
+          sql"select exists (select lbid from consent_given_events where lbid=$consentId and dsid=${ds.id})"
+        existsEv <- q3.query[Boolean].unique.transact(res.xa)
+        _        <- expect(existsEv).failFast
+
+      } yield success
+  }
+
+  test("create and record proactively given consent for unknown user") {
+    res =>
+      val uid = uuid.toString
+      val req = json"""
+      {
+          "scope": [
+            { "dc": "CONTACT", "pc": "*", "pp": "RESEARCH" }
+          ]
+      }
+      """
+      for {
+        add       <- res.server.run(
+          post("user-events/consent/proactive", req, Some(userToken(userId = uid)))
+        )
+        consentId <- add.as[String].map(_.uuid)
+
+        q1 = sql"select exists (select id from legal_bases where id=$consentId)"
+        lbInDb <- q1.query[Boolean].unique.transact(res.xa)
+        _      <- expect(lbInDb).failFast
+
+        _ <- waitUntilLbInserted(res.xa, consentId)
+        q2 = sql"""select count(*) from legal_bases_scope where lbid = $consentId"""
+        rows <- q2.query[Int].unique.transact(res.xa)
+        _    <- expect(rows == 30).failFast
+
+        sqlDs = sql"select exists (select id from data_subjects where id=$uid)"
+        userInDb <- sqlDs.query[Boolean].unique.transact(res.xa)
+        _        <- expect(userInDb).failFast
+
+        q3 =
+          sql"select exists (select lbid from consent_given_events where lbid=$consentId and dsid=$uid)"
+        existsEv <- q3.query[Boolean].unique.transact(res.xa)
+        _        <- expect(existsEv).failFast
+
+      } yield success
+  }
+
+  test("record known proactively given consent for user") {
+    res =>
+      val uid1 = uuid.toString
+      val uid2 = uuid.toString
+      val req  = json"""
+      {
+          "scope": [
+            { "dc": "CONTACT", "pc": "*", "pp": "*" }
+          ]
+      }
+      """
+      for {
+        add        <- res.server.run(
+          post("user-events/consent/proactive", req, Some(userToken(userId = uid1)))
+        )
+        consentId1 <- add.as[String].map(_.uuid)
+
+        _ <- waitUntilLbInserted(res.xa, consentId1)
+
+        add        <- res.server.run(
+          post("user-events/consent/proactive", req, Some(userToken(userId = uid2)))
+        )
+        consentId2 <- add.as[String].map(_.uuid)
+        _          <- expect(consentId1 == consentId2).failFast
+
+        q3 =
+          sql"select exists (select lbid from consent_given_events where lbid=$consentId2 and dsid=$uid2)"
+        existsEv <- q3.query[Boolean].unique.transact(res.xa)
+        _        <- expect(existsEv).failFast
+
+      } yield success
+  }
+
   test("fail recording given consent for unknown consent id") {
     res =>
       val req = json"""{ "consent_id": $uuid }"""
@@ -71,11 +198,10 @@ class UserEventsEndpointsSuite(global: GlobalRead) extends IOSuite {
 
   test("record given consent for unknown user") {
     res =>
-      val uid   = uuid.toString
-      val token = tb().user(uid)
-      val req   = json"""{ "consent_id": $consent1 }"""
+      val uid = uuid.toString
+      val req = json"""{ "consent_id": $consent1 }"""
       for {
-        response <- res.server.run(post("user-events/consent", req, Some(token)))
+        response <- res.server.run(post("user-events/consent", req, Some(userToken(userId = uid))))
         _        <- expect(response.status == Status.Ok).failFast
 
         sqlEv =

@@ -62,7 +62,7 @@ class UserEventsService(
       _         <- handleUser(jwt.appId, ds)
       timestamp <- Clock[IO].realTimeInstant
       lbOpt     <- repos.legalBase.getByScope(jwt.appId, scope)
-      _         <- lbOpt match {
+      consentId <- lbOpt match {
         case None     =>
           for {
             id <- UUIDGen.randomUUID[IO]
@@ -71,14 +71,14 @@ class UserEventsService(
             _ <- storeConsent(id, ds, timestamp)
             // TODO: handling error
             _ <- repos.legalBase.addScope(jwt.appId, lb.id, lb.scope).start
-          } yield ()
+          } yield id
         case Some(id) => {
           for {
             _ <- storeConsent(id, ds, timestamp)
-          } yield ()
+          } yield id
         }
       }
-    } yield ()
+    } yield consentId.toString
 
   def addConsentGivenEvent(jwt: UserJwt)(req: GiveConsentPayload) =
     for {
