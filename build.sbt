@@ -32,7 +32,7 @@ lazy val root = (project in file("."))
 lazy val util = (project in file("modules/util"))
   .settings(commonSettings*)
   .settings(
-    name := "pce-util",
+    name             := "pce-util",
     testFrameworks += new TestFramework("weaver.framework.CatsEffect"),
     csrConfiguration := csrConfiguration.value.withTtl(Some(0.seconds)),
     libraryDependencies ++= Seq(
@@ -44,7 +44,7 @@ lazy val util = (project in file("modules/util"))
 lazy val priv = (project in file("modules/priv"))
   .settings(commonSettings*)
   .settings(
-    name := "pce-priv",
+    name             := "pce-priv",
     testFrameworks += new TestFramework("weaver.framework.CatsEffect"),
     csrConfiguration := csrConfiguration.value.withTtl(Some(0.seconds)),
     libraryDependencies ++= Seq(
@@ -72,7 +72,7 @@ lazy val core = (project in file("modules/core"))
     testFrameworks += new TestFramework("weaver.framework.CatsEffect"),
     resolvers += "Blindnet Snapshots" at "https://nexus.blindnet.io/repository/maven-snapshots",
     // https://github.com/sbt/sbt/issues/5377
-    csrConfiguration := csrConfiguration.value.withTtl(Some(0.seconds)),
+    csrConfiguration                 := csrConfiguration.value.withTtl(Some(0.seconds)),
     libraryDependencies ++= Seq(
       dependencies.main.catsEffect,
       dependencies.main.ciris,
@@ -109,10 +109,14 @@ lazy val core = (project in file("modules/core"))
     assembly / mainClass             := Some("io.blindnet.pce.Main"),
     assembly / assemblyJarName       := "devkit_pce.jar",
     assembly / assemblyMergeStrategy := {
+      // format: off
       case PathList(ps @ _*) if ps.last == "module-info.class"                          =>
+      // format: on
         MergeStrategy.discard
       case PathList("META-INF", "maven", "org.webjars", "swagger-ui", "pom.properties") =>
         MergeStrategy.singleOrError
+      case PathList("META-INF", "io.netty.versions.properties")                         =>
+        MergeStrategy.first
       case x                                                                            =>
         val oldStrategy = (assembly / assemblyMergeStrategy).value
         oldStrategy(x)
