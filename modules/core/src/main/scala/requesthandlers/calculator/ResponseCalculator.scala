@@ -55,7 +55,7 @@ class ResponseCalculator(
           _       <- if (newResp.status == Granted) then storeEvent(pr, d) else IO.unit
           app     <- repos.app.get(pr.appId).map(_.get)
           // TODO: model apps using/not using DAC
-          _ <- app.dac.usingDac.runOnTrue(callStorage(app, newResp.eventId, d, pr.dataSubject, r))
+          _       <- callStorage(app, newResp.eventId, d, pr.dataSubject, r).whenA(app.dac.usingDac)
         } yield ()
       case _           => logger.info(s"Response ${resp.id} not UNDER-REVIEW")
     }

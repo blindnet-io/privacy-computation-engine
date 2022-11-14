@@ -85,7 +85,6 @@ class RequestRecommender(
       case _ => IO.raiseError(new NotImplementedError)
     }
 
-  // TODO: handle when psr is empty
   private def getRecAccess(pr: PrivacyRequest, d: Demand) =
     for {
       selectors <- repos.privacyScope.getSelectors(pr.appId, active = true)

@@ -80,8 +80,19 @@ class PrivacyRequestService(
       ds        <-
         NonEmptyList.fromList(req.dataSubject.map(dsp => dsp.toPrivDataSubject(jwt.appId))) match {
           case None             => IO(None)
-          case Some(identities) => repos.dataSubject.get(jwt.appId, identities)
+          case Some(identities) =>
+            for {
+              optDs <- repos.dataSubject.get(jwt.appId, identities)
+              ds    <- optDs match {
+                case Some(ds) => IO(Some(ds))
+                case None     =>
+                  jwt.asUser
+                    .flatMap(uJwt => identities.find(_.id == uJwt.userId))
+                    .fold(IO(None))(ds => repos.dataSubject.insert(jwt.appId, ds).as(Some(ds)))
+              }
+            } yield ds
         }
+
       pr = PrivacyRequest(
         reqId,
         jwt.appId,
@@ -92,7 +103,7 @@ class PrivacyRequestService(
         req.dataSubject.map(_.id),
         demands
       )
-      _         <- validateRequest(jwt)(pr)
+      _ <- validateRequest(jwt)(pr)
 
       responses <- PrivacyResponse.fromPrivacyRequest[IO](pr)
       _         <- repos.privacyRequest.store(pr, responses)
