@@ -15,9 +15,8 @@ import io.blindnet.pce.model.*
 import io.blindnet.pce.model.error.given
 import io.blindnet.pce.priv.Recommendation
 import io.blindnet.pce.util.extension.*
-import io.circe.Json
 import io.circe.generic.auto.*
-import io.circe.syntax.*
+import io.circe.literal.*
 import api.endpoints.messages.privacyrequest.*
 import db.repositories.*
 import model.error.*
@@ -63,15 +62,17 @@ class DataConsumerInterfaceService(
 
   def approveDemand(jwt: AppJwt)(req: ApproveDemandPayload) =
     for {
-      _ <- repos.demandsToReview.remove(NonEmptyList.of(req.id))
+      r <- repos.privacyRequest.getRecommendation(req.id).orFail(s"No recommendation found")
+      newR = r.copy(status = Some(Status.Granted), motive = None)
+      _ <- repos.privacyRequest.updateRecommendation(newR)
       d <- CommandCreateResponse.create(
         req.id,
-        // TODO: refactor
-        Json.obj(
-          "msg"  -> req.msg.map(_.asJson).getOrElse(Json.Null),
-          "lang" -> req.lang.map(_.asJson).getOrElse(Json.Null)
-        )
+        json"""{
+          "msg": ${req.msg},
+          "lang": ${req.lang}
+        }"""
       )
+      _ <- repos.demandsToReview.remove(NonEmptyList.of(req.id))
       _ <- repos.commands.addCreateResp(List(d))
     } yield ()
 
@@ -82,11 +83,10 @@ class DataConsumerInterfaceService(
       _ <- repos.privacyRequest.updateRecommendation(newR)
       d <- CommandCreateResponse.create(
         req.id,
-        // TODO: refactor
-        Json.obj(
-          "msg"  -> req.msg.map(_.asJson).getOrElse(Json.Null),
-          "lang" -> req.lang.map(_.asJson).getOrElse(Json.Null)
-        )
+        json"""{
+          "msg": ${req.msg},
+          "lang": ${req.lang}
+        }"""
       )
       _ <- repos.demandsToReview.remove(NonEmptyList.of(req.id))
       _ <- repos.commands.addCreateResp(List(d))

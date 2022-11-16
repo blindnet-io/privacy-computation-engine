@@ -17,7 +17,7 @@ object dependencies {
 
     val circe        = "io.circe"             %% "circe-core"    % circeV
     val circeGeneric = "io.circe"             %% "circe-generic" % circeV
-    val circeLiteral = "io.circe"             %% "circe-literal" % circeV % Test
+    val circeLiteral = "io.circe"             %% "circe-literal" % circeV
     val jwtCirce     = "com.github.jwt-scala" %% "jwt-circe"     % "9.0.5"
 
     val http4sEmberServer = "org.http4s" %% "http4s-ember-server" % http4sV
