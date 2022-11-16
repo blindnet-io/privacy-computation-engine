@@ -69,7 +69,7 @@ trait response {
       a: Action = Action.Access,
       s: Status = Status.Granted,
       motive: Option[Motive] = None,
-      answer: Option[Json] = None,
+      answer: Option[String] = None,
       message: Option[String] = None,
       lang: Option[String] = None,
       system: Option[String] = None,
