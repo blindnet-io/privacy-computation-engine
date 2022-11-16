@@ -238,6 +238,17 @@ private object queries {
       .query[Recommendation]
       .option
 
+  def getRecommendation(appId: UUID, dId: UUID) =
+    sql"""
+      select dr.id, dr.did, dr.status, dr.motive, dr.data_categories, dr.date_from, dr.date_to, dr.provenance, dr.target
+      from demand_recommendations dr
+        join demands d on d.id = dr.did
+        join privacy_requests pr on pr.id = d.prid
+      where d.id = $dId and pr.appid = $appId
+    """
+      .query[Recommendation]
+      .option
+
   def getAllUserRequestIds(ds: DataSubject) =
     sql"""
       select id

@@ -54,8 +54,9 @@ class TransparencyCalculator(
           case Some(Status.Granted) | None =>
             for {
               answer <- getAnswer(resp.action, appId, t, ds, restr)
+              strAnswer = answer.spaces2
               // format: off
-              newResp = PrivacyResponse(resp.id, rEventId, resp.demandId, responseTime, resp.action, Status.Granted, answer = Some(answer))
+              newResp = PrivacyResponse(resp.id, rEventId, resp.demandId, responseTime, resp.action, Status.Granted, answer = Some(strAnswer))
               // format: on
             } yield newResp
 

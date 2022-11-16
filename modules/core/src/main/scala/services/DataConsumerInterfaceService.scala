@@ -56,13 +56,16 @@ class DataConsumerInterfaceService(
       d <- repos.privacyRequest.getDemand(dId, false).orFail(s"Demand $dId not found")
       rId = d.reqId
       req <- repos.privacyRequest.getRequest(rId, false).orFail(s"Request $rId not found")
-      rec <- repos.privacyRequest.getRecommendation(dId)
+      rec <- repos.privacyRequest.getRecommendation(jwt.appId, dId)
       res = PendingDemandDetailsPayload.fromPrivDemand(d, req, rec)
     } yield res
 
   def approveDemand(jwt: AppJwt)(req: ApproveDemandPayload) =
     for {
-      r <- repos.privacyRequest.getRecommendation(req.id).orFail(s"No recommendation found")
+      _ <- repos.demandsToReview.exists(jwt.appId, req.id).onFalseBadRequest("Demand not pending")
+      r <- repos.privacyRequest
+        .getRecommendation(jwt.appId, req.id)
+        .orBadRequest(s"No recommendation found")
       newR = r.copy(status = Some(Status.Granted), motive = None)
       _ <- repos.privacyRequest.updateRecommendation(newR)
       d <- CommandCreateResponse.create(
@@ -78,7 +81,10 @@ class DataConsumerInterfaceService(
 
   def denyDemand(jwt: AppJwt)(req: DenyDemandPayload) =
     for {
-      r <- repos.privacyRequest.getRecommendation(req.id).orFail(s"No recommendation found")
+      _ <- repos.demandsToReview.exists(jwt.appId, req.id).onFalseBadRequest("Demand not pending")
+      r <- repos.privacyRequest
+        .getRecommendation(jwt.appId, req.id)
+        .orBadRequest(s"No recommendation found")
       newR = r.copy(status = Some(Status.Denied), motive = Some(req.motive))
       _ <- repos.privacyRequest.updateRecommendation(newR)
       d <- CommandCreateResponse.create(
@@ -94,7 +100,9 @@ class DataConsumerInterfaceService(
 
   def changeRecommendation(jwt: AppJwt)(req: ChangeRecommendationPayload) =
     for {
-      _ <- verifyDemandExists(jwt.appId, req.demandId)
+      _ <- repos.demandsToReview
+        .exists(jwt.appId, req.demandId)
+        .onFalseBadRequest("Demand not pending")
       newRec = RecommendationPayload.toRecommendation(req.recommendation, req.demandId)
       newRecV <- Recommendation.validate(newRec).toEither.orBadRequest
       _       <- repos.privacyRequest.updateRecommendation(newRecV)
@@ -136,7 +144,7 @@ class DataConsumerInterfaceService(
       timeline <- repos.events.getTimelineNoScope(ds)
       lbIds = timeline.events.flatMap(_.getLbId).toNel
       lbs <- lbIds.fold(IO(List.empty))(repos.legalBase.get(jwt.appId, _))
-      res = TimelineEventsPayload.fromPriv(List.empty, List.empty, timeline, lbs)
+      res = TimelineEventsPayload.fromPriv(reqs, resps, timeline, lbs)
     } yield res
 
 }

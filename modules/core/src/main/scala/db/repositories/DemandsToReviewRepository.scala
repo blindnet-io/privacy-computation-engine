@@ -18,6 +18,8 @@ import priv.terms.*
 trait DemandsToReviewRepository {
   def get(appId: UUID, n: Int = 0): IO[List[UUID]]
 
+  def exists(appId: UUID, dId: UUID): IO[Boolean]
+
   def add(ids: List[UUID]): IO[Unit]
 
   def remove(ids: NonEmptyList[UUID]): IO[Unit]
@@ -37,6 +39,20 @@ object DemandsToReviewRepository {
         """
           .query[UUID]
           .to[List]
+          .transact(xa)
+
+      def exists(appId: UUID, dId: UUID): IO[Boolean] =
+        sql"""
+          select exists (
+            select d.id
+            from pending_demands_to_review pd
+              join demands d on d.id = pd.did
+              join privacy_requests pr on pr.id = d.prid
+            where d.id = $dId and pr.appid = $appId
+          )
+        """
+          .query[Boolean]
+          .unique
           .transact(xa)
 
       def add(ids: List[UUID]): IO[Unit] =

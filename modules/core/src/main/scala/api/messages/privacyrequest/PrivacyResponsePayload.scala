@@ -24,7 +24,7 @@ case class PrivacyResponsePayload(
     requestedAction: Action,
     status: Status,
     motive: Option[Motive],
-    answer: Option[Json],
+    answer: Option[String],
     message: Option[String],
     lang: Option[String],
     includes: List[Json], // TODO: recursive type

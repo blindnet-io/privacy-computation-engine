@@ -29,9 +29,8 @@ private object codecs {
       Option[String], Option[String], Option[String], Option[String])]
       .map {
         case (id, evid, did, parent, t, a, s, mot, answer, msg, lang, system, data) =>
-          val answ = answer.flatMap(a => parse(a).toOption)
           val incl = List.empty
-          PrivacyResponse(id, evid, did, t, a, s, mot, answ, msg, lang, system, parent, incl, data)
+          PrivacyResponse(id, evid, did, t, a, s, mot, answer, msg, lang, system, parent, incl, data)
       }
     // format: on
 

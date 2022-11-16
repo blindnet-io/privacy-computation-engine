@@ -35,7 +35,7 @@ case class PrivacyResponse(
     action: Action,
     status: Status,
     motive: Option[Motive] = None,
-    answer: Option[Json] = None,
+    answer: Option[String] = None,
     message: Option[String] = None,
     lang: Option[String] = None,
     system: Option[String] = None,

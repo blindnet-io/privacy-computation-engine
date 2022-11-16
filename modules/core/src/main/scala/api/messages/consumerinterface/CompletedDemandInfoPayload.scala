@@ -26,7 +26,7 @@ case class CompletedDemandInfoPayload(
     action: Action,
     status: Status,
     motive: Option[Motive],
-    answer: Option[Json],
+    answer: Option[String],
     requestMessage: Option[String],
     requestLang: Option[String],
     responseMessage: Option[String],

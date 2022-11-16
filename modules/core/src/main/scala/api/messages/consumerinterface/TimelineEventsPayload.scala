@@ -18,7 +18,7 @@ import priv.privacyrequest.*
 import priv.terms.*
 import api.endpoints.messages.*
 
-case class PrivacyRequetsDemand(
+case class PrivacyRequestEventDemand(
     id: UUID,
     action: Action
 )
@@ -27,7 +27,7 @@ case class PrivacyRequestEvent(
     id: UUID,
     date: Instant,
     target: Target,
-    demands: List[PrivacyRequetsDemand]
+    demands: List[PrivacyRequestEventDemand]
 )
 
 case class PrivacyResponseEvent(
@@ -70,10 +70,13 @@ case class TimelineEventsPayload(
 )
 
 object TimelineEventsPayload {
-  given Decoder[PrivacyRequetsDemand] = unSnakeCaseIfy(deriveDecoder[PrivacyRequetsDemand])
-  given Encoder[PrivacyRequetsDemand] = snakeCaseIfy(deriveEncoder[PrivacyRequetsDemand])
-  given Schema[PrivacyRequetsDemand]  =
-    Schema.derived[PrivacyRequetsDemand](using Configuration.default.withSnakeCaseMemberNames)
+  given Decoder[PrivacyRequestEventDemand] = unSnakeCaseIfy(
+    deriveDecoder[PrivacyRequestEventDemand]
+  )
+
+  given Encoder[PrivacyRequestEventDemand] = snakeCaseIfy(deriveEncoder[PrivacyRequestEventDemand])
+  given Schema[PrivacyRequestEventDemand]  =
+    Schema.derived[PrivacyRequestEventDemand](using Configuration.default.withSnakeCaseMemberNames)
 
   given Decoder[PrivacyRequestEvent] = unSnakeCaseIfy(deriveDecoder[PrivacyRequestEvent])
   given Encoder[PrivacyRequestEvent] = snakeCaseIfy(deriveEncoder[PrivacyRequestEvent])
@@ -117,7 +120,7 @@ object TimelineEventsPayload {
           r.id.value,
           r.timestamp,
           r.target,
-          r.demands.map(d => PrivacyRequetsDemand(d.id, d.action))
+          r.demands.map(d => PrivacyRequestEventDemand(d.id, d.action))
         )
     )
 

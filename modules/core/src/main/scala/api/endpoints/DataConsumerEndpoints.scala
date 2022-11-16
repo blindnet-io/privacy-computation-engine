@@ -34,7 +34,7 @@ class DataConsumerEndpoints(
       .get
       .in("pending-requests")
       .out(jsonBody[List[PendingDemandPayload]])
-      .serverLogicSuccess(consumerInterfaceService.getPendingDemands)
+      .serverLogic(runLogicSuccess(consumerInterfaceService.getPendingDemands))
 
   val getPendingDemandDetails =
     appAuthEndpoint
@@ -43,9 +43,8 @@ class DataConsumerEndpoints(
       .in("pending-requests")
       .in(path[UUID]("demandId"))
       .out(jsonBody[PendingDemandDetailsPayload])
-      .errorOutVariant(oneOfVariant(statusCode(StatusCode.UnprocessableEntity)))
-      .errorOutVariant(oneOfVariant(statusCode(StatusCode.NotFound)))
-      .serverLogicSuccess(consumerInterfaceService.getPendingDemandDetails)
+      .errorOutVariants(notFound)
+      .serverLogic(runLogic(consumerInterfaceService.getPendingDemandDetails))
 
   val approveDemand =
     appAuthEndpoint
@@ -54,10 +53,8 @@ class DataConsumerEndpoints(
       .in("pending-requests")
       .in("approve")
       .in(jsonBody[ApproveDemandPayload])
-      .errorOutVariant(oneOfVariant(statusCode(StatusCode.BadRequest)))
-      .errorOutVariant(oneOfVariant(statusCode(StatusCode.UnprocessableEntity)))
-      .errorOutVariant(oneOfVariant(statusCode(StatusCode.NotFound)))
-      .serverLogicSuccess(consumerInterfaceService.approveDemand)
+      .errorOutVariants(unprocessable)
+      .serverLogic(runLogic(consumerInterfaceService.approveDemand))
 
   val denyDemand =
     appAuthEndpoint
@@ -66,10 +63,8 @@ class DataConsumerEndpoints(
       .in("pending-requests")
       .in("deny")
       .in(jsonBody[DenyDemandPayload])
-      .errorOutVariant(oneOfVariant(statusCode(StatusCode.BadRequest)))
-      .errorOutVariant(oneOfVariant(statusCode(StatusCode.UnprocessableEntity)))
-      .errorOutVariant(oneOfVariant(statusCode(StatusCode.NotFound)))
-      .serverLogicSuccess(consumerInterfaceService.denyDemand)
+      .errorOutVariants(unprocessable)
+      .serverLogic(runLogic(consumerInterfaceService.denyDemand))
 
   val changeRecommendation =
     appAuthEndpoint
@@ -78,10 +73,8 @@ class DataConsumerEndpoints(
       .in("pending-requests")
       .in("recommendation")
       .in(jsonBody[ChangeRecommendationPayload])
-      .errorOutVariant(oneOfVariant(statusCode(StatusCode.BadRequest)))
-      .errorOutVariant(oneOfVariant(statusCode(StatusCode.UnprocessableEntity)))
-      .errorOutVariant(oneOfVariant(statusCode(StatusCode.NotFound)))
-      .serverLogicSuccess(consumerInterfaceService.changeRecommendation)
+      .errorOutVariants(unprocessable)
+      .serverLogic(runLogic(consumerInterfaceService.changeRecommendation))
 
   val getCompletedDemands =
     appAuthEndpoint
@@ -89,7 +82,7 @@ class DataConsumerEndpoints(
       .get
       .in("completed-requests")
       .out(jsonBody[List[CompletedDemandPayload]])
-      .serverLogicSuccess(consumerInterfaceService.getCompletedDemands)
+      .serverLogic(runLogicSuccess(consumerInterfaceService.getCompletedDemands))
 
   val getCompletedDemandDetails =
     appAuthEndpoint
@@ -98,9 +91,8 @@ class DataConsumerEndpoints(
       .in("completed-requests")
       .in(path[UUID]("requestId"))
       .out(jsonBody[List[CompletedDemandInfoPayload]])
-      .errorOutVariant(oneOfVariant(statusCode(StatusCode.UnprocessableEntity)))
-      .errorOutVariant(oneOfVariant(statusCode(StatusCode.NotFound)))
-      .serverLogicSuccess(consumerInterfaceService.getCompletedDemandInfo)
+      .errorOutVariants(notFound)
+      .serverLogic(runLogic(consumerInterfaceService.getCompletedDemandInfo))
 
   val getTimeline =
     appAuthEndpoint
@@ -109,9 +101,7 @@ class DataConsumerEndpoints(
       .in("timeline")
       .in(path[String]("userId"))
       .out(jsonBody[TimelineEventsPayload])
-      .errorOutVariant(oneOfVariant(statusCode(StatusCode.UnprocessableEntity)))
-      .errorOutVariant(oneOfVariant(statusCode(StatusCode.NotFound)))
-      .serverLogicSuccess(consumerInterfaceService.getTimeline)
+      .serverLogic(runLogicSuccess(consumerInterfaceService.getTimeline))
 
   val endpoints =
     List(
