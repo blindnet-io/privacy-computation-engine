@@ -82,6 +82,8 @@ class RequestRecommender(
       case Delete                                              => getRecDelete(pr, d)
       case RevokeConsent                                       => getRecRevoke(pr, d)
       case Object | Restrict                                   => IO(Recommendation.grant(_, d.id))
+      case Portability                                         => IO(Recommendation.grant(_, d.id))
+      case Other                                               => IO(Recommendation.grant(_, d.id))
       case _ => IO.raiseError(new NotImplementedError)
     }
 

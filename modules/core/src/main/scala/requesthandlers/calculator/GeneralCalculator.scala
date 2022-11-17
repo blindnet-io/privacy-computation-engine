@@ -42,7 +42,9 @@ class GeneralCalculator(
       newResp <-
         r.status match {
           case Some(Status.Granted) =>
-            createGrantedResponse(resp.id, pr.appId, d, ccr, pr.dataSubject.get, r)
+            // format: off
+            createGrantedResponse(resp.id, pr.appId, d, ccr, pr.dataSubject.get, r, msg, lang)
+            // format: on
 
           case Some(s) =>
             // format: off
@@ -62,7 +64,9 @@ class GeneralCalculator(
       d: Demand,
       ccr: CommandCreateResponse,
       ds: DataSubject,
-      r: Recommendation
+      r: Recommendation,
+      msg: Option[String],
+      lang: Option[String]
   ) =
     for {
       rEventId  <- UUIDGen.randomUUID[IO].map(ResponseEventId.apply)
@@ -74,7 +78,9 @@ class GeneralCalculator(
         d.id,
         timestamp,
         d.action,
-        Status.Granted
+        Status.Granted,
+        message = msg,
+        lang = lang
       )
     } yield newResp
 

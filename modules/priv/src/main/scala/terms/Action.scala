@@ -30,7 +30,7 @@ enum Action(term: String, parent: Option[Action] = None) {
   case TRetention  extends Action("TRANSPARENCY.RETENTION", Some(Transparency))
   case TWhere      extends Action("TRANSPARENCY.WHERE", Some(Transparency))
   case TWho        extends Action("TRANSPARENCY.WHO", Some(Transparency))
-  case Other       extends Action("OTHER")
+  case Other       extends Action("OTHER-DEMAND")
 
   def withSubCategories(): List[Action] = {
     val children = this.children()

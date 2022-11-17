@@ -86,6 +86,12 @@ class ResponseCalculator(
       case Restrict =>
         general.createResponse(pr, ccr, d, resp, r)
 
+      case Portability =>
+        general.createResponse(pr, ccr, d, resp, r)
+
+      case Other =>
+        general.createResponse(pr, ccr, d, resp, r)
+
       case _ => IO.raiseError(new NotImplementedError)
     }
 
