@@ -103,7 +103,9 @@ class ConfigurationEndpointsSuite(global: GlobalRead) extends IOSuite {
           "transparency": "manual",
           "access": "auto",
           "delete": "manual",
-          "consents": "auto"
+          "revoke_consent": "auto",
+          "object": "manual",
+          "restrict": "auto"
       }
       """
       for {
@@ -115,7 +117,14 @@ class ConfigurationEndpointsSuite(global: GlobalRead) extends IOSuite {
         )
         s    <- resp.to[DemandResolutionStrategy]
         _    <- expect
-          .all(s.transparency == man, s.access == auto, s.delete == man, s.consents == auto)
+          .all(
+            s.transparency == man,
+            s.access == auto,
+            s.delete == man,
+            s.revokeConsent == auto,
+            s.objectScope == man,
+            s.restrictScope == auto
+          )
           .failFast
       } yield success
   }
