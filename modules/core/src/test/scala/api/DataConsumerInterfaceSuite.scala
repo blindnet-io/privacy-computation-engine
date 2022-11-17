@@ -320,6 +320,8 @@ class DataConsumerInterface(global: GlobalRead) extends IOSuite {
           .all(
             d.id == d11,
             d.action == Access,
+            d.message.contains("msg11"),
+            d.language.contains("lang11"),
             d.dataSubject.contains(DataSubjectPayload(dsId1, None)),
             r.dId == d11,
             r.status.contains(PrivStatus.Granted),

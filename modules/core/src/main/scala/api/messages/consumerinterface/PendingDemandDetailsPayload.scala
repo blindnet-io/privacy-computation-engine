@@ -21,6 +21,8 @@ case class PendingDemandDetailsPayload(
     id: UUID,
     date: Instant,
     action: Action,
+    message: Option[String],
+    language: Option[String],
     dataSubject: Option[DataSubjectPayload],
     recommendation: Option[Recommendation]
 )
@@ -44,6 +46,8 @@ object PendingDemandDetailsPayload {
       d.id,
       pr.timestamp,
       d.action,
+      d.message,
+      d.language,
       pr.dataSubject.map(DataSubjectPayload.fromDataSubject),
       r
     )
