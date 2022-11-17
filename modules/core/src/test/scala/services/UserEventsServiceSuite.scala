@@ -37,10 +37,21 @@ import httputil.*
 
 class UserEventsSuite(global: GlobalRead) extends IOSuite {
 
-  type Res = Resources
-  def sharedResource: Resource[IO, Resources] = global.getOrFailR[Resources]()
+  val appId = uuid
 
-  val cId = UUID.fromString("28b5bee0-9db8-40ec-840e-64eafbfb9ddd")
+  val cId = uuid
+
+  type Res = Resources
+  def sharedResource: Resource[IO, Resources] = for {
+    res <- global.getOrFailR[Resources]()
+
+    _ <- Resource.eval {
+      for {
+        _ <- dbutil.createApp(appId, res.xa)
+        _ <- dbutil.createLegalBase(cId, appId, LegalBaseTerms.Consent, "test consent 1", res.xa)
+      } yield ()
+    }
+  } yield res
 
   test("verifyLbExists should fail for non existing legal base") {
     res =>

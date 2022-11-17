@@ -37,17 +37,113 @@ import priv.LegalBase
 import SharedResources.*
 import testutil.*
 import httputil.*
+import dbutil.*
+import io.blindnet.pce.priv.terms.LegalBaseTerms
 
 class UserEventsEndpointsSuite(global: GlobalRead) extends IOSuite {
 
-  type Res = Resources
-  def sharedResource: Resource[IO, Resources] = sharedResourceOrFallback(global)
+  val appId = uuid
 
-  val consent1  = "28b5bee0-9db8-40ec-840e-64eafbfb9ddd".uuid
-  val consent2  = "b25c1c0c-d375-4a5c-8500-6918f2888435".uuid
-  val consent3  = "b52f8b4b-590c-4dcb-b572-f4a890ea330b".uuid
-  val contract1 = "0e3bcc80-09a0-45c2-9e3f-454f953e3cfb".uuid
-  val legInter1 = "db8db4ab-0ac2-4528-a333-576e8d0e10fe".uuid
+  val ds = DataSubject(uuid.toString, appId)
+
+  val consent1  = uuid
+  val consent2  = uuid
+  val consent3  = uuid
+  val contract1 = uuid
+  val legInter1 = uuid
+
+  type Res = Resources
+  def sharedResource: Resource[IO, Resources] =
+    for {
+      res <- global.getOrFailR[Resources]()
+
+      _ <- Resource.eval {
+        for {
+          _ <- createApp(appId, res.xa)
+          _ <- createDs(ds.id, appId, res.xa)
+
+          _ <- sql"""
+          insert into data_categories (id, term, selector, appid, active) values
+          ($uuid, 'OTHER-DATA.PROOF', true, $appId, true)
+          """.update.run.transact(res.xa)
+
+          _ <- sql"""
+          insert into provenances (select gen_random_uuid(), $appId, id, 'USER', 'demo' from data_categories)
+          """.update.run.transact(res.xa)
+
+          _ <- sql"""insert into retention_policies (
+          select gen_random_uuid(), $appId, id, 'NO-LONGER-THAN', '10', 'RELATIONSHIP-END' from data_categories)
+          """.update.run.transact(res.xa)
+
+          _ <- sql"""insert into "scope" (
+          select gen_random_uuid() as id, dc.id as dcid, pc.id as pcid, pp.id as ppid
+          from data_categories dc, processing_categories pc, processing_purposes pp
+          where dc.selector = true)
+          """.update.run.transact(res.xa)
+
+          _ <- createLegalBase(consent1, appId, LegalBaseTerms.Consent, "Prizes consent", res.xa)
+          _ <- createLegalBase(consent2, appId, LegalBaseTerms.Consent, "test consent 1", res.xa)
+          _ <- createLegalBase(consent3, appId, LegalBaseTerms.Consent, "test consent 2", res.xa)
+          _ <- createLegalBase(contract1, appId, LegalBaseTerms.Contract, "test contract 1", res.xa)
+          _ <- createLegalBase(
+            legInter1,
+            appId,
+            LegalBaseTerms.LegitimateInterest,
+            "test legitimate interest 1",
+            res.xa
+          )
+
+          _ <- sql"""
+          insert into legal_bases_scope
+          values ($consent1, (
+            select s.id from scope s
+            join data_categories dc on dc.id = s.dcid
+            join processing_categories pc on pc.id = s.pcid
+            join processing_purposes pp on pp.id = s.ppid
+            where dc.term = 'CONTACT.EMAIL' and pc.term='*' and pp.term = '*')
+          )
+          """.update.run.transact(res.xa)
+
+          _ <- sql"""
+          insert into legal_bases_scope
+          values ($consent1, (
+            select s.id from scope s
+            join data_categories dc on dc.id = s.dcid
+            join processing_categories pc on pc.id = s.pcid
+            join processing_purposes pp on pp.id = s.ppid
+            where dc.term = 'NAME' and pc.term='*' and pp.term = '*')
+          )
+          """.update.run.transact(res.xa)
+
+          _ <- sql"""
+          insert into legal_bases_scope
+          values ($consent1, (
+            select s.id from scope s
+            join data_categories dc on dc.id = s.dcid
+            join processing_categories pc on pc.id = s.pcid
+            join processing_purposes pp on pp.id = s.ppid
+            where dc.term = 'UID.ID' and pc.term='*' and pp.term = '*')
+          )
+          """.update.run.transact(res.xa)
+
+          _ <- sql"""
+          insert into legal_bases_scope
+          values ($consent1, (
+            select s.id from scope s
+            join data_categories dc on dc.id = s.dcid
+            join processing_categories pc on pc.id = s.pcid
+            join processing_purposes pp on pp.id = s.ppid
+            where dc.term = 'OTHER-DATA.PROOF' and pc.term='*' and pp.term = '*')
+          )
+          """.update.run.transact(res.xa)
+
+          _ <- sql"""
+          insert into consent_given_events (id, lbid, dsid, appid, date) values
+          ($uuid, $consent1, ${ds.id}, $appId,  LOCALTIMESTAMP - INTERVAL '185 DAY');
+          """.update.run.transact(res.xa)
+        } yield ()
+      }
+    } yield res
 
   test("fail proactively giving consent for large scope") {
     res =>
@@ -59,7 +155,9 @@ class UserEventsEndpointsSuite(global: GlobalRead) extends IOSuite {
       }
       """
       for {
-        response <- res.server.run(post("user-events/consent/proactive", req, Some(userToken())))
+        response <- res.server.run(
+          post("user-events/consent/proactive", req, userToken(appId, ds.id))
+        )
         _        <- expect(response.status == Status.UnprocessableEntity).failFast
       } yield success
   }
@@ -85,7 +183,9 @@ class UserEventsEndpointsSuite(global: GlobalRead) extends IOSuite {
       }
       """
       for {
-        add       <- res.server.run(post("user-events/consent/proactive", req, Some(userToken())))
+        add       <- res.server.run(
+          post("user-events/consent/proactive", req, userToken(appId, ds.id))
+        )
         consentId <- add.as[String].map(_.uuid)
 
         q1 = sql"select exists (select id from legal_bases where id=$consentId)"
@@ -117,7 +217,7 @@ class UserEventsEndpointsSuite(global: GlobalRead) extends IOSuite {
       """
       for {
         add       <- res.server.run(
-          post("user-events/consent/proactive", req, Some(userToken(userId = uid)))
+          post("user-events/consent/proactive", req, userToken(appId, uid))
         )
         consentId <- add.as[String].map(_.uuid)
 
@@ -155,14 +255,14 @@ class UserEventsEndpointsSuite(global: GlobalRead) extends IOSuite {
       """
       for {
         add        <- res.server.run(
-          post("user-events/consent/proactive", req, Some(userToken(userId = uid1)))
+          post("user-events/consent/proactive", req, userToken(appId, uid1))
         )
         consentId1 <- add.as[String].map(_.uuid)
 
         _ <- waitUntilLbInserted(res.xa, consentId1)
 
         add        <- res.server.run(
-          post("user-events/consent/proactive", req, Some(userToken(userId = uid2)))
+          post("user-events/consent/proactive", req, userToken(appId, uid2))
         )
         consentId2 <- add.as[String].map(_.uuid)
         _          <- expect(consentId1 == consentId2).failFast
@@ -179,7 +279,7 @@ class UserEventsEndpointsSuite(global: GlobalRead) extends IOSuite {
     res =>
       val req = json"""{ "consent_id": $uuid }"""
       res.server
-        .run(post("user-events/consent", req, Some(userToken())))
+        .run(post("user-events/consent", req, userToken(appId, ds.id)))
         .map(response => expect(response.status == Status.NotFound))
   }
 
@@ -187,7 +287,7 @@ class UserEventsEndpointsSuite(global: GlobalRead) extends IOSuite {
     res =>
       val req = json"""{ "consent_id": $consent1 }"""
       for {
-        response <- res.server.run(post("user-events/consent", req, Some(userToken())))
+        response <- res.server.run(post("user-events/consent", req, userToken(appId, ds.id)))
         _        <- expect(response.status == Status.Ok).failFast
         sql =
           sql"select exists (select lbid from consent_given_events where lbid=$consent1 and dsid=${ds.id})"
@@ -201,7 +301,7 @@ class UserEventsEndpointsSuite(global: GlobalRead) extends IOSuite {
       val uid = uuid.toString
       val req = json"""{ "consent_id": $consent1 }"""
       for {
-        response <- res.server.run(post("user-events/consent", req, Some(userToken(userId = uid))))
+        response <- res.server.run(post("user-events/consent", req, userToken(appId, uid)))
         _        <- expect(response.status == Status.Ok).failFast
 
         sqlEv =
@@ -226,7 +326,7 @@ class UserEventsEndpointsSuite(global: GlobalRead) extends IOSuite {
       }
       """
       res.server
-        .run(post("user-events/consent/store", req, Some(appToken())))
+        .run(post("user-events/consent/store", req, appToken(appId)))
         .map(response => expect(response.status == Status.NotFound))
   }
 
@@ -240,7 +340,7 @@ class UserEventsEndpointsSuite(global: GlobalRead) extends IOSuite {
       }
       """
       for {
-        response <- res.server.run(post("user-events/consent/store", req, Some(appToken())))
+        response <- res.server.run(post("user-events/consent/store", req, appToken(appId)))
         _        <- expect(response.status == Status.Ok).failFast
         sql =
           sql"select exists (select lbid from consent_given_events where lbid=$consent2 and dsid=${ds.id})"
@@ -260,7 +360,7 @@ class UserEventsEndpointsSuite(global: GlobalRead) extends IOSuite {
       }
       """
       for {
-        response <- res.server.run(post("user-events/consent/store", req, Some(appToken())))
+        response <- res.server.run(post("user-events/consent/store", req, appToken(appId)))
         _        <- expect(response.status == Status.Ok).failFast
 
         sqlEv =
@@ -279,7 +379,7 @@ class UserEventsEndpointsSuite(global: GlobalRead) extends IOSuite {
     res =>
       val req = json"""{ "data_subject": {"id": ${ds.id}}, "contract_id": $uuid, "date": $now }"""
       res.server
-        .run(post("user-events/contract/start", req, Some(appToken())))
+        .run(post("user-events/contract/start", req, appToken(appId)))
         .map(response => expect(response.status == Status.NotFound))
   }
 
@@ -288,7 +388,7 @@ class UserEventsEndpointsSuite(global: GlobalRead) extends IOSuite {
       val req =
         json"""{ "data_subject": {"id": ${ds.id}}, "contract_id": $contract1, "date": $now }"""
       for {
-        response <- res.server.run(post("user-events/contract/start", req, Some(appToken())))
+        response <- res.server.run(post("user-events/contract/start", req, appToken(appId)))
         _        <- expect(response.status == Status.Ok).failFast
         sql =
           sql"select exists (select lbid from legal_base_events where lbid=$contract1 and dsid=${ds.id} and event='SERVICE-START')"
@@ -303,7 +403,7 @@ class UserEventsEndpointsSuite(global: GlobalRead) extends IOSuite {
       val req =
         json"""{ "data_subject": {"id": $uid}, "contract_id": $contract1, "date": $now }"""
       for {
-        response <- res.server.run(post("user-events/contract/start", req, Some(appToken())))
+        response <- res.server.run(post("user-events/contract/start", req, appToken(appId)))
         _        <- expect(response.status == Status.Ok).failFast
 
         sqlEv =
@@ -322,7 +422,7 @@ class UserEventsEndpointsSuite(global: GlobalRead) extends IOSuite {
     res =>
       val req = json"""{ "data_subject": {"id": ${ds.id}}, "contract_id": $uuid, "date": $now }"""
       res.server
-        .run(post("user-events/contract/end", req, Some(appToken())))
+        .run(post("user-events/contract/end", req, appToken(appId)))
         .map(response => expect(response.status == Status.NotFound))
   }
 
@@ -331,7 +431,7 @@ class UserEventsEndpointsSuite(global: GlobalRead) extends IOSuite {
       val req =
         json"""{ "data_subject": {"id": ${ds.id}}, "contract_id": $contract1, "date": $now }"""
       for {
-        response <- res.server.run(post("user-events/contract/end", req, Some(appToken())))
+        response <- res.server.run(post("user-events/contract/end", req, appToken(appId)))
         _        <- expect(response.status == Status.Ok).failFast
         sql =
           sql"select exists (select lbid from legal_base_events where lbid=$contract1 and dsid=${ds.id} and event='SERVICE-END')"
@@ -346,7 +446,7 @@ class UserEventsEndpointsSuite(global: GlobalRead) extends IOSuite {
       val req =
         json"""{ "data_subject": {"id": $uid}, "contract_id": $contract1, "date": $now }"""
       for {
-        response <- res.server.run(post("user-events/contract/end", req, Some(appToken())))
+        response <- res.server.run(post("user-events/contract/end", req, appToken(appId)))
         _        <- expect(response.status == Status.Ok).failFast
 
         sqlEv =
@@ -366,7 +466,7 @@ class UserEventsEndpointsSuite(global: GlobalRead) extends IOSuite {
       val req =
         json"""{ "data_subject": {"id": ${ds.id}}, "legitimate_interest_id": $uuid, "date": $now }"""
       res.server
-        .run(post("user-events/legitimate-interest/start", req, Some(appToken())))
+        .run(post("user-events/legitimate-interest/start", req, appToken(appId)))
         .map(response => expect(response.status == Status.NotFound))
   }
 
@@ -376,7 +476,7 @@ class UserEventsEndpointsSuite(global: GlobalRead) extends IOSuite {
         json"""{ "data_subject": {"id": ${ds.id}}, "legitimate_interest_id": $legInter1, "date": $now }"""
       for {
         response <- res.server.run(
-          post("user-events/legitimate-interest/start", req, Some(appToken()))
+          post("user-events/legitimate-interest/start", req, appToken(appId))
         )
         _        <- expect(response.status == Status.Ok).failFast
         sql =
@@ -393,7 +493,7 @@ class UserEventsEndpointsSuite(global: GlobalRead) extends IOSuite {
         json"""{ "data_subject": {"id": $uid}, "legitimate_interest_id": $legInter1, "date": $now }"""
       for {
         response <- res.server.run(
-          post("user-events/legitimate-interest/start", req, Some(appToken()))
+          post("user-events/legitimate-interest/start", req, appToken(appId))
         )
         _        <- expect(response.status == Status.Ok).failFast
 
@@ -414,7 +514,7 @@ class UserEventsEndpointsSuite(global: GlobalRead) extends IOSuite {
       val req =
         json"""{ "data_subject": {"id": ${ds.id}}, "legitimate_interest_id": $uuid, "date": $now }"""
       res.server
-        .run(post("user-events/legitimate-interest/end", req, Some(appToken())))
+        .run(post("user-events/legitimate-interest/end", req, appToken(appId)))
         .map(response => expect(response.status == Status.NotFound))
   }
 
@@ -424,7 +524,7 @@ class UserEventsEndpointsSuite(global: GlobalRead) extends IOSuite {
         json"""{ "data_subject": {"id": ${ds.id}}, "legitimate_interest_id": $legInter1, "date": $now }"""
       for {
         response <- res.server.run(
-          post("user-events/legitimate-interest/end", req, Some(appToken()))
+          post("user-events/legitimate-interest/end", req, appToken(appId))
         )
         _        <- expect(response.status == Status.Ok).failFast
         sql =
@@ -441,7 +541,7 @@ class UserEventsEndpointsSuite(global: GlobalRead) extends IOSuite {
         json"""{ "data_subject": {"id": $uid}, "legitimate_interest_id": $legInter1, "date": $now }"""
       for {
         response <- res.server.run(
-          post("user-events/legitimate-interest/end", req, Some(appToken()))
+          post("user-events/legitimate-interest/end", req, appToken(appId))
         )
         _        <- expect(response.status == Status.Ok).failFast
 

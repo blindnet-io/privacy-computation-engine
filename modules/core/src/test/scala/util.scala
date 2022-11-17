@@ -17,6 +17,11 @@ import cats.effect.IO
 import org.http4s.headers.Authorization
 import org.typelevel.ci.*
 import io.blindnet.jwt.*
+import doobie.*
+import doobie.implicits.*
+import doobie.postgres.*
+import doobie.postgres.implicits.*
+import io.blindnet.pce.priv.terms.LegalBaseTerms
 
 object testutil {
 
@@ -38,14 +43,11 @@ object testutil {
     t.toSet.map(tt => PrivacyScopeTriple.unsafe(tt._1, tt._2, tt._3))
   )
 
-  val appId = "6f083c15-4ada-4671-a6d1-c671bc9105dc".uuid
-  val ds    = DataSubject("fdfc95a6-8fd8-4581-91f7-b3d236a6a10e", appId)
-
-  val secretKey                                              = TokenPrivateKey.generateRandom()
-  val publicKey                                              = secretKey.toPublicKey().toString()
-  def tb(appId: UUID = appId)                                = TokenBuilder(appId, secretKey)
-  def appToken(appId: UUID = appId)                          = tb(appId).app()
-  def userToken(appId: UUID = appId, userId: String = ds.id) = tb(appId).user(userId)
+  val secretKey                              = TokenPrivateKey.generateRandom()
+  val publicKey                              = secretKey.toPublicKey().toString()
+  def tb(appId: UUID)                        = TokenBuilder(appId, secretKey)
+  def appToken(appId: UUID)                  = tb(appId).app()
+  def userToken(appId: UUID, userId: String) = tb(appId).user(userId)
 }
 
 object httputil {
@@ -61,13 +63,68 @@ object httputil {
   def get(path: String, token: Option[String] = None) =
     req(Method.GET, path, token)
 
+  def get(path: String, token: String) =
+    req(Method.GET, path, Some(token))
+
   def post(path: String, body: Json, token: Option[String] = None) =
     req(Method.POST, path, token).withEntity(body)
+
+  def post(path: String, body: Json, token: String) =
+    req(Method.POST, path, Some(token)).withEntity(body)
 
   def put(path: String, body: Json, token: Option[String] = None) =
     req(Method.PUT, path, token).withEntity(body)
 
+  def put(path: String, body: Json, token: String) =
+    req(Method.PUT, path, Some(token)).withEntity(body)
+
   def delete(path: String, token: Option[String] = None) =
     req(Method.DELETE, path, token)
+
+  def delete(path: String, token: String) =
+    req(Method.DELETE, path, Some(token))
+
+}
+
+object dbutil {
+  def createApp(id: UUID, xa: Transactor[IO]) =
+    for {
+      _ <- sql"""insert into apps values ($id)""".update.run.transact(xa)
+      _ <- sql"""insert into dac values ($id, false, '')""".update.run.transact(xa)
+      _ <- sql"""
+      insert into automatic_responses_config values
+      ($id, true, true, true, true)
+      """.update.run.transact(xa)
+      _ <- sql"""
+      insert into general_information values
+      (${testutil.uuid}, $id, 'test', 'dpo@fakemail.me', array ['France', 'USA'], array ['dc cat 1', 'dc cat 2'], array ['policy 1', 'policy 2'], 'https://blindnet.io/privacy', 'your data is secure')
+      """.update.run.transact(xa)
+    } yield ()
+
+  def createDs(id: String, appId: UUID, xa: Transactor[IO]) =
+    for {
+      _ <- sql"""insert into data_subjects values ($id, $appId, 'id')""".update.run.transact(xa)
+    } yield ()
+
+  def createLegalBase(
+      id: UUID,
+      appId: UUID,
+      typ: LegalBaseTerms,
+      name: String,
+      xa: Transactor[IO]
+  ) =
+    for {
+      _ <- sql"""
+        insert into legal_bases values
+        ($id, $appId, ${typ.encode}::legal_base_terms, $name, '', true)
+        """.update.run.transact(xa)
+    } yield ()
+
+  def createRegulations(xa: Transactor[IO]) =
+    for {
+      _ <- sql"""
+      insert into regulations values (${testutil.uuid}, 'GDPR', 'EU'), (${testutil.uuid}, 'CCPA', null)
+      """.update.run.transact(xa)
+    } yield ()
 
 }

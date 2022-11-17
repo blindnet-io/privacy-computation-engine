@@ -54,21 +54,12 @@ class ConfigurationEndpointsSuite(global: GlobalRead) extends IOSuite {
   def sharedResource: Resource[IO, Res] =
     for {
       res <- sharedResourceOrFallback(global)
-      _   <- Resource.eval(sql"""
-      insert into apps values ($appId)
-      """.update.run.transact(res.xa))
-      _   <- Resource.eval(sql"""
-        insert into dac values ($appId, false, '')
-        """.update.run.transact(res.xa))
-      _   <- Resource.eval(sql"""
-        insert into automatic_responses_config values ($appId, true, true, true, true)
-        """.update.run.transact(res.xa))
-      _   <- Resource.eval(sql"""
-        insert into general_information values ($uuid, $appId, 'test', 'dpo@fakemail.me', array ['France', 'USA'], array ['dc cat 1', 'dc cat 2'], array ['policy 1', 'policy 2'], 'https://blindnet.io/privacy', 'your data is secure')
-        """.update.run.transact(res.xa))
-      _   <- Resource.eval(sql"""
-        insert into regulations values ($uuid, 'GDPR', 'EU'), ($uuid, 'CCPA', null)
-      """.update.run.transact(res.xa))
+      _   <- Resource.eval {
+        for {
+          _ <- dbutil.createApp(appId, res.xa)
+          _ <- dbutil.createRegulations(res.xa)
+        } yield ()
+      }
 
       lbsAdded <- Resource.eval(CountDownLatch[IO](4))
       lbIds    <- Resource.eval(Ref.of(List.empty[UUID]))
@@ -87,8 +78,8 @@ class ConfigurationEndpointsSuite(global: GlobalRead) extends IOSuite {
       }
       """
       for {
-        _    <- res._1.server.run(put("configure/general-info", req, Some(appToken(appId))))
-        resp <- res._1.server.run(get("configure/general-info", Some(appToken(appId))))
+        _    <- res._1.server.run(put("configure/general-info", req, appToken(appId)))
+        resp <- res._1.server.run(get("configure/general-info", appToken(appId)))
         gi   <- resp.to[GeneralInformation]
         _    <- expect
           .all(
@@ -117,10 +108,10 @@ class ConfigurationEndpointsSuite(global: GlobalRead) extends IOSuite {
       """
       for {
         _    <- res._1.server.run(
-          put("configure/demand-resolution-strategy", req, Some(appToken(appId)))
+          put("configure/demand-resolution-strategy", req, appToken(appId))
         )
         resp <- res._1.server.run(
-          get("configure/demand-resolution-strategy", Some(appToken(appId)))
+          get("configure/demand-resolution-strategy", appToken(appId))
         )
         s    <- resp.to[DemandResolutionStrategy]
         _    <- expect
@@ -141,7 +132,7 @@ class ConfigurationEndpointsSuite(global: GlobalRead) extends IOSuite {
       ]
       """
       for {
-        _ <- res._1.server.run(put("configure/selectors", req, Some(appToken(appId))))
+        _ <- res._1.server.run(put("configure/selectors", req, appToken(appId)))
 
         dcs <- sql"""select term from data_categories where selector=true"""
           .query[String]
@@ -172,7 +163,7 @@ class ConfigurationEndpointsSuite(global: GlobalRead) extends IOSuite {
       ]
       """
       for {
-        resp <- res._1.server.run(put("configure/selectors", req, Some(appToken(appId))))
+        resp <- res._1.server.run(put("configure/selectors", req, appToken(appId)))
         _    <- expect(resp.status == Status.UnprocessableEntity).failFast
       } yield success
   }
@@ -181,7 +172,7 @@ class ConfigurationEndpointsSuite(global: GlobalRead) extends IOSuite {
     res =>
       val req = json"""[]"""
       for {
-        resp <- res._1.server.run(put("configure/selectors", req, Some(appToken(appId))))
+        resp <- res._1.server.run(put("configure/selectors", req, appToken(appId)))
         _    <- expect(resp.status == Status.UnprocessableEntity).failFast
       } yield success
   }
@@ -195,7 +186,7 @@ class ConfigurationEndpointsSuite(global: GlobalRead) extends IOSuite {
       ]
       """
       for {
-        resp <- res._1.server.run(put("configure/selectors", req, Some(appToken(appId))))
+        resp <- res._1.server.run(put("configure/selectors", req, appToken(appId)))
         _    <- expect(resp.status == Status.BadRequest).failFast
       } yield success
   }
@@ -209,7 +200,7 @@ class ConfigurationEndpointsSuite(global: GlobalRead) extends IOSuite {
       ]
       """
       for {
-        resp <- res._1.server.run(put("configure/selectors", req, Some(appToken(appId))))
+        resp <- res._1.server.run(put("configure/selectors", req, appToken(appId)))
         _    <- expect(resp.status == Status.UnprocessableEntity).failFast
       } yield success
   }
@@ -222,9 +213,9 @@ class ConfigurationEndpointsSuite(global: GlobalRead) extends IOSuite {
       ]
       """
       for {
-        resp1 <- res._1.server.run(put("configure/selectors", req, Some(appToken(appId))))
+        resp1 <- res._1.server.run(put("configure/selectors", req, appToken(appId)))
         _     <- expect(resp1.status == Status.Ok).failFast
-        resp2 <- res._1.server.run(put("configure/selectors", req, Some(appToken(appId))))
+        resp2 <- res._1.server.run(put("configure/selectors", req, appToken(appId)))
         _     <- expect(resp2.status == Status.UnprocessableEntity).failFast
       } yield success
   }
@@ -232,7 +223,7 @@ class ConfigurationEndpointsSuite(global: GlobalRead) extends IOSuite {
   test("get privacy scope dimenstions") {
     res =>
       for {
-        resp <- res._1.server.run(get("configure/privacy-scope-dimensions", Some(appToken(appId))))
+        resp <- res._1.server.run(get("configure/privacy-scope-dimensions", appToken(appId)))
         dims <- resp.to[PrivacyScopeDimensionsPayload]
         _    <- expect
           .all(
@@ -247,7 +238,7 @@ class ConfigurationEndpointsSuite(global: GlobalRead) extends IOSuite {
   test("fail getting non existent legal base") {
     res =>
       for {
-        resp <- res._1.server.run(get(s"configure/legal-bases/$uuid", Some(appToken(appId))))
+        resp <- res._1.server.run(get(s"configure/legal-bases/$uuid", appToken(appId)))
         _    <- expect(resp.status == Status.NotFound).failFast
       } yield success
   }
@@ -277,10 +268,10 @@ class ConfigurationEndpointsSuite(global: GlobalRead) extends IOSuite {
       }
       """
       for {
-        resp <- res._1.server.run(put("configure/legal-bases", req, Some(appToken(appId))))
+        resp <- res._1.server.run(put("configure/legal-bases", req, appToken(appId)))
         lbId <- resp.as[String].map(_.uuid)
         _    <- waitUntilLbInserted(res._1.xa, lbId)
-        resp <- res._1.server.run(get(s"configure/legal-bases/$lbId", Some(appToken(appId))))
+        resp <- res._1.server.run(get(s"configure/legal-bases/$lbId", appToken(appId)))
         lb   <- resp.to[LegalBase]
         _    <- res._2.legalBaseIds.update(lb.id :: _)
         _    <- res._2.legalBasesAdded.release
@@ -323,10 +314,10 @@ class ConfigurationEndpointsSuite(global: GlobalRead) extends IOSuite {
       }
       """
       for {
-        resp <- res._1.server.run(put("configure/legal-bases", req, Some(appToken(appId))))
+        resp <- res._1.server.run(put("configure/legal-bases", req, appToken(appId)))
         lbId <- resp.as[String].map(_.uuid)
         _    <- waitUntilLbInserted(res._1.xa, lbId)
-        resp <- res._1.server.run(get(s"configure/legal-bases/$lbId", Some(appToken(appId))))
+        resp <- res._1.server.run(get(s"configure/legal-bases/$lbId", appToken(appId)))
         lb   <- resp.to[LegalBase]
         _    <- res._2.legalBaseIds.update(lb.id :: _)
         _    <- res._2.legalBasesAdded.release
@@ -359,10 +350,10 @@ class ConfigurationEndpointsSuite(global: GlobalRead) extends IOSuite {
       }
       """
       for {
-        resp <- res._1.server.run(put("configure/legal-bases", req, Some(appToken(appId))))
+        resp <- res._1.server.run(put("configure/legal-bases", req, appToken(appId)))
         lbId <- resp.as[String].map(_.uuid)
         _    <- waitUntilLbInserted(res._1.xa, lbId)
-        resp <- res._1.server.run(get(s"configure/legal-bases/$lbId", Some(appToken(appId))))
+        resp <- res._1.server.run(get(s"configure/legal-bases/$lbId", appToken(appId)))
         lb   <- resp.to[LegalBase]
         _    <- res._2.legalBaseIds.update(lb.id :: _)
         _    <- res._2.legalBasesAdded.release
@@ -392,10 +383,10 @@ class ConfigurationEndpointsSuite(global: GlobalRead) extends IOSuite {
       }
       """
       for {
-        resp <- res._1.server.run(put("configure/legal-bases", req, Some(appToken(appId))))
+        resp <- res._1.server.run(put("configure/legal-bases", req, appToken(appId)))
         lbId <- resp.as[String].map(_.uuid)
         _    <- waitUntilLbInserted(res._1.xa, lbId)
-        resp <- res._1.server.run(get(s"configure/legal-bases/$lbId", Some(appToken(appId))))
+        resp <- res._1.server.run(get(s"configure/legal-bases/$lbId", appToken(appId)))
         lb   <- resp.to[LegalBase]
         _    <- res._2.legalBaseIds.update(lb.id :: _)
         _    <- res._2.legalBasesAdded.release
@@ -416,7 +407,7 @@ class ConfigurationEndpointsSuite(global: GlobalRead) extends IOSuite {
     res =>
       for {
         _          <- res._2.legalBasesAdded.await
-        resp       <- res._1.server.run(get(s"configure/legal-bases", Some(appToken(appId))))
+        resp       <- res._1.server.run(get(s"configure/legal-bases", appToken(appId)))
         lbs        <- resp.to[List[LegalBase]]
         savedLbIds <- res._2.legalBaseIds.get
         _          <- expect(lbs.map(_.id).sorted == savedLbIds.sorted).failFast
@@ -427,7 +418,7 @@ class ConfigurationEndpointsSuite(global: GlobalRead) extends IOSuite {
     res =>
       val req = json"""[]"""
       for {
-        resp <- res._1.server.run(put("configure/retention-policies", req, Some(appToken(appId))))
+        resp <- res._1.server.run(put("configure/retention-policies", req, appToken(appId)))
         _    <- expect(resp.status == Status.UnprocessableEntity).failFast
       } yield success
   }
@@ -451,7 +442,7 @@ class ConfigurationEndpointsSuite(global: GlobalRead) extends IOSuite {
       ]
       """
       for {
-        resp <- res._1.server.run(put("configure/retention-policies", req, Some(appToken(appId))))
+        resp <- res._1.server.run(put("configure/retention-policies", req, appToken(appId)))
         _    <- expect(resp.status == Status.UnprocessableEntity).failFast
       } yield success
   }
@@ -481,10 +472,10 @@ class ConfigurationEndpointsSuite(global: GlobalRead) extends IOSuite {
       ]
       """
       for {
-        add <- res._1.server.run(put("configure/retention-policies", req, Some(appToken(appId))))
+        add <- res._1.server.run(put("configure/retention-policies", req, appToken(appId)))
         _   <- expect(add.status == Status.Ok).failFast
 
-        get1 <- res._1.server.run(get("configure/data-categories", Some(appToken(appId))))
+        get1 <- res._1.server.run(get("configure/data-categories", appToken(appId)))
         dcs1 <- get1.to[List[DataCategoryResponsePayload]]
         _    <- expect
           .all(
@@ -518,10 +509,10 @@ class ConfigurationEndpointsSuite(global: GlobalRead) extends IOSuite {
           .failFast
 
         id = dcs1.find(_.dataCategory.term == "BIOMETRIC").get.retentionPolicies.head.id
-        del <- res._1.server.run(delete(s"configure/retention-policies/$id", Some(appToken(appId))))
+        del <- res._1.server.run(delete(s"configure/retention-policies/$id", appToken(appId)))
         _   <- expect(del.status == Status.Ok).failFast
 
-        get2 <- res._1.server.run(get("configure/data-categories", Some(appToken(appId))))
+        get2 <- res._1.server.run(get("configure/data-categories", appToken(appId)))
         dcs2 <- get2.to[List[DataCategoryResponsePayload]]
         _    <- expect
           .all(
@@ -537,7 +528,7 @@ class ConfigurationEndpointsSuite(global: GlobalRead) extends IOSuite {
     res =>
       val req = json"""[]"""
       for {
-        resp <- res._1.server.run(put("configure/provenances", req, Some(appToken(appId))))
+        resp <- res._1.server.run(put("configure/provenances", req, appToken(appId)))
         _    <- expect(resp.status == Status.UnprocessableEntity).failFast
       } yield success
   }
@@ -559,7 +550,7 @@ class ConfigurationEndpointsSuite(global: GlobalRead) extends IOSuite {
       ]
       """
       for {
-        resp <- res._1.server.run(put("configure/provenances", req, Some(appToken(appId))))
+        resp <- res._1.server.run(put("configure/provenances", req, appToken(appId)))
         _    <- expect(resp.status == Status.UnprocessableEntity).failFast
       } yield success
   }
@@ -586,10 +577,10 @@ class ConfigurationEndpointsSuite(global: GlobalRead) extends IOSuite {
       ]
       """
       for {
-        add <- res._1.server.run(put("configure/provenances", req, Some(appToken(appId))))
+        add <- res._1.server.run(put("configure/provenances", req, appToken(appId)))
         _   <- expect(add.status == Status.Ok).failFast
 
-        get1 <- res._1.server.run(get("configure/data-categories", Some(appToken(appId))))
+        get1 <- res._1.server.run(get("configure/data-categories", appToken(appId)))
         dcs1 <- get1.to[List[DataCategoryResponsePayload]]
         _    <- expect
           .all(
@@ -621,10 +612,10 @@ class ConfigurationEndpointsSuite(global: GlobalRead) extends IOSuite {
           .failFast
 
         id = dcs1.find(_.dataCategory.term == "BIOMETRIC").get.provenances.head.id
-        del <- res._1.server.run(delete(s"configure/provenances/$id", Some(appToken(appId))))
+        del <- res._1.server.run(delete(s"configure/provenances/$id", appToken(appId)))
         _   <- expect(del.status == Status.Ok).failFast
 
-        get2 <- res._1.server.run(get("configure/data-categories", Some(appToken(appId))))
+        get2 <- res._1.server.run(get("configure/data-categories", appToken(appId)))
         dcs2 <- get2.to[List[DataCategoryResponsePayload]]
         _    <- expect
           .all(
@@ -639,7 +630,7 @@ class ConfigurationEndpointsSuite(global: GlobalRead) extends IOSuite {
   test("get regulations") {
     res =>
       for {
-        resp <- res._1.server.run(get("configure/regulations", Some(appToken(appId))))
+        resp <- res._1.server.run(get("configure/regulations", appToken(appId)))
         regs <- resp.to[List[RegulationResponsePayload]]
         _    <- expect(
           regs.map(r => (r.name, r.description)).toSet == Set(("GDPR", Some("EU")), ("CCPA", None))
@@ -651,7 +642,7 @@ class ConfigurationEndpointsSuite(global: GlobalRead) extends IOSuite {
     res =>
       val req = json"""{"regulation_ids": ${List(uuid)}}"""
       for {
-        resp <- res._1.server.run(put("configure/regulations", req, Some(appToken(appId))))
+        resp <- res._1.server.run(put("configure/regulations", req, appToken(appId)))
         _    <- expect(resp.status == Status.UnprocessableEntity).failFast
       } yield success
   }
@@ -660,7 +651,7 @@ class ConfigurationEndpointsSuite(global: GlobalRead) extends IOSuite {
     res =>
       val req = json"""{"regulation_ids": []}"""
       for {
-        resp <- res._1.server.run(put("configure/regulations", req, Some(appToken(appId))))
+        resp <- res._1.server.run(put("configure/regulations", req, appToken(appId)))
         _    <- expect(resp.status == Status.UnprocessableEntity).failFast
       } yield success
   }
@@ -668,24 +659,24 @@ class ConfigurationEndpointsSuite(global: GlobalRead) extends IOSuite {
   test("add and delete regulation from app") {
     res =>
       for {
-        getAllRegs <- res._1.server.run(get("configure/regulations", Some(appToken(appId))))
+        getAllRegs <- res._1.server.run(get("configure/regulations", appToken(appId)))
         allRegs    <- getAllRegs.to[List[RegulationResponsePayload]]
 
         req = json"""{"regulation_ids":${allRegs.map(_.id)}}"""
-        add <- res._1.server.run(put("configure/regulations", req, Some(appToken(appId))))
+        add <- res._1.server.run(put("configure/regulations", req, appToken(appId)))
         _   <- expect(add.status == Status.Ok).failFast
 
-        getRegs1 <- res._1.server.run(get("configure/regulations/app", Some(appToken(appId))))
+        getRegs1 <- res._1.server.run(get("configure/regulations/app", appToken(appId)))
         regs1    <- getRegs1.to[List[RegulationResponsePayload]]
         _        <- expect(
           regs1.map(r => (r.name, r.description)).toSet == Set(("GDPR", Some("EU")), ("CCPA", None))
         ).failFast
 
         ccpaId = allRegs.find(_.name == "CCPA").get.id
-        del <- res._1.server.run(delete(s"configure/regulations/$ccpaId", Some(appToken(appId))))
+        del <- res._1.server.run(delete(s"configure/regulations/$ccpaId", appToken(appId)))
         _   <- expect(del.status == Status.Ok).failFast
 
-        getRegs2 <- res._1.server.run(get("configure/regulations/app", Some(appToken(appId))))
+        getRegs2 <- res._1.server.run(get("configure/regulations/app", appToken(appId)))
         regs2    <- getRegs2.to[List[RegulationResponsePayload]]
         _        <- expect(
           regs2.map(r => (r.name, r.description)).toSet == Set(("GDPR", Some("EU")))

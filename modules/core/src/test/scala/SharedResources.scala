@@ -66,7 +66,7 @@ object SharedResources extends GlobalResource {
       val resp = req.uri.renderString match {
         case s"$_/applications/$id" =>
           Response[IO]().withEntity(
-            json"""{ "id": $appId, "name": "test", "key": $publicKey }"""
+            json"""{ "id": $id, "name": "test", "key": $publicKey }"""
           )
 
         case _ =>

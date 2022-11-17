@@ -38,6 +38,7 @@ import priv.LegalBase
 import SharedResources.*
 import testutil.*
 import httputil.*
+import dbutil.*
 import scala.concurrent.duration.*
 import io.blindnet.pce.priv.terms.{ Status as PrivStatus, * }
 import io.blindnet.pce.priv.terms.Action.*
@@ -50,6 +51,9 @@ class DataConsumerInterface(global: GlobalRead) extends IOSuite {
   val appId = uuid
   val dsId1 = uuid.toString
   val dsId2 = uuid.toString
+
+  val appId2 = uuid
+  val dsApp2 = uuid.toString
 
   val (r1, r2, r3, r4, r5, r6) = (uuid, uuid, uuid, uuid, uuid, uuid)
 
@@ -68,222 +72,226 @@ class DataConsumerInterface(global: GlobalRead) extends IOSuite {
   def sharedResource: Resource[IO, Res] =
     for {
       res <- sharedResourceOrFallback(global)
-      _   <- Resource.eval(sql"""insert into apps values ($appId)""".update.run.transact(res.xa))
-      _   <- Resource.eval(sql"""
-      insert into data_subjects values
-      ($dsId1, $appId, 'id'),
-      ($dsId2, $appId, 'id')
-      """.update.run.transact(res.xa))
+      _   <- Resource.eval {
+        for {
+          _ <- createApp(appId, res.xa)
+          _ <- createDs(dsId1, appId, res.xa)
+          _ <- createDs(dsId2, appId, res.xa)
 
-      // ----------------------------------------
-      // request 1
-      _   <- Resource.eval(sql"""
-      insert into privacy_requests values
-      ($r1, $appId, $dsId1, ${List(dsId1)}, $t, 'ORGANIZATION')
-      """.update.run.transact(res.xa))
+          _ <- createApp(appId2, res.xa)
+          _ <- createDs(dsApp2, appId2, res.xa)
 
-      // demands
-      _   <- Resource.eval(sql"""
-      insert into demands values
-      ($d11, $r1, 'ACCESS', 'msg11', 'lang11')
-      """.update.run.transact(res.xa))
-      _   <- Resource.eval(sql"""
-      insert into demands values
-      ($d12, $r1, 'TRANSPARENCY', 'msg12', 'lang12')
-      """.update.run.transact(res.xa))
+          _ <- createLegalBase(consent1, appId, LegalBaseTerms.Consent, "test consent 1", res.xa)
+          _ <- createLegalBase(consent2, appId, LegalBaseTerms.Consent, "test consent 2", res.xa)
+          _ <- createLegalBase(
+            necessary1,
+            appId,
+            LegalBaseTerms.Necessary,
+            "test necessary 1",
+            res.xa
+          )
+          _ <- createLegalBase(contract1, appId, LegalBaseTerms.Contract, "test contract 1", res.xa)
+          _ <- createLegalBase(
+            legitInterest1,
+            appId,
+            LegalBaseTerms.LegitimateInterest,
+            "test legitimate interest 1",
+            res.xa
+          )
 
-      // recommendations
-      _   <- Resource.eval(sql"""
-      insert into demand_recommendations values
-      ($uuid, $d11, 'GRANTED', null, ${List("BIOMETRIC", "DEVICE")},
-        ${t - 10}, ${t - 5}, 'USER', 'ORGANIZATION')
-      """.update.run.transact(res.xa))
-      _   <- Resource.eval(sql"""
-      insert into demand_recommendations values
-      ($uuid, $d12, 'GRANTED', null, ${List("BIOMETRIC", "DEVICE")},
-        ${t - 10}, ${t - 5}, 'USER', 'ORGANIZATION')
-      """.update.run.transact(res.xa))
-      // ----------------------------------------
+          // ----------------------------------------
+          // request 1
+          _ <- sql"""
+          insert into privacy_requests values
+          ($r1, $appId, $dsId1, ${List(dsId1)}, $t, 'ORGANIZATION')
+          """.update.run.transact(res.xa)
 
-      // ----------------------------------------
-      // request 2
-      _   <- Resource.eval(sql"""
-      insert into privacy_requests values
-      ($r2, $appId, $dsId2, ${List(dsId2)}, $t, 'ORGANIZATION')
-      """.update.run.transact(res.xa))
+          // demands
+          _ <- sql"""
+          insert into demands values
+          ($d11, $r1, 'ACCESS', 'msg11', 'lang11')
+          """.update.run.transact(res.xa)
+          _ <- sql"""
+          insert into demands values
+          ($d12, $r1, 'TRANSPARENCY', 'msg12', 'lang12')
+          """.update.run.transact(res.xa)
 
-      // demands
-      _   <- Resource.eval(sql"""
-      insert into demands values
-      ($d21, $r2, 'DELETE', 'msg21', 'lang21')
-      """.update.run.transact(res.xa))
-      _   <- Resource.eval(sql"""
-      insert into demands values
-      ($d22, $r2, 'TRANSPARENCY.DPO', 'msg22', 'lang22')
-      """.update.run.transact(res.xa))
-      _   <- Resource.eval(sql"""
-      insert into demands values
-      ($d23, $r2, 'TRANSPARENCY.DPO', 'msg23', 'lang23')
-      """.update.run.transact(res.xa))
+          // recommendations
+          _ <- sql"""
+          insert into demand_recommendations values
+          ($uuid, $d11, 'GRANTED', null, ${List("BIOMETRIC", "DEVICE")},
+            ${t - 10}, ${t - 5}, 'USER', 'ORGANIZATION')
+          """.update.run.transact(res.xa)
+          _ <- sql"""
+          insert into demand_recommendations values
+          ($uuid, $d12, 'GRANTED', null, ${List("BIOMETRIC", "DEVICE")},
+            ${t - 10}, ${t - 5}, 'USER', 'ORGANIZATION')
+          """.update.run.transact(res.xa)
+          // ----------------------------------------
 
-      // recommendations
-      _   <- Resource.eval(sql"""
-      insert into demand_recommendations values
-      ($uuid, $d21, 'DENIED', null, ${List("BIOMETRIC", "DEVICE")},
-        ${t - 10}, ${t - 5}, 'USER', 'ORGANIZATION')
-      """.update.run.transact(res.xa))
-      _   <- Resource.eval(sql"""
-      insert into demand_recommendations values
-      ($uuid, $d22, 'DENIED', null, ${List("BIOMETRIC", "DEVICE")},
-        ${t - 10}, ${t - 5}, 'USER', 'ORGANIZATION')
-      """.update.run.transact(res.xa))
-      // ----------------------------------------
+          // ----------------------------------------
+          // request 2
+          _ <- sql"""
+          insert into privacy_requests values
+          ($r2, $appId, $dsId2, ${List(dsId2)}, $t, 'ORGANIZATION')
+          """.update.run.transact(res.xa)
 
-      // ----------------------------------------
-      // request 3
-      _   <- Resource.eval(sql"""
-      insert into privacy_requests values
-      ($r3, $appId, $dsId1, ${List(dsId1)}, $t, 'ORGANIZATION')
-      """.update.run.transact(res.xa))
+          // demands
+          _ <- sql"""
+          insert into demands values
+          ($d21, $r2, 'DELETE', 'msg21', 'lang21')
+          """.update.run.transact(res.xa)
+          _ <- sql"""
+          insert into demands values
+          ($d22, $r2, 'TRANSPARENCY.DPO', 'msg22', 'lang22')
+          """.update.run.transact(res.xa)
+          _ <- sql"""
+          insert into demands values
+          ($d23, $r2, 'TRANSPARENCY.DPO', 'msg23', 'lang23')
+          """.update.run.transact(res.xa)
 
-      // demands
-      _   <- Resource.eval(sql"""
-      insert into demands values
-      ($d31, $r3, 'RESTRICT', 'msg31', 'lang31')
-      """.update.run.transact(res.xa))
-      _   <- Resource.eval(sql"""
-      insert into demands values
-      ($d32, $r3, 'DELETE', 'msg32', 'lang32')
-      """.update.run.transact(res.xa))
+          // recommendations
+          _ <- sql"""
+          insert into demand_recommendations values
+          ($uuid, $d21, 'DENIED', null, ${List("BIOMETRIC", "DEVICE")},
+            ${t - 10}, ${t - 5}, 'USER', 'ORGANIZATION')
+          """.update.run.transact(res.xa)
+          _ <- sql"""
+          insert into demand_recommendations values
+          ($uuid, $d22, 'DENIED', null, ${List("BIOMETRIC", "DEVICE")},
+            ${t - 10}, ${t - 5}, 'USER', 'ORGANIZATION')
+          """.update.run.transact(res.xa)
+          // ----------------------------------------
 
-      // response
-      d32r = uuid
-      _ <- Resource.eval(sql"""
-      insert into privacy_responses values
-      ($d32r, $d32, null, 'DELETE', null)
-      """.update.run.transact(res.xa))
-      _ <- Resource.eval(sql"""
-      insert into privacy_response_events values
-      ($uuid, $d32r, ${t + 1}, 'UNDER-REVIEW', null, null, null, null)
-      """.update.run.transact(res.xa))
-      _ <- Resource.eval(sql"""
-      insert into privacy_response_events values
-      ($uuid, $d32r, ${t + 2}, 'DENIED', 'OTHER-MOTIVE', 'denied', 'en', null)
-      """.update.run.transact(res.xa))
-      // ----------------------------------------
+          // ----------------------------------------
+          // request 3
+          _ <- sql"""
+          insert into privacy_requests values
+          ($r3, $appId, $dsId1, ${List(dsId1)}, $t, 'ORGANIZATION')
+          """.update.run.transact(res.xa)
 
-      // ----------------------------------------
-      // request 4
-      _ <- Resource.eval(sql"""
-      insert into privacy_requests values
-      ($r4, $appId, $dsId2, ${List(dsId2)}, $t, 'ORGANIZATION')
-      """.update.run.transact(res.xa))
+          // demands
+          _ <- sql"""
+          insert into demands values
+          ($d31, $r3, 'RESTRICT', 'msg31', 'lang31')
+          """.update.run.transact(res.xa)
+          _ <- sql"""
+          insert into demands values
+          ($d32, $r3, 'DELETE', 'msg32', 'lang32')
+          """.update.run.transact(res.xa)
 
-      // demands
-      _ <- Resource.eval(sql"""
-      insert into demands values
-      ($d41, $r4, 'REVOKE-CONSENT', 'msg41', 'lang41')
-      """.update.run.transact(res.xa))
-      _ <- Resource.eval(sql"""
-      insert into demands values
-      ($d42, $r4, 'RESTRICT', 'msg42', 'lang42')
-      """.update.run.transact(res.xa))
-      // ----------------------------------------
+          // response
+          d32r = uuid
+          _ <- sql"""
+          insert into privacy_responses values
+          ($d32r, $d32, null, 'DELETE', null)
+          """.update.run.transact(res.xa)
+          _ <- sql"""
+          insert into privacy_response_events values
+          ($uuid, $d32r, ${t + 1}, 'UNDER-REVIEW', null, null, null, null)
+          """.update.run.transact(res.xa)
+          _ <- sql"""
+          insert into privacy_response_events values
+          ($uuid, $d32r, ${t + 2}, 'DENIED', 'OTHER-MOTIVE', 'denied', 'en', null)
+          """.update.run.transact(res.xa)
+          // ----------------------------------------
 
-      // ----------------------------------------
-      // request 5
-      _ <- Resource.eval(sql"""
-      insert into privacy_requests values
-      ($r5, $appId, null, ${List.empty[String]}, $t, 'ORGANIZATION')
-      """.update.run.transact(res.xa))
+          // ----------------------------------------
+          // request 4
+          _ <- sql"""
+          insert into privacy_requests values
+          ($r4, $appId, $dsId2, ${List(dsId2)}, $t, 'ORGANIZATION')
+          """.update.run.transact(res.xa)
 
-      // demands
-      _ <- Resource.eval(sql"""
-      insert into demands values
-      ($d51, $r5, 'TRANSPARENCY.DPO', 'msg51', 'lang51')
-      """.update.run.transact(res.xa))
+          // demands
+          _ <- sql"""
+          insert into demands values
+          ($d41, $r4, 'REVOKE-CONSENT', 'msg41', 'lang41')
+          """.update.run.transact(res.xa)
+          _ <- sql"""
+          insert into demands values
+          ($d42, $r4, 'RESTRICT', 'msg42', 'lang42')
+          """.update.run.transact(res.xa)
+          // ----------------------------------------
 
-      // response
-      d51r = uuid
-      _ <- Resource.eval(sql"""
-      insert into privacy_responses values
-      ($d51r, $d51, null, 'TRANSPARENCY.DPO', null)
-      """.update.run.transact(res.xa))
-      _ <- Resource.eval(sql"""
-      insert into privacy_response_events values
-      ($uuid, $d51r, ${t + 1}, 'UNDER-REVIEW', null, null, null, null)
-      """.update.run.transact(res.xa))
-      _ <- Resource.eval(sql"""
-      insert into privacy_response_events values
-      ($uuid, $d51r, ${t + 2}, 'GRANTED', null, null, null, '"dpo"')
-      """.update.run.transact(res.xa))
-      // ----------------------------------------
+          // ----------------------------------------
+          // request 5
+          _ <- sql"""
+          insert into privacy_requests values
+          ($r5, $appId, null, ${List.empty[String]}, $t, 'ORGANIZATION')
+          """.update.run.transact(res.xa)
 
-      // ----------------------------------------
-      // different app
-      // request 6
-      appId2 = uuid
-      _ <- Resource.eval(sql"""insert into apps values ($appId2)""".update.run.transact(res.xa))
-      dsApp2 = uuid
-      _ <- Resource.eval(sql"""
-      insert into data_subjects values
-      ($dsApp2, $appId2, 'id')
-      """.update.run.transact(res.xa))
+          // demands
+          _ <- sql"""
+          insert into demands values
+          ($d51, $r5, 'TRANSPARENCY.DPO', 'msg51', 'lang51')
+          """.update.run.transact(res.xa)
 
-      _ <- Resource.eval(sql"""
-      insert into privacy_requests values
-      ($r6, $appId2, $dsApp2, ${List(dsApp2)}, $t, 'ORGANIZATION')
-      """.update.run.transact(res.xa))
+          // response
+          d51r = uuid
+          _ <- sql"""
+          insert into privacy_responses values
+          ($d51r, $d51, null, 'TRANSPARENCY.DPO', null)
+          """.update.run.transact(res.xa)
+          _ <- sql"""
+          insert into privacy_response_events values
+          ($uuid, $d51r, ${t + 1}, 'UNDER-REVIEW', null, null, null, null)
+          """.update.run.transact(res.xa)
+          _ <- sql"""
+          insert into privacy_response_events values
+          ($uuid, $d51r, ${t + 2}, 'GRANTED', null, null, null, '"dpo"')
+          """.update.run.transact(res.xa)
+          // ----------------------------------------
 
-      // demands
-      _ <- Resource.eval(sql"""
-      insert into demands values
-      ($d61, $r6, 'REVOKE-CONSENT', 'msg61', 'lang61')
-      """.update.run.transact(res.xa))
-      // ----------------------------------------
+          // ----------------------------------------
+          // different app
+          // request 6
+          _ <- sql"""
+          insert into privacy_requests values
+          ($r6, $appId2, $dsApp2, ${List(dsApp2)}, $t, 'ORGANIZATION')
+          """.update.run.transact(res.xa)
 
-      // pending demands
-      _ <- Resource.eval(sql"""
-      insert into pending_demands_to_review values
-      ($d11), ($d12), ($d21), ($d22), ($d31), ($d61)
-      """.update.run.transact(res.xa))
+          // demands
+          _ <- sql"""
+          insert into demands values
+          ($d61, $r6, 'REVOKE-CONSENT', 'msg61', 'lang61')
+          """.update.run.transact(res.xa)
+          // ----------------------------------------
 
-      // legal bases
-      _ <- Resource.eval(sql"""
-      insert into legal_bases values
-      ($consent1, $appId, 'CONSENT', 'test consent 1', '', true),
-      ($consent2, $appId, 'CONSENT', 'test consent 2', '', true),
-      ($necessary1, $appId, 'NECESSARY', 'test necessary 1', '', true),
-      ($contract1, $appId, 'CONTRACT', 'test contract 1', '', true),
-      ($legitInterest1, $appId, 'LEGITIMATE-INTEREST', 'test legitimate interest 1', '', true)
-      """.update.run.transact(res.xa))
+          // pending demands
+          _ <- sql"""
+          insert into pending_demands_to_review values
+          ($d11), ($d12), ($d21), ($d22), ($d31), ($d61)
+          """.update.run.transact(res.xa)
 
-      // legal base events
-      _ <- Resource.eval(sql"""
-      insert into legal_base_events values
-      ($uuid, $necessary1, $dsId1, $appId, 'RELATIONSHIP-START', ${t - 10}),
-      ($uuid, $contract1, $dsId1, $appId, 'SERVICE-START', ${t - 9}),
-      ($uuid, $contract1, $dsId1, $appId, 'SERVICE-END', ${t - 8}),
-      ($uuid, $legitInterest1, $dsId1, $appId, 'RELATIONSHIP-END', ${t - 7})
-      """.update.run.transact(res.xa))
+          // legal base events
+          _ <- sql"""
+          insert into legal_base_events values
+          ($uuid, $necessary1, $dsId1, $appId, 'RELATIONSHIP-START', ${t - 10}),
+          ($uuid, $contract1, $dsId1, $appId, 'SERVICE-START', ${t - 9}),
+          ($uuid, $contract1, $dsId1, $appId, 'SERVICE-END', ${t - 8}),
+          ($uuid, $legitInterest1, $dsId1, $appId, 'RELATIONSHIP-END', ${t - 7})
+          """.update.run.transact(res.xa)
 
-      _ <- Resource.eval(sql"""
-      insert into consent_given_events values
-      ($uuid, $consent1, $dsId1, $appId, ${t - 10}),
-      ($uuid, $consent2, $dsId1, $appId, ${t - 8})
-      """.update.run.transact(res.xa))
+          _ <- sql"""
+          insert into consent_given_events values
+          ($uuid, $consent1, $dsId1, $appId, ${t - 10}),
+          ($uuid, $consent2, $dsId1, $appId, ${t - 8})
+          """.update.run.transact(res.xa)
 
-      _ <- Resource.eval(sql"""
-      insert into consent_revoked_events values
-      ($uuid, $consent1, $dsId1, $appId, ${t - 7})
-      """.update.run.transact(res.xa))
+          _ <- sql"""
+          insert into consent_revoked_events values
+          ($uuid, $consent1, $dsId1, $appId, ${t - 7})
+          """.update.run.transact(res.xa)
+        } yield ()
+      }
 
     } yield res
 
   test("get pending demands") {
     res =>
       for {
-        resp    <- res.server.run(get("consumer-interface/pending-requests", Some(appToken(appId))))
+        resp    <- res.server.run(get("consumer-interface/pending-requests", appToken(appId)))
         pending <- resp.to[List[PendingDemandPayload]]
         _       <- expect
           .all(
@@ -302,7 +310,7 @@ class DataConsumerInterface(global: GlobalRead) extends IOSuite {
     res =>
       for {
         resp <- res.server.run(
-          get(s"consumer-interface/pending-requests/$uuid", Some(appToken(appId)))
+          get(s"consumer-interface/pending-requests/$uuid", appToken(appId))
         )
         _    <- expect(resp.status == Status.NotFound).failFast
       } yield success
@@ -312,7 +320,7 @@ class DataConsumerInterface(global: GlobalRead) extends IOSuite {
     res =>
       for {
         resp <- res.server.run(
-          get(s"consumer-interface/pending-requests/${d11}", Some(appToken(appId)))
+          get(s"consumer-interface/pending-requests/${d11}", appToken(appId))
         )
         d    <- resp.to[PendingDemandDetailsPayload]
         r = d.recommendation.get
@@ -341,7 +349,7 @@ class DataConsumerInterface(global: GlobalRead) extends IOSuite {
       val req = json"""{ "id": $d23 }"""
       for {
         resp <- res.server.run(
-          post(s"consumer-interface/pending-requests/approve", req, Some(appToken(appId)))
+          post(s"consumer-interface/pending-requests/approve", req, appToken(appId))
         )
         _    <- expect(resp.status == Status.UnprocessableEntity).failFast
       } yield success
@@ -352,7 +360,7 @@ class DataConsumerInterface(global: GlobalRead) extends IOSuite {
       val req = json"""{ "id": $d31 }"""
       for {
         resp <- res.server.run(
-          post(s"consumer-interface/pending-requests/approve", req, Some(appToken(appId)))
+          post(s"consumer-interface/pending-requests/approve", req, appToken(appId))
         )
         _    <- expect(resp.status == Status.UnprocessableEntity).failFast
       } yield success
@@ -369,7 +377,7 @@ class DataConsumerInterface(global: GlobalRead) extends IOSuite {
       """
       for {
         resp   <- res.server.run(
-          post(s"consumer-interface/pending-requests/approve", req, Some(appToken(appId)))
+          post(s"consumer-interface/pending-requests/approve", req, appToken(appId))
         )
         status <- sql"""select status from demand_recommendations where did=$d11"""
           .query[PrivStatus]
@@ -396,7 +404,7 @@ class DataConsumerInterface(global: GlobalRead) extends IOSuite {
       val req = json"""{ "id": $d23, "motive": ${Motive.ValidReasons.encode} }"""
       for {
         resp <- res.server.run(
-          post(s"consumer-interface/pending-requests/deny", req, Some(appToken(appId)))
+          post(s"consumer-interface/pending-requests/deny", req, appToken(appId))
         )
         _    <- expect(resp.status == Status.UnprocessableEntity).failFast
       } yield success
@@ -407,7 +415,7 @@ class DataConsumerInterface(global: GlobalRead) extends IOSuite {
       val req = json"""{ "id": $d31, "motive": ${Motive.ValidReasons.encode} }"""
       for {
         resp <- res.server.run(
-          post(s"consumer-interface/pending-requests/deny", req, Some(appToken(appId)))
+          post(s"consumer-interface/pending-requests/deny", req, appToken(appId))
         )
         _    <- expect(resp.status == Status.UnprocessableEntity).failFast
       } yield success
@@ -425,7 +433,7 @@ class DataConsumerInterface(global: GlobalRead) extends IOSuite {
       """
       for {
         resp   <- res.server.run(
-          post(s"consumer-interface/pending-requests/deny", req, Some(appToken(appId)))
+          post(s"consumer-interface/pending-requests/deny", req, appToken(appId))
         )
         status <- sql"""select status from demand_recommendations where did=$d12"""
           .query[PrivStatus]
@@ -460,7 +468,7 @@ class DataConsumerInterface(global: GlobalRead) extends IOSuite {
       """
       for {
         resp <- res.server.run(
-          post(s"consumer-interface/pending-requests/recommendation", req, Some(appToken(appId)))
+          post(s"consumer-interface/pending-requests/recommendation", req, appToken(appId))
         )
         _    <- expect(resp.status == Status.UnprocessableEntity).failFast
       } yield success
@@ -478,7 +486,7 @@ class DataConsumerInterface(global: GlobalRead) extends IOSuite {
       """
       for {
         resp <- res.server.run(
-          post(s"consumer-interface/pending-requests/recommendation", req, Some(appToken(appId)))
+          post(s"consumer-interface/pending-requests/recommendation", req, appToken(appId))
         )
         _    <- expect(resp.status == Status.UnprocessableEntity).failFast
       } yield success
@@ -500,7 +508,7 @@ class DataConsumerInterface(global: GlobalRead) extends IOSuite {
       """
       for {
         resp <- res.server.run(
-          post(s"consumer-interface/pending-requests/recommendation", req, Some(appToken(appId)))
+          post(s"consumer-interface/pending-requests/recommendation", req, appToken(appId))
         )
         r    <- res.repos.privacyRequest.getRecommendation(d21).map(_.get)
 
@@ -519,7 +527,7 @@ class DataConsumerInterface(global: GlobalRead) extends IOSuite {
   test("get completed demands") {
     res =>
       for {
-        resp <- res.server.run(get("consumer-interface/completed-requests", Some(appToken(appId))))
+        resp      <- res.server.run(get("consumer-interface/completed-requests", appToken(appId)))
         completed <- resp.to[List[CompletedDemandPayload]]
         _         <- expect
           .all(
@@ -542,7 +550,7 @@ class DataConsumerInterface(global: GlobalRead) extends IOSuite {
     res =>
       for {
         resp <- res.server.run(
-          get(s"consumer-interface/completed-requests/$uuid", Some(appToken(appId)))
+          get(s"consumer-interface/completed-requests/$uuid", appToken(appId))
         )
         _    <- expect(resp.status == Status.NotFound).failFast
       } yield success
@@ -552,7 +560,7 @@ class DataConsumerInterface(global: GlobalRead) extends IOSuite {
     res =>
       for {
         resp <- res.server.run(
-          get(s"consumer-interface/completed-requests/$d11", Some(appToken(appId)))
+          get(s"consumer-interface/completed-requests/$d11", appToken(appId))
         )
         c    <- resp.to[List[CompletedDemandInfoPayload]]
         _    <- expect(c.isEmpty).failFast
@@ -563,7 +571,7 @@ class DataConsumerInterface(global: GlobalRead) extends IOSuite {
     res =>
       for {
         resp <- res.server.run(
-          get(s"consumer-interface/completed-requests/$d32", Some(appToken(appId)))
+          get(s"consumer-interface/completed-requests/$d32", appToken(appId))
         )
         c    <- resp.to[List[CompletedDemandInfoPayload]].map(_.head)
         _    <- expect
@@ -586,7 +594,7 @@ class DataConsumerInterface(global: GlobalRead) extends IOSuite {
     res =>
       for {
         resp <- res.server.run(
-          get(s"consumer-interface/completed-requests/$d51", Some(appToken(appId)))
+          get(s"consumer-interface/completed-requests/$d51", appToken(appId))
         )
         c    <- resp.to[List[CompletedDemandInfoPayload]].map(_.head)
         _    <- expect
@@ -608,7 +616,7 @@ class DataConsumerInterface(global: GlobalRead) extends IOSuite {
   test("get timeline") {
     res =>
       for {
-        resp <- res.server.run(get(s"consumer-interface/timeline/$dsId1", Some(appToken(appId))))
+        resp <- res.server.run(get(s"consumer-interface/timeline/$dsId1", appToken(appId)))
         t    <- resp.to[TimelineEventsPayload]
         _    <- expect
           .all(

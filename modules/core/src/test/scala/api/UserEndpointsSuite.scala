@@ -36,40 +36,57 @@ import priv.LegalBase
 import SharedResources.*
 import testutil.*
 import httputil.*
+import dbutil.*
+import io.blindnet.pce.priv.terms.LegalBaseTerms
 
 class UserEndpointsSuite(global: GlobalRead) extends IOSuite {
 
-  type Res = Resources
-  def sharedResource: Resource[IO, Resources] = sharedResourceOrFallback(global)
+  val appId = uuid
+  val ds    = DataSubject(uuid.toString, appId)
 
-  val consent1 = "28b5bee0-9db8-40ec-840e-64eafbfb9ddd".uuid
-  val consent2 = "b25c1c0c-d375-4a5c-8500-6918f2888435".uuid
-  val consent3 = "b52f8b4b-590c-4dcb-b572-f4a890ea330b".uuid
+  val consent1 = uuid
+  val consent2 = uuid
+  val consent3 = uuid
+
+  type Res = Resources
+  def sharedResource: Resource[IO, Resources] =
+    for {
+      res <- global.getOrFailR[Resources]()
+
+      _ <- Resource.eval {
+        for {
+          _ <- createApp(appId, res.xa)
+          _ <- createDs(ds.id, appId, res.xa)
+
+          _ <- createLegalBase(consent1, appId, LegalBaseTerms.Consent, "Prizes consent", res.xa)
+          _ <- createLegalBase(consent2, appId, LegalBaseTerms.Consent, "test consent 1", res.xa)
+          _ <- createLegalBase(consent3, appId, LegalBaseTerms.Consent, "test consent 2", res.xa)
+
+          _ <- sql"""
+          insert into consent_given_events values
+            ($uuid, $consent1, ${ds.id}, $appId, ${now - 10}),
+            ($uuid, $consent2, ${ds.id}, $appId, ${now - 9}),
+            ($uuid, $consent1, ${ds.id}, $appId, ${now - 8}),
+            ($uuid, $consent3, ${ds.id}, $appId, ${now - 7}),
+            ($uuid, $consent2, ${ds.id}, $appId, ${now - 6})
+          """.update.run.transact(res.xa)
+          _ <- sql"""
+          insert into consent_revoked_events values
+            ($uuid, $consent2, ${ds.id}, $appId, ${now - 11}),
+            ($uuid, $consent2, ${ds.id}, $appId, ${now - 7}),
+            ($uuid, $consent3, ${ds.id}, $appId, ${now - 5})
+          """.update.run.transact(res.xa)
+        } yield ()
+      }
+    } yield res
 
   test("return users active consents") {
     res =>
-      val uid   = uuid
-      val token = tb().user(uid.toString)
       for {
-        _ <- sql"""insert into data_subjects values ($uid, $appId)""".update.run.transact(res.xa)
-        _ <- sql"""
-          insert into consent_given_events values
-            ($uuid, $consent1, $uid, $appId, ${now - 10}),
-            ($uuid, $consent2, $uid, $appId, ${now - 9}),
-            ($uuid, $consent1, $uid, $appId, ${now - 8}),
-            ($uuid, $consent3, $uid, $appId, ${now - 7}),
-            ($uuid, $consent2, $uid, $appId, ${now - 6})
-          """.update.run.transact(res.xa)
-        _ <- sql"""
-          insert into consent_revoked_events values
-            ($uuid, $consent2, $uid, $appId, ${now - 11}),
-            ($uuid, $consent2, $uid, $appId, ${now - 7}),
-            ($uuid, $consent3, $uid, $appId, ${now - 5})
-          """.update.run.transact(res.xa)
 
-        resp     <- res.server.run(get("user/consents", Some(token)))
+        resp     <- res.server.run(get("user/consents", userToken(appId, ds.id)))
         consents <- resp.to[List[GivenConsentsPayload]]
-        _        <- expect(consents.map(_.id).sorted == List(consent2, consent1)).failFast
+        _        <- expect(consents.map(_.id).sorted == List(consent1, consent2).sorted).failFast
       } yield success
   }
 
