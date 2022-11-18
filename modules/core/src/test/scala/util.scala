@@ -93,7 +93,7 @@ object dbutil {
       _ <- sql"""insert into dac values ($id, false, '')""".update.run.transact(xa)
       _ <- sql"""
       insert into automatic_responses_config values
-      ($id, true, true, true, true)
+      ($id, true, true, true, true, true, true)
       """.update.run.transact(xa)
       _ <- sql"""
       insert into general_information values

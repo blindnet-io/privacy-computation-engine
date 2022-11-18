@@ -24,7 +24,8 @@ object AppRepository {
 
       def get(id: UUID): IO[Option[PCEApp]] =
         sql"""
-          select a.id, d.active, d.uri, d.token, arc.auto_transparency, arc.auto_access, arc.auto_delete, arc.auto_consents
+          select a.id, d.active, d.uri, d.token, arc.auto_transparency, arc.auto_access, arc.auto_delete,
+            arc.auto_revoke_consent, arc.auto_object, arc.auto_restrict
           from apps a
             join dac d on d.appid = a.id
             join automatic_responses_config arc on arc.appid = a.id
@@ -40,7 +41,9 @@ object AppRepository {
           set auto_transparency = ${rs.isAutoTransparency},
               auto_access = ${rs.isAutoAccess},
               auto_delete = ${rs.isAutoDelete},
-              auto_consents = ${rs.isAutoConsents}
+              auto_revoke_consent = ${rs.isAutoRevokeConsent},
+              auto_object = ${rs.isAutoObject},
+              auto_restrict = ${rs.isAutoRestrict}
           where appid = $id
         """.update.run.transact(xa).void
 

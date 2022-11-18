@@ -21,13 +21,15 @@ case class PCEApp(
 
 object PCEApp {
   given Read[PCEApp] =
-    Read[(UUID, Boolean, Option[String], Option[String], Boolean, Boolean, Boolean, Boolean)]
+    // format: off
+    Read[(UUID, Boolean, Option[String], Option[String], Boolean, Boolean, Boolean, Boolean, Boolean, Boolean)]
+    // format: on
       .map {
-        case (id, usingDac, dacUri, dacToken, t, a, d, c) =>
+        case (id, usingDac, dacUri, dacToken, t, a, d, rc, ob, re) =>
           PCEApp(
             id,
             DacConfig(usingDac, dacUri.map(Uri.unsafeFromString), dacToken),
-            DemandResolutionStrategy.simple(t, a, d, c)
+            DemandResolutionStrategy.simple(t, a, d, rc, ob, re)
           )
       }
 

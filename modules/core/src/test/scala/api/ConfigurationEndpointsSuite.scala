@@ -103,7 +103,9 @@ class ConfigurationEndpointsSuite(global: GlobalRead) extends IOSuite {
           "transparency": "manual",
           "access": "auto",
           "delete": "manual",
-          "consents": "auto"
+          "revoke_consent": "auto",
+          "object": "manual",
+          "restrict": "auto"
       }
       """
       for {
@@ -115,7 +117,14 @@ class ConfigurationEndpointsSuite(global: GlobalRead) extends IOSuite {
         )
         s    <- resp.to[DemandResolutionStrategy]
         _    <- expect
-          .all(s.transparency == man, s.access == auto, s.delete == man, s.consents == auto)
+          .all(
+            s.transparency == man,
+            s.access == auto,
+            s.delete == man,
+            s.revokeConsent == auto,
+            s.objectScope == man,
+            s.restrictScope == auto
+          )
           .failFast
       } yield success
   }
@@ -127,7 +136,7 @@ class ConfigurationEndpointsSuite(global: GlobalRead) extends IOSuite {
       [
         { "name": "selector_1", "data_category": "AFFILIATION" },
         { "name": "selector_1", "data_category": "AFFILIATION" },
-        { "name": "selector_2", "data_category": "BIOMETRIC" },
+        { "name": "selector_2", "data_category": "LOCATION" },
         { "name": "selector_3", "data_category": "CONTACT.PHONE" }
       ]
       """
@@ -141,13 +150,13 @@ class ConfigurationEndpointsSuite(global: GlobalRead) extends IOSuite {
         _   <- expect
           .all(
             dcs.contains("AFFILIATION.selector_1"),
-            dcs.contains("BIOMETRIC.selector_2"),
+            dcs.contains("LOCATION.selector_2"),
             dcs.contains("CONTACT.PHONE.selector_3")
           )
           .failFast
 
         rows <-
-          sql"""select count(*) from scope where dcid = (select id from data_categories where term='BIOMETRIC')"""
+          sql"""select count(*) from scope where dcid = (select id from data_categories where term='LOCATION')"""
             .query[Int]
             .unique
             .transact(res._1.xa)

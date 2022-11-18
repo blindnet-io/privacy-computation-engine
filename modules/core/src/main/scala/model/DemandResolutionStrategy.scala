@@ -44,27 +44,40 @@ case class DemandResolutionStrategy(
     transparency: DemandResolution,
     access: DemandResolution,
     delete: DemandResolution,
-    consents: DemandResolution
+    revokeConsent: DemandResolution,
+    objectScope: DemandResolution,
+    restrictScope: DemandResolution
 ) {
-  val isAutoTransparency = transparency == DemandResolution.Automatic
-  val isAutoAccess       = access == DemandResolution.Automatic
-  val isAutoDelete       = delete == DemandResolution.Automatic
-  val isAutoConsents     = consents == DemandResolution.Automatic
+  val isAutoTransparency  = transparency == DemandResolution.Automatic
+  val isAutoAccess        = access == DemandResolution.Automatic
+  val isAutoDelete        = delete == DemandResolution.Automatic
+  val isAutoRevokeConsent = revokeConsent == DemandResolution.Automatic
+  val isAutoObject        = objectScope == DemandResolution.Automatic
+  val isAutoRestrict      = restrictScope == DemandResolution.Automatic
 }
 
 object DemandResolutionStrategy {
 
-  def simple(t: Boolean, a: Boolean, d: Boolean, c: Boolean) =
+  def simple(t: Boolean, a: Boolean, d: Boolean, rc: Boolean, ob: Boolean, re: Boolean) =
     import DemandResolution.*
     DemandResolutionStrategy(
       transparency = if t then Automatic else Manual,
       access = if a then Automatic else Manual,
       delete = if d then Automatic else Manual,
-      consents = if c then Automatic else Manual
+      revokeConsent = if rc then Automatic else Manual,
+      objectScope = if ob then Automatic else Manual,
+      restrictScope = if re then Automatic else Manual
     )
 
-  given Decoder[DemandResolutionStrategy] = deriveDecoder[DemandResolutionStrategy]
-  given Encoder[DemandResolutionStrategy] = deriveEncoder[DemandResolutionStrategy]
+  given Decoder[DemandResolutionStrategy] =
+    Decoder.forProduct6("transparency", "access", "delete", "revoke_consent", "object", "restrict")(
+      DemandResolutionStrategy.apply
+    )
+
+  given Encoder[DemandResolutionStrategy] =
+    Encoder.forProduct6("transparency", "access", "delete", "revoke_consent", "object", "restrict")(
+      s => (s.transparency, s.access, s.delete, s.revokeConsent, s.objectScope, s.restrictScope)
+    )
 
   given Schema[DemandResolutionStrategy] = Schema.derived[DemandResolutionStrategy]
 
