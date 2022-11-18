@@ -145,6 +145,74 @@ class UserEventsEndpointsSuite(global: GlobalRead) extends IOSuite {
       }
     } yield res
 
+  test("fail giving for a non-existent app using the public endpoint") {
+    res =>
+      val req = json"""
+      {
+          "consent_id": $consent1,
+          "app_id": $uuid,
+          "data_subject": {
+            "id": $uuid,
+            "schema": "id"
+          }
+      }
+      """
+      for {
+        response <- res.server.run(
+          post("user-events/consent/public", req)
+        )
+        _        <- expect(response.status == Status.NotFound).failFast
+      } yield success
+  }
+
+  test("fail giving for a non-existent consent id using the public endpoint") {
+    res =>
+      val req = json"""
+      {
+          "consent_id": $uuid,
+          "app_id": $appId,
+          "data_subject": {
+            "id": $uuid,
+            "schema": "id"
+          }
+      }
+      """
+      for {
+        response <- res.server.run(
+          post("user-events/consent/public", req)
+        )
+        _        <- expect(response.status == Status.NotFound).failFast
+      } yield success
+  }
+
+  test("give consent using the public endpoint") {
+    res =>
+      val uid = uuid.toString
+      val req = json"""
+      {
+          "consent_id": $consent1,
+          "app_id": $appId,
+          "data_subject": {
+            "id": $uid,
+            "schema": "id"
+          }
+      }
+      """
+      for {
+        response <- res.server.run(
+          post("user-events/consent/public", req)
+        )
+
+        sqlDs = sql"select exists (select id from data_subjects where id=$uid)"
+        userInDb <- sqlDs.query[Boolean].unique.transact(res.xa)
+        _        <- expect(userInDb).failFast
+        sqlEv =
+          sql"select exists (select lbid from consent_given_events where lbid=$consent1 and dsid=$uid)"
+        existsEv <- sqlEv.query[Boolean].unique.transact(res.xa)
+        _        <- expect(existsEv).failFast
+      } yield success
+  }
+
   test("fail proactively giving consent for large scope") {
     res =>
       val req = json"""
