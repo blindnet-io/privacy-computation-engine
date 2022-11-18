@@ -33,7 +33,7 @@ class UserEventsEndpoints(
       .description("Give consent")
       .post
       .in("consent")
-      .in("unsafe")
+      .in("public")
       .in(jsonBody[GiveConsentUnsafePayload])
       .errorOutVariants(notFound)
       .serverLogic(req => userEventsService.addConsentGivenEvent(req).attempt)
