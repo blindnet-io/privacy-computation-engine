@@ -58,7 +58,6 @@ class ConfigurationService(
     val pps = Purpose.getAllPurposes
     IO(PrivacyScopeDimensionsPayload(dcs, pcs, pps))
 
-  // TODO: copy parents retention policies and provenances
   def addSelectors(appId: UUID)(req: List[CreateSelectorPayload]) =
     for {
       _ <- req.forall(_.dataCategory.term != "*").onFalseBadRequest("Selector can't be top level")
@@ -71,6 +70,21 @@ class ConfigurationService(
       _   <- repos.privacyScope
         .addSelectors(appId, ids zip selectors)
         .handleErrorWith(_ => "Selector already exists".failBadRequest)
+
+      ss = (s zip selectors).toList
+
+      provenances <- repos.provenance.get(appId)
+      sProv       <-
+        ss.flatMap(s => provenances.get(s._1.dataCategory).getOrElse(List.empty).map(s._2 -> _))
+          .traverse { case (dc, p) => UUIDGen.randomUUID[IO].map(id => (dc, p.copy(id = id))) }
+
+      retPolicies <- repos.retentionPolicy.get(appId)
+      sRPs        <-
+        ss.flatMap(s => retPolicies.get(s._1.dataCategory).getOrElse(List.empty).map(s._2 -> _))
+          .traverse { case (dc, rp) => UUIDGen.randomUUID[IO].map(id => (dc, rp.copy(id = id))) }
+
+      _ <- sProv.toNel.fold(IO.unit)(l => repos.provenance.add(appId, l))
+      _ <- sRPs.toNel.fold(IO.unit)(l => repos.retentionPolicy.add(appId, l))
     } yield ()
 
   def getLegalBases(appId: UUID)(x: Unit) =
