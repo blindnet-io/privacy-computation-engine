@@ -51,6 +51,13 @@ object PrivacyScope {
   def unsafe(dcs: Seq[String], pcs: Seq[String], pps: Seq[String]) =
     PrivacyScope((dcs lazyZip pcs lazyZip pps).map(PrivacyScopeTriple.unsafe).toSet)
 
+  def validate(ps: PrivacyScope, ctx: PSContext) = {
+    ps.triples.forall(
+      t =>
+        DataCategory.terms.contains(t.dataCategory.term) || ctx.selectors.contains(t.dataCategory)
+    )
+  }
+
   given Monoid[PrivacyScope] =
     Monoid.instance(empty, (ps1, ps2) => ps1 union ps2)
 

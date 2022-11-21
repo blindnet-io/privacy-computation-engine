@@ -177,7 +177,7 @@ object LegalBaseRepository {
                 join data_categories dc ON dc.id = s.dcid
                 join processing_categories pc ON pc.id = s.pcid
                 join processing_purposes pp ON pp.id = s.ppid
-                where
+                where (dc.appid is null or dc.appid=$appId) and
             """ ++ Fragments.or(
               scope.triples
                 .map(

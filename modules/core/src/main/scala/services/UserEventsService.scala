@@ -26,6 +26,7 @@ import util.*
 import priv.LegalBase
 import priv.terms.EventTerms.*
 import io.blindnet.pce.priv.PSContext
+import io.blindnet.pce.priv.PrivacyScope
 
 class UserEventsService(
     repos: Repositories
@@ -58,6 +59,7 @@ class UserEventsService(
       scope = req.getPrivPrivacyScope.zoomIn(ctx)
       // TODO
       _ <- "Scope too large".failBadRequest.whenA(scope.triples.size > 1000)
+      _ <- "Bad privacy scope".failBadRequest.unlessA(PrivacyScope.validate(scope, ctx))
       ds = DataSubject(jwt.userId, jwt.appId)
       _         <- handleUser(jwt.appId, ds)
       timestamp <- Clock[IO].realTimeInstant

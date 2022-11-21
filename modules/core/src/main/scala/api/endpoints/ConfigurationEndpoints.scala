@@ -128,7 +128,8 @@ class ConfigurationEndpoints(
       .in("legal-bases")
       .in(jsonBody[CreateLegalBasePayload])
       .out(stringBody)
-      .serverLogic(runLogicSuccess(configurationService.createLegalBase))
+      .errorOutVariant(unprocessable)
+      .serverLogic(runLogic(configurationService.createLegalBase))
 
   val addRetentionPolicies =
     authEndpoint
