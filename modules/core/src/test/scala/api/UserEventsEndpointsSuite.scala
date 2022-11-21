@@ -68,17 +68,22 @@ class UserEventsEndpointsSuite(global: GlobalRead) extends IOSuite {
           """.update.run.transact(res.xa)
 
           _ <- sql"""
-          insert into provenances (select gen_random_uuid(), $appId, id, 'USER', 'demo' from data_categories)
+          insert into provenances (
+            select gen_random_uuid(), $appId, id, 'USER', 'demo' from data_categories
+            where appid is null or appid = $appId
+          )
           """.update.run.transact(res.xa)
 
           _ <- sql"""insert into retention_policies (
-          select gen_random_uuid(), $appId, id, 'NO-LONGER-THAN', '10', 'RELATIONSHIP-END' from data_categories)
+            select gen_random_uuid(), $appId, id, 'NO-LONGER-THAN', '10', 'RELATIONSHIP-END' from data_categories
+            where appid is null or appid = $appId
+          )
           """.update.run.transact(res.xa)
 
           _ <- sql"""insert into "scope" (
           select gen_random_uuid() as id, dc.id as dcid, pc.id as pcid, pp.id as ppid
           from data_categories dc, processing_categories pc, processing_purposes pp
-          where dc.selector = true)
+          where dc.selector = true and dc.appid = $appId)
           """.update.run.transact(res.xa)
 
           _ <- createLegalBase(consent1, appId, LegalBaseTerms.Consent, "Prizes consent", res.xa)
@@ -133,7 +138,7 @@ class UserEventsEndpointsSuite(global: GlobalRead) extends IOSuite {
             join data_categories dc on dc.id = s.dcid
             join processing_categories pc on pc.id = s.pcid
             join processing_purposes pp on pp.id = s.ppid
-            where dc.term = 'OTHER-DATA.PROOF' and pc.term='*' and pp.term = '*')
+            where dc.term = 'OTHER-DATA.PROOF' and pc.term='*' and pp.term = '*' and dc.appid = $appId)
           )
           """.update.run.transact(res.xa)
 
@@ -219,6 +224,23 @@ class UserEventsEndpointsSuite(global: GlobalRead) extends IOSuite {
       {
           "scope": [
             { "dc": "*", "pc": "*", "pp": "*" }
+          ]
+      }
+      """
+      for {
+        response <- res.server.run(
+          post("user-events/consent/proactive", req, userToken(appId, ds.id))
+        )
+        _        <- expect(response.status == Status.UnprocessableEntity).failFast
+      } yield success
+  }
+
+  test("fail proactively giving consent for bad scope") {
+    res =>
+      val req = json"""
+      {
+          "scope": [
+              { "dc": "OTHER-DATA.fdsfsdafs", "pc": "ANONYMIZATION", "pp": "JUSTICE" }
           ]
       }
       """

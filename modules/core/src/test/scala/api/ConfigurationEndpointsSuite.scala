@@ -40,6 +40,7 @@ import testutil.*
 import httputil.*
 import scala.concurrent.duration.*
 import io.blindnet.pce.priv.terms.ProvenanceTerms
+import io.blindnet.pce.priv.terms.DataCategory
 
 class ConfigurationEndpointsSuite(global: GlobalRead) extends IOSuite {
 
@@ -58,6 +59,30 @@ class ConfigurationEndpointsSuite(global: GlobalRead) extends IOSuite {
         for {
           _ <- dbutil.createApp(appId, res.xa)
           _ <- dbutil.createRegulations(res.xa)
+
+          _ <- sql"""
+          insert into data_categories (id, term, selector, appid, active) values
+          ($uuid, 'OTHER-DATA.PROOF', true, $appId, true)
+          """.update.run.transact(res.xa)
+
+          _ <- sql"""insert into "scope" (
+          select gen_random_uuid() as id, dc.id as dcid, pc.id as pcid, pp.id as ppid
+          from data_categories dc, processing_categories pc, processing_purposes pp
+          where dc.selector = true and dc.appid = $appId)
+          """.update.run.transact(res.xa)
+
+          _ <- sql"""
+          insert into provenances (
+            select gen_random_uuid(), $appId, id, 'USER', 'demo' from data_categories
+            where term = 'DEVICE'
+          )
+          """.update.run.transact(res.xa)
+
+          _ <- sql"""insert into retention_policies (
+            select gen_random_uuid(), $appId, id, 'NO-LONGER-THAN', '10', 'RELATIONSHIP-END' from data_categories
+            where term = 'DEVICE'
+          )
+          """.update.run.transact(res.xa)
         } yield ()
       }
 
@@ -129,7 +154,6 @@ class ConfigurationEndpointsSuite(global: GlobalRead) extends IOSuite {
       } yield success
   }
 
-  // TODO: test parent retention policies and provenances
   test("add selectors") {
     res =>
       val req = json"""
@@ -161,6 +185,37 @@ class ConfigurationEndpointsSuite(global: GlobalRead) extends IOSuite {
             .unique
             .transact(res._1.xa)
         _    <- expect(rows == 209).failFast
+      } yield success
+  }
+
+  test("added selectors copy parents provenances and retention policies") {
+    res =>
+      val req = json"""
+      [
+        { "name": "selector_copied_1", "data_category": "DEVICE" }
+      ]
+      """
+      for {
+        _ <- res._1.server.run(put("configure/selectors", req, appToken(appId)))
+
+        provenances <- res._1.repos.provenance.get(appId, DataCategory("DEVICE.selector_copied_1"))
+        _           <- expect
+          .all(
+            provenances.head.provenance == ProvenanceTerms.User,
+            provenances.head.system == "demo"
+          )
+          .failFast
+
+        retPolicies <- res._1.repos.retentionPolicy
+          .get(appId, DataCategory("DEVICE.selector_copied_1"))
+        _           <- expect
+          .all(
+            retPolicies.head.policyType == RetentionPolicyTerms.NoLongerThan,
+            retPolicies.head.duration == "10",
+            retPolicies.head.after == EventTerms.RelationshipEnd
+          )
+          .failFast
+
       } yield success
   }
 
@@ -262,6 +317,24 @@ class ConfigurationEndpointsSuite(global: GlobalRead) extends IOSuite {
       _        <- (IO.sleep(1.seconds) *> waitUntilLbInserted(xa, id, n + 1)).unlessA(inserted)
     } yield ()
 
+  test("fail creating legal base with bad privacy scope") {
+    res =>
+      val req = json"""
+      {
+          "lb_type": "CONTRACT",
+          "name": "test contract",
+          "description": "",
+          "scope": [
+              { "dc": "OTHER-DATA.fdsfsdafs", "pc": "ANONYMIZATION", "pp": "JUSTICE" }
+          ]
+      }
+      """
+      for {
+        resp <- res._1.server.run(put("configure/legal-bases", req, appToken(appId)))
+        _    <- expect(resp.status == Status.UnprocessableEntity).failFast
+      } yield success
+  }
+
   test("create and get contract legal base") {
     res =>
       val req = json"""
@@ -276,14 +349,14 @@ class ConfigurationEndpointsSuite(global: GlobalRead) extends IOSuite {
           ]
       }
       """
-      for {
+      val t   = for {
         resp <- res._1.server.run(put("configure/legal-bases", req, appToken(appId)))
+        _    <- expect(resp.status == Status.Ok).failFast
         lbId <- resp.as[String].map(_.uuid)
         _    <- waitUntilLbInserted(res._1.xa, lbId)
         resp <- res._1.server.run(get(s"configure/legal-bases/$lbId", appToken(appId)))
         lb   <- resp.to[LegalBase]
         _    <- res._2.legalBaseIds.update(lb.id :: _)
-        _    <- res._2.legalBasesAdded.release
         _    <- expect
           .all(
             lb.id == lbId,
@@ -308,6 +381,7 @@ class ConfigurationEndpointsSuite(global: GlobalRead) extends IOSuite {
           )
           .failFast
       } yield success
+      t.guarantee(res._2.legalBasesAdded.release)
   }
 
   test("create and get consent legal base") {
@@ -322,14 +396,14 @@ class ConfigurationEndpointsSuite(global: GlobalRead) extends IOSuite {
           ]
       }
       """
-      for {
+      val t   = for {
         resp <- res._1.server.run(put("configure/legal-bases", req, appToken(appId)))
+        _    <- expect(resp.status == Status.Ok).failFast
         lbId <- resp.as[String].map(_.uuid)
         _    <- waitUntilLbInserted(res._1.xa, lbId)
         resp <- res._1.server.run(get(s"configure/legal-bases/$lbId", appToken(appId)))
         lb   <- resp.to[LegalBase]
         _    <- res._2.legalBaseIds.update(lb.id :: _)
-        _    <- res._2.legalBasesAdded.release
         _    <- expect
           .all(
             lb.id == lbId,
@@ -344,6 +418,7 @@ class ConfigurationEndpointsSuite(global: GlobalRead) extends IOSuite {
           )
           .failFast
       } yield success
+      t.guarantee(res._2.legalBasesAdded.release)
   }
 
   test("create and get necessary legal base") {
@@ -358,14 +433,14 @@ class ConfigurationEndpointsSuite(global: GlobalRead) extends IOSuite {
           ]
       }
       """
-      for {
+      val t   = for {
         resp <- res._1.server.run(put("configure/legal-bases", req, appToken(appId)))
+        _    <- expect(resp.status == Status.Ok).failFast
         lbId <- resp.as[String].map(_.uuid)
         _    <- waitUntilLbInserted(res._1.xa, lbId)
         resp <- res._1.server.run(get(s"configure/legal-bases/$lbId", appToken(appId)))
         lb   <- resp.to[LegalBase]
         _    <- res._2.legalBaseIds.update(lb.id :: _)
-        _    <- res._2.legalBasesAdded.release
         _    <- expect
           .all(
             lb.id == lbId,
@@ -377,6 +452,7 @@ class ConfigurationEndpointsSuite(global: GlobalRead) extends IOSuite {
           )
           .failFast
       } yield success
+      t.guarantee(res._2.legalBasesAdded.release)
   }
 
   test("create and get legitimate interest legal base") {
@@ -391,14 +467,14 @@ class ConfigurationEndpointsSuite(global: GlobalRead) extends IOSuite {
           ]
       }
       """
-      for {
+      val t   = for {
         resp <- res._1.server.run(put("configure/legal-bases", req, appToken(appId)))
+        _    <- expect(resp.status == Status.Ok).failFast
         lbId <- resp.as[String].map(_.uuid)
         _    <- waitUntilLbInserted(res._1.xa, lbId)
         resp <- res._1.server.run(get(s"configure/legal-bases/$lbId", appToken(appId)))
         lb   <- resp.to[LegalBase]
         _    <- res._2.legalBaseIds.update(lb.id :: _)
-        _    <- res._2.legalBasesAdded.release
         _    <- expect
           .all(
             lb.id == lbId,
@@ -410,6 +486,7 @@ class ConfigurationEndpointsSuite(global: GlobalRead) extends IOSuite {
           )
           .failFast
       } yield success
+      t.guarantee(res._2.legalBasesAdded.release)
   }
 
   test("get all legal bases") {
