@@ -43,7 +43,7 @@ services:
   
   redis:
     restart: always
-    image: redis:6.2.7
+    image: redis:6.2.7-alpine
     ports:
       - "6379:6379"
     healthcheck:
