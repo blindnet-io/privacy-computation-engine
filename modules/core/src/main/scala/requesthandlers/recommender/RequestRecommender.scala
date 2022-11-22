@@ -89,8 +89,7 @@ class RequestRecommender(
 
   private def getRecAccess(pr: PrivacyRequest, d: Demand) =
     for {
-      selectors <- repos.privacyScope.getSelectors(pr.appId, active = true)
-      ctx   = PSContext(selectors)
+      ctx <- repos.privacyScope.getContext(pr.appId)
       scope = PrivacyScope.full(ctx)
 
       psr   = d.getPSR.orEmpty.zoomIn(ctx)
@@ -109,8 +108,7 @@ class RequestRecommender(
 
   private def getRecDelete(pr: PrivacyRequest, d: Demand) =
     for {
-      selectors <- repos.privacyScope.getSelectors(pr.appId, active = true)
-      ctx = PSContext(selectors)
+      ctx         <- repos.privacyScope.getContext(pr.appId)
       timeline    <- repos.events.getTimeline(pr.dataSubject.get, ctx)
       regulations <- repos.regulations.get(pr.appId, ctx)
       events = timeline.compiledEvents(Some(pr.timestamp), regulations)
@@ -118,7 +116,7 @@ class RequestRecommender(
 
       rdcs        = d.getPSR.orEmpty.zoomIn(ctx).dataCategories
       restDCs     =
-        if rdcs.isEmpty then DataCategory.granularize(DataCategory.All, selectors)
+        if rdcs.isEmpty then DataCategory.granularize(DataCategory.All, ctx.selectors)
         else rdcs
       epsDCs      = eps.triples.map(_.dataCategory)
       filteredDCs = events.foldLeft(epsDCs intersect restDCs)(

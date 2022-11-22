@@ -40,6 +40,14 @@ class PrivacyScopeRepositoryLive(xa: Transactor[IO]) extends PrivacyScopeReposit
   def getPurposes(appId: UUID): IO[Set[Purpose]] =
     queries.getPurposes(appId).map(_.flatMap(Purpose.granularize)).transact(xa)
 
+  def getContext(appId: UUID): IO[PSContext] = {
+    val ctx = for {
+      selectors <- queries.getSelectors(appId, true)
+    } yield PSContext(selectors)
+
+    ctx.transact(xa)
+  }
+
   def getSelectors(appId: UUID, active: Boolean): IO[Set[DataCategory]] =
     queries.getSelectors(appId, active).transact(xa)
 

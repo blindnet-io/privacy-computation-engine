@@ -98,9 +98,8 @@ class ConfigurationService(
 
   def createLegalBase(appId: UUID)(req: CreateLegalBasePayload) =
     for {
-      id        <- UUIDGen.randomUUID[IO]
-      selectors <- repos.privacyScope.getSelectors(appId, active = true)
-      ctx   = PSContext(selectors)
+      id  <- UUIDGen.randomUUID[IO]
+      ctx <- repos.privacyScope.getContext(appId)
       scope = req.getPrivPrivacyScope.zoomIn(ctx)
       _ <- s"Bad privacy scope".failBadRequest.unlessA(PrivacyScope.validate(scope, ctx))
       lb = LegalBase(id, req.lbType, scope, req.name, req.description, true)

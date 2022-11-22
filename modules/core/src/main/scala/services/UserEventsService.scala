@@ -54,8 +54,7 @@ class UserEventsService(
 
   def giveConsentProactive(jwt: UserJwt)(req: GiveConsentProactive) =
     for {
-      selectors <- repos.privacyScope.getSelectors(jwt.appId, active = true)
-      ctx   = PSContext(selectors)
+      ctx <- repos.privacyScope.getContext(jwt.appId)
       scope = req.getPrivPrivacyScope.zoomIn(ctx)
       // TODO
       _ <- "Scope too large".failBadRequest.whenA(scope.triples.size > 1000)
