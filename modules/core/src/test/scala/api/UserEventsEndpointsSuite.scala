@@ -222,9 +222,11 @@ class UserEventsEndpointsSuite(global: GlobalRead) extends IOSuite {
     res =>
       val req = json"""
       {
-          "scope": [
-            { "dc": "*", "pc": "*", "pp": "*" }
-          ]
+          "scope": [{
+            "data_categories": ["*"],
+            "processing_categories": ["*"],
+            "processing_purposes": ["*"]
+          }]
       }
       """
       for {
@@ -239,9 +241,11 @@ class UserEventsEndpointsSuite(global: GlobalRead) extends IOSuite {
     res =>
       val req = json"""
       {
-          "scope": [
-              { "dc": "OTHER-DATA.fdsfsdafs", "pc": "ANONYMIZATION", "pp": "JUSTICE" }
-          ]
+          "scope": [{
+            "data_categories": ["OTHER-DATA.fdsfsdafs"],
+            "processing_categories": ["ANONYMIZATION"],
+            "processing_purposes": ["JUSTICE"]
+          }]
       }
       """
       for {
@@ -267,8 +271,16 @@ class UserEventsEndpointsSuite(global: GlobalRead) extends IOSuite {
       val req = json"""
       {
           "scope": [
-            { "dc": "CONTACT", "pc": "*", "pp": "ADVERTISING" },
-            { "dc": "NAME", "pc": "GENERATING", "pp": "RESEARCH" }
+            {
+              "data_categories": ["CONTACT"],
+              "processing_categories": ["*"],
+              "processing_purposes": ["ADVERTISING"]
+            },
+            {
+              "data_categories": ["NAME", "PROFILING"],
+              "processing_categories": ["GENERATING", "PUBLISHING"],
+              "processing_purposes": ["RESEARCH", "SALE", "SECURITY"]
+            }
           ]
       }
       """
@@ -277,6 +289,7 @@ class UserEventsEndpointsSuite(global: GlobalRead) extends IOSuite {
           post("user-events/consent/proactive", req, userToken(appId, ds.id))
         )
         consentId <- add.as[String].map(_.uuid)
+        _         <- expect(add.status == Status.Ok).failFast
 
         q1 = sql"select exists (select id from legal_bases where id=$consentId)"
         lbInDb <- q1.query[Boolean].unique.transact(res.xa)
@@ -285,7 +298,7 @@ class UserEventsEndpointsSuite(global: GlobalRead) extends IOSuite {
         _ <- waitUntilLbInserted(res.xa, consentId)
         q2 = sql"""select count(*) from legal_bases_scope where lbid = $consentId"""
         rows <- q2.query[Int].unique.transact(res.xa)
-        _    <- expect(rows == 31).failFast
+        _    <- expect(rows == 42).failFast
 
         q3 =
           sql"select exists (select lbid from consent_given_events where lbid=$consentId and dsid=${ds.id})"
@@ -301,7 +314,11 @@ class UserEventsEndpointsSuite(global: GlobalRead) extends IOSuite {
       val req = json"""
       {
           "scope": [
-            { "dc": "CONTACT", "pc": "*", "pp": "RESEARCH" }
+            {
+              "data_categories": ["CONTACT"],
+              "processing_categories": ["*"],
+              "processing_purposes": ["RESEARCH"]
+            }
           ]
       }
       """
@@ -309,6 +326,7 @@ class UserEventsEndpointsSuite(global: GlobalRead) extends IOSuite {
         add       <- res.server.run(
           post("user-events/consent/proactive", req, userToken(appId, uid))
         )
+        _         <- expect(add.status == Status.Ok).failFast
         consentId <- add.as[String].map(_.uuid)
 
         q1 = sql"select exists (select id from legal_bases where id=$consentId)"
@@ -339,22 +357,28 @@ class UserEventsEndpointsSuite(global: GlobalRead) extends IOSuite {
       val req  = json"""
       {
           "scope": [
-            { "dc": "CONTACT", "pc": "*", "pp": "*" }
+            {
+              "data_categories": ["CONTACT"],
+              "processing_categories": ["*"],
+              "processing_purposes": ["*"]
+            }
           ]
       }
       """
       for {
-        add        <- res.server.run(
+        add1       <- res.server.run(
           post("user-events/consent/proactive", req, userToken(appId, uid1))
         )
-        consentId1 <- add.as[String].map(_.uuid)
+        _          <- expect(add1.status == Status.Ok).failFast
+        consentId1 <- add1.as[String].map(_.uuid)
 
         _ <- waitUntilLbInserted(res.xa, consentId1)
 
-        add        <- res.server.run(
+        add2       <- res.server.run(
           post("user-events/consent/proactive", req, userToken(appId, uid2))
         )
-        consentId2 <- add.as[String].map(_.uuid)
+        _          <- expect(add2.status == Status.Ok).failFast
+        consentId2 <- add2.as[String].map(_.uuid)
         _          <- expect(consentId1 == consentId2).failFast
 
         q3 =

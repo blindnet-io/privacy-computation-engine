@@ -325,7 +325,11 @@ class ConfigurationEndpointsSuite(global: GlobalRead) extends IOSuite {
           "name": "test contract",
           "description": "",
           "scope": [
-              { "dc": "OTHER-DATA.fdsfsdafs", "pc": "ANONYMIZATION", "pp": "JUSTICE" }
+            {
+              "data_categories": ["OTHER-DATA.fdsfsdafs"],
+              "processing_categories": ["ANONYMIZATION"],
+              "processing_purposes": ["JUSTICE"]
+            }
           ]
       }
       """
@@ -343,9 +347,21 @@ class ConfigurationEndpointsSuite(global: GlobalRead) extends IOSuite {
           "name": "test contract",
           "description": "",
           "scope": [
-              { "dc": "BIOMETRIC", "pc": "*", "pp": "SECURITY" },
-              { "dc": "NAME", "pc": "STORING", "pp": "SECURITY" },
-              { "dc": "OTHER-DATA.PROOF", "pc": "ANONYMIZATION", "pp": "JUSTICE" }
+            {
+              "data_categories": ["BIOMETRIC"],
+              "processing_categories": ["*"],
+              "processing_purposes": ["SECURITY"]
+            },
+            {
+              "data_categories": ["NAME"],
+              "processing_categories": ["STORING", "PUBLISHING"],
+              "processing_purposes": ["SECURITY", "SALE"]
+            },
+            {
+              "data_categories": ["OTHER-DATA.PROOF", "BIOMETRIC"],
+              "processing_categories": ["ANONYMIZATION"],
+              "processing_purposes": ["JUSTICE"]
+            }
           ]
       }
       """
@@ -363,7 +379,11 @@ class ConfigurationEndpointsSuite(global: GlobalRead) extends IOSuite {
             lb.lbType == LegalBaseTerms.Contract,
             lb.scope == scope(
               ("OTHER-DATA.PROOF", "ANONYMIZATION", "JUSTICE"),
+              ("BIOMETRIC", "ANONYMIZATION", "JUSTICE"),
               ("NAME", "STORING", "SECURITY"),
+              ("NAME", "STORING", "SALE"),
+              ("NAME", "PUBLISHING", "SECURITY"),
+              ("NAME", "PUBLISHING", "SALE"),
               ("BIOMETRIC", "OTHER-PROCESSING", "SECURITY"),
               ("BIOMETRIC", "AUTOMATED-INFERENCE", "SECURITY"),
               ("BIOMETRIC", "COLLECTION", "SECURITY"),
@@ -392,7 +412,11 @@ class ConfigurationEndpointsSuite(global: GlobalRead) extends IOSuite {
           "name": "test consent",
           "description": "",
           "scope": [
-              { "dc": "NAME", "pc": "SHARING", "pp": "SERVICES" }
+            {
+              "data_categories": ["NAME"],
+              "processing_categories": ["SHARING"],
+              "processing_purposes": ["SERVICES"]
+            }
           ]
       }
       """
@@ -429,7 +453,11 @@ class ConfigurationEndpointsSuite(global: GlobalRead) extends IOSuite {
           "name": "test necessary",
           "description": "",
           "scope": [
-              { "dc": "NAME", "pc": "PUBLISHING", "pp": "SALE" }
+            {
+              "data_categories": ["NAME"],
+              "processing_categories": ["PUBLISHING"],
+              "processing_purposes": ["SALE"]
+            }
           ]
       }
       """
@@ -463,7 +491,11 @@ class ConfigurationEndpointsSuite(global: GlobalRead) extends IOSuite {
           "name": "test legitimate interest",
           "description": "",
           "scope": [
-              { "dc": "NAME", "pc": "GENERATING", "pp": "RESEARCH" }
+            {
+              "data_categories": ["NAME"],
+              "processing_categories": ["GENERATING"],
+              "processing_purposes": ["RESEARCH"]
+            }
           ]
       }
       """

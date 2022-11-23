@@ -27,6 +27,7 @@ import priv.LegalBase
 import priv.terms.EventTerms.*
 import io.blindnet.pce.priv.PSContext
 import io.blindnet.pce.priv.PrivacyScope
+import io.blindnet.pce.api.endpoints.messages.ScopePayload
 
 class UserEventsService(
     repos: Repositories
@@ -55,7 +56,7 @@ class UserEventsService(
   def giveConsentProactive(jwt: UserJwt)(req: GiveConsentProactive) =
     for {
       ctx <- repos.privacyScope.getContext(jwt.appId)
-      scope = req.getPrivPrivacyScope.zoomIn(ctx)
+      scope = ScopePayload.toPrivacyScope(req.scope).zoomIn(ctx)
       // TODO
       _ <- "Scope too large".failBadRequest.whenA(scope.triples.size > 1000)
       _ <- "Bad privacy scope".failBadRequest.unlessA(PrivacyScope.validate(scope, ctx))

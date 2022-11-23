@@ -26,6 +26,7 @@ import model.*
 import priv.privacyrequest.{ Demand, PrivacyRequest, * }
 import priv.*
 import priv.terms.*
+import io.blindnet.pce.api.endpoints.messages.ScopePayload
 
 class ConfigurationService(
     repos: Repositories
@@ -100,7 +101,7 @@ class ConfigurationService(
     for {
       id  <- UUIDGen.randomUUID[IO]
       ctx <- repos.privacyScope.getContext(appId)
-      scope = req.getPrivPrivacyScope.zoomIn(ctx)
+      scope = ScopePayload.toPrivacyScope(req.scope).zoomIn(ctx)
       _ <- s"Bad privacy scope".failBadRequest.unlessA(PrivacyScope.validate(scope, ctx))
       lb = LegalBase(id, req.lbType, scope, req.name, req.description, true)
       _ <- repos.legalBase.add(appId, lb)

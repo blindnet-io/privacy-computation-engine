@@ -30,14 +30,10 @@ case class CreateLegalBasePayload(
     description: Option[String],
     @description("privacy scope of the legal base")
     // format: off
-    @encodedExample(Set(ScopePayload(DataCategory("CONTACT"), ProcessingCategory("COLLECTION"), Purpose("ADVERTISING"))).asJson)
+    @encodedExample(Set(ScopePayload(Set(DataCategory("*")), Set(ProcessingCategory("USING"), ProcessingCategory("SHARING")), Set(Purpose("ADVERTISING")))).asJson)
     // format: on
     scope: Set[ScopePayload]
-) {
-  def getPrivPrivacyScope =
-    PrivacyScope(scope.map(s => PrivacyScopeTriple(s.dc, s.pc, s.pp)))
-
-}
+)
 
 object CreateLegalBasePayload {
   given Decoder[CreateLegalBasePayload] = unSnakeCaseIfy(

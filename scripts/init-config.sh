@@ -94,10 +94,11 @@ curl -v --location --request PUT \
     "name": "Prizes consent",
     "description": "",
     "scope": [
-        { "dc": "CONTACT.EMAIL", "pc": "*", "pp": "*" },
-        { "dc": "NAME", "pc": "*", "pp": "*" },
-        { "dc": "UID.ID", "pc": "*", "pp": "*" },
-        { "dc": "OTHER-DATA.PROOF", "pc": "*", "pp": "*" }
+      {
+        "data_categories": ["CONTACT.EMAIL", "NAME", "UID.ID", "OTHER-DATA.PROOF"],
+        "processing_categories": ["*"],
+        "processing_purposes": ["*"]
+      }
     ]
 }'
 

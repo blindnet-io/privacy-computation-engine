@@ -20,11 +20,7 @@ import io.blindnet.pce.api.endpoints.messages.ScopePayload
 
 case class GiveConsentProactive(
     scope: Set[ScopePayload]
-) {
-  def getPrivPrivacyScope =
-    PrivacyScope(scope.map(s => PrivacyScopeTriple(s.dc, s.pc, s.pp)))
-
-}
+)
 
 object GiveConsentProactive {
   given Decoder[GiveConsentProactive] = unSnakeCaseIfy(
