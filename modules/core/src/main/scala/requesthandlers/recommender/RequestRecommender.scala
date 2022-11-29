@@ -60,8 +60,12 @@ class RequestRecommender(
       .validate(pr, d)
       .fold(
         rf =>
-          storeRecommendation(rf) >>
-            CommandCreateResponse.create(d.id) map (c => List(c)) >>= repos.commands.addCreateResp,
+          // create deny recommendation
+          for {
+            _ <- storeRecommendation(rf)
+            c <- CommandCreateResponse.create(d.id)
+            _ <- repos.commands.pushCreateResponse(List(c))
+          } yield (),
         _ => handleRecommendation(app, pr, d)
       )
 
@@ -171,7 +175,7 @@ class RequestRecommender(
       }
 
     if auto then
-      CommandCreateResponse.create(d.id) map (c => List(c)) >>= repos.commands.addCreateResp
+      CommandCreateResponse.create(d.id) map (c => List(c)) >>= repos.commands.pushCreateResponse
     else repos.demandsToReview.add(List(d.id))
 
 }
@@ -184,7 +188,7 @@ object RequestRecommender {
 
     def loop(): IO[Unit] =
       for {
-        cs <- repos.commands.getCreateRec(10)
+        cs <- repos.commands.popCreateRecommendation(10)
         _  <- cs.parTraverse_(
           c => {
             val dId = c.dId
@@ -197,9 +201,8 @@ object RequestRecommender {
             p.handleErrorWith(
               e =>
                 logger
-                  .error(e)(s"Error processing demand $dId - ${e.getMessage}")
-                // .flatMap(_ => IO.sleep(5.second))
-                // .flatMap(_ => repos.commands.addCreateRec(List(c)))
+                  .error(e)(s"Error creating recommendation for demand $dId\n${e.getMessage}")
+                  .flatMap(_ => repos.commands.pushCreateRecommendation(List(c.addRetry)))
             )
           }
         )

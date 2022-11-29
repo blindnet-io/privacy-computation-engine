@@ -17,15 +17,18 @@ case class CommandCreateRecommendation(
     id: UUID,
     dId: UUID,
     timestamp: Instant,
-    data: Json
-)
+    data: Json,
+    retries: Int
+) {
+  def addRetry = this.copy(retries = this.retries + 1)
+}
 
 object CommandCreateRecommendation {
   def create(dId: UUID, data: Json = Json.Null) =
     for {
       id        <- UUIDGen[IO].randomUUID
       timestamp <- Clock[IO].realTimeInstant
-      c = CommandCreateRecommendation(id, dId, timestamp, data)
+      c = CommandCreateRecommendation(id, dId, timestamp, data, 0)
     } yield c
 
 }

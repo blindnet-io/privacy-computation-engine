@@ -45,12 +45,12 @@ class ResponseCalculator(
   private def processResponse(ccr: CommandCreateResponse, resp: PrivacyResponse): IO[Unit] =
     resp.status match {
       case UnderReview =>
-        // TODO: rollback if fails
         for {
           d       <- repos.privacyRequest.getDemand(ccr.dId, true).map(_.get)
           pr      <- repos.privacyRequest.getRequestFromDemand(d.id).map(_.get)
           r       <- repos.privacyRequest.getRecommendation(d.id).map(_.get)
           newResp <- createResponse(pr, ccr, d, resp, r)
+          // TODO: 2 atomic inserts, rollback if this IO fails
           _       <- repos.privacyRequest.storeNewResponse(newResp)
           _       <- if (newResp.status == Granted) then storeEvent(pr, d) else IO.unit
           app     <- repos.app.get(pr.appId).map(_.get)
@@ -146,7 +146,7 @@ object ResponseCalculator {
 
     def loop(): IO[Unit] =
       for {
-        cs <- repos.commands.getCreateResp(5)
+        cs <- repos.commands.popCreateResponse(5)
         _  <- cs.parTraverse_(
           c => {
             val dId = c.dId
@@ -159,9 +159,8 @@ object ResponseCalculator {
             p.handleErrorWith(
               e =>
                 logger
-                  .error(e)(s"Error creating response for demand $dId - ${e.getMessage}")
-                // .flatMap(_ => IO.sleep(5.second))
-                // .flatMap(_ => repos.commands.addCreateResp(List(c)))
+                  .error(e)(s"Error creating response for demand $dId\n${e.getMessage}")
+                  .flatMap(_ => repos.commands.pushCreateResponse(List(c.addRetry)))
             )
           }
         )
