@@ -22,7 +22,7 @@ import model.error.InternalException
 
 // TODO: refactor
 trait StorageInterface {
-  def requestAccess(
+  def get(
       app: PCEApp,
       callbackId: UUID,
       demandId: UUID,
@@ -30,7 +30,7 @@ trait StorageInterface {
       rec: Recommendation
   ): IO[Unit]
 
-  def requestDeletion(
+  def delete(
       app: PCEApp,
       callbackId: UUID,
       demandId: UUID,
@@ -45,7 +45,7 @@ object StorageInterface {
 
   def live(c: Client[IO], repos: Repositories, conf: Config) =
     new StorageInterface {
-      def requestAccess(
+      def get(
           app: PCEApp,
           callbackId: UUID,
           demandId: UUID,
@@ -84,7 +84,7 @@ object StorageInterface {
         } yield ()
       }
 
-      def requestDeletion(
+      def delete(
           app: PCEApp,
           callbackId: UUID,
           demandId: UUID,

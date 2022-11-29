@@ -11,7 +11,7 @@ import io.circe.generic.semiauto.*
 import io.circe.syntax.*
 import io.circe.parser.*
 
-case class CBData(aid: UUID, rid: ResponseEventId)
+case class CBData(aid: UUID, rid: UUID)
 object CBData:
   given Codec[CBData] = deriveCodec
 

@@ -69,6 +69,18 @@ private object queries {
       .query[Demand]
       .to[List]
 
+  def getDemandFromResponseEvent(preId: ResponseEventId) =
+    sql"""
+      select d.id, pr.id, d.action, d.message, d.lang
+      from demands d
+        join privacy_requests pr on pr.id = d.prid
+        join privacy_responses pr2 on pr2.did = d.id
+        join privacy_response_events pre on pre.prid = pr2.id
+      where pre.id = $preId
+    """
+      .query[Demand]
+      .option
+
   def getCompletedDemands(appId: UUID) =
     sql"""
       select d.id, pr.dsid, pr.appid, pr."date", max(pre."date"), d.action, pre.status 

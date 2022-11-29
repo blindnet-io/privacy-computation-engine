@@ -24,8 +24,7 @@ import io.blindnet.pce.db.repositories.CBData
 
 // TODO: refactor
 class ResponseCalculator(
-    repos: Repositories,
-    storage: StorageInterface
+    repos: Repositories
 ) {
 
   import priv.terms.Action.*
@@ -34,28 +33,37 @@ class ResponseCalculator(
   val logger: Logger[IO] = Slf4jLogger.getLogger[IO]
 
   val transparency = TransparencyCalculator(repos)
-  val general      = GeneralCalculator(repos, storage)
+  val general      = GeneralCalculator(repos)
 
   private def createResponse(ccr: CommandCreateResponse): IO[Unit] =
     for {
       responses <- repos.privacyRequest.getDemandResponses(ccr.dId)
-      _         <- responses.traverse(r => processResponse(ccr, r))
+      d         <- repos.privacyRequest.getDemand(ccr.dId, true).map(_.get)
+      pr        <- repos.privacyRequest.getRequestFromDemand(d.id).map(_.get)
+      rec       <- repos.privacyRequest.getRecommendation(d.id).map(_.get)
+      app       <- repos.app.get(pr.appId).map(_.get)
+      _         <- responses.traverse(r => processResponse(ccr, r, d, pr, rec, app))
     } yield ()
 
-  private def processResponse(ccr: CommandCreateResponse, resp: PrivacyResponse): IO[Unit] =
+  private def processResponse(
+      ccr: CommandCreateResponse,
+      resp: PrivacyResponse,
+      d: Demand,
+      pr: PrivacyRequest,
+      r: Recommendation,
+      app: PCEApp
+  ): IO[Unit] =
     resp.status match {
       case UnderReview =>
         for {
-          d       <- repos.privacyRequest.getDemand(ccr.dId, true).map(_.get)
-          pr      <- repos.privacyRequest.getRequestFromDemand(d.id).map(_.get)
-          r       <- repos.privacyRequest.getRecommendation(d.id).map(_.get)
+
           newResp <- createResponse(pr, ccr, d, resp, r)
-          // TODO: 2 atomic inserts, rollback if this IO fails
+          // TODO: 3 atomic inserts, rollback if this IO fails
           _       <- repos.privacyRequest.storeNewResponse(newResp)
-          _       <- if (newResp.status == Granted) then storeEvent(pr, d) else IO.unit
-          app     <- repos.app.get(pr.appId).map(_.get)
-          // TODO: model apps using/not using DAC
-          _       <- callStorage(app, newResp.eventId, d, pr.dataSubject, r).whenA(app.dac.usingDac)
+          _       <- storeEvent(pr, d).whenA(newResp.status == Granted)
+          _       <-
+            createStorageCommand(d.id, d.action, newResp.status, newResp.eventId)
+              .whenA(app.dac.usingDac)
         } yield ()
       case _           => logger.info(s"Response ${resp.id} not UNDER-REVIEW")
     }
@@ -113,27 +121,26 @@ class ResponseCalculator(
       case _ => IO.unit
     }
 
-  private def callStorage(
-      app: PCEApp,
-      rEventId: ResponseEventId,
-      d: Demand,
-      ds: Option[DataSubject],
-      r: Recommendation
+  private def createStorageCommand(
+      dId: UUID,
+      action: Action,
+      status: Status,
+      preId: ResponseEventId
   ) =
-    (d.action, ds) match {
-      case (Access, Some(ds)) =>
+    (status, action) match {
+      case (Status.Granted, Action.Access) =>
         for {
-          cbId <- UUIDGen.randomUUID[IO]
-          _    <- repos.callbacks.set(cbId, CBData(app.id, rEventId))
-          _    <- storage.requestAccess(app, cbId, d.id, ds, r)
+          c <- CommandInvokeStorage.createGet(dId, preId.value)
+          _ <- repos.commands.pushInvokeStorage(List(c))
         } yield ()
-      case (Delete, Some(ds)) =>
+
+      case (Status.Granted, Action.Delete) =>
         for {
-          cbId <- UUIDGen.randomUUID[IO]
-          _    <- repos.callbacks.set(cbId, CBData(app.id, rEventId))
-          _    <- storage.requestDeletion(app, cbId, d.id, ds, r)
+          c <- CommandInvokeStorage.createDelete(dId, preId.value)
+          _ <- repos.commands.pushInvokeStorage(List(c))
         } yield ()
-      case _                  => IO.unit
+
+      case _ => IO.unit
     }
 
 }
@@ -141,8 +148,8 @@ class ResponseCalculator(
 object ResponseCalculator {
   val logger: Logger[IO] = Slf4jLogger.getLogger[IO]
 
-  def run(repos: Repositories, storage: StorageInterface): IO[Unit] = {
-    val reqProc = new ResponseCalculator(repos, storage)
+  def run(repos: Repositories): IO[Unit] = {
+    val reqProc = new ResponseCalculator(repos)
 
     def loop(): IO[Unit] =
       for {

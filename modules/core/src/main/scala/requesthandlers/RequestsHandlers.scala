@@ -17,7 +17,8 @@ object RequestHandlers {
 
     for {
       _ <- RequestRecommender.run(repos).start
-      _ <- ResponseCalculator.run(repos, storage).start
+      _ <- ResponseCalculator.run(repos).start
+      _ <- StorageCommandsHandler.run(repos, storage).start
     } yield ()
   }
 

@@ -26,9 +26,14 @@ trait CommandsRepository {
   def popCreateResponse(n: Int = 0): IO[List[CommandCreateResponse]]
 
   def pushCreateResponse(cs: List[CommandCreateResponse]): IO[Unit]
+
+  def popInvokeStorage(n: Int = 0): IO[List[CommandInvokeStorage]]
+
+  def pushInvokeStorage(cs: List[CommandInvokeStorage]): IO[Unit]
 }
 
 object CommandsRepository {
+
   def live(xa: Transactor[IO]): CommandsRepository =
     new CommandsRepository {
 
@@ -47,12 +52,12 @@ object CommandsRepository {
         """ ++ Fragments.in(fr"id", ids)).update.run
 
         val p = for {
-          ccrs <- select
-          _    <- NonEmptyList.fromList(ccrs.map(_.id)) match {
+          cs <- select
+          _  <- NonEmptyList.fromList(cs.map(_.id)) match {
             case Some(ids) => delete(ids)
             case None      => connection.unit
           }
-        } yield ccrs
+        } yield cs
 
         p.transact(xa)
       }
@@ -79,12 +84,12 @@ object CommandsRepository {
         """ ++ Fragments.in(fr"id", ids)).update.run
 
         val p = for {
-          ccrs <- select
-          _    <- NonEmptyList.fromList(ccrs.map(_.id)) match {
+          cs <- select
+          _  <- NonEmptyList.fromList(cs.map(_.id)) match {
             case Some(ids) => delete(ids)
             case None      => connection.unit
           }
-        } yield ccrs
+        } yield cs
 
         p.transact(xa)
       }
@@ -95,6 +100,38 @@ object CommandsRepository {
             values (?, ?, ?, ?, ?)
           """
         Update[CommandCreateResponse](sql).updateMany(cs).transact(xa).void
+
+      def popInvokeStorage(n: Int = 0): IO[List[CommandInvokeStorage]] = {
+        val select = sql"""
+          select id, did, preid, action, date, retries
+          from commands_invoke_storage
+          where retries < 5
+          order by date asc
+          limit $n
+        """.query[CommandInvokeStorage].to[List]
+
+        val delete = (ids: NonEmptyList[UUID]) => (fr"""
+          delete from commands_invoke_storage
+          where
+        """ ++ Fragments.in(fr"id", ids)).update.run
+
+        val p = for {
+          cs <- select
+          _  <- NonEmptyList.fromList(cs.map(_.id)) match {
+            case Some(ids) => delete(ids)
+            case None      => connection.unit
+          }
+        } yield cs
+
+        p.transact(xa)
+      }
+
+      def pushInvokeStorage(cs: List[CommandInvokeStorage]): IO[Unit] =
+        val sql = """
+            insert into commands_invoke_storage
+            values (?, ?, ?, ?::storage_action, ?, ?)
+          """
+        Update[CommandInvokeStorage](sql).updateMany(cs).transact(xa).void
 
     }
 
