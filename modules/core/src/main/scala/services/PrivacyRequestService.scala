@@ -108,7 +108,7 @@ class PrivacyRequestService(
       responses <- PrivacyResponse.fromPrivacyRequest[IO](pr)
       _         <- repos.privacyRequest.store(pr, responses)
       cs        <- demands.traverse(d => CommandCreateRecommendation.create(d.id))
-      _         <- repos.commands.addCreateRec(cs)
+      _         <- repos.commands.pushCreateRecommendation(cs)
 
     } yield PrivacyRequestCreatedPayload(reqId.value)
   }

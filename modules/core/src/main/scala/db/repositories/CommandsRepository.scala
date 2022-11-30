@@ -19,23 +19,29 @@ import priv.*
 import priv.terms.*
 
 trait CommandsRepository {
-  def getCreateRec(n: Int = 0): IO[List[CommandCreateRecommendation]]
+  def popCreateRecommendation(n: Int = 0): IO[List[CommandCreateRecommendation]]
 
-  def addCreateRec(cs: List[CommandCreateRecommendation]): IO[Unit]
+  def pushCreateRecommendation(cs: List[CommandCreateRecommendation]): IO[Unit]
 
-  def getCreateResp(n: Int = 0): IO[List[CommandCreateResponse]]
+  def popCreateResponse(n: Int = 0): IO[List[CommandCreateResponse]]
 
-  def addCreateResp(cs: List[CommandCreateResponse]): IO[Unit]
+  def pushCreateResponse(cs: List[CommandCreateResponse]): IO[Unit]
+
+  def popInvokeStorage(n: Int = 0): IO[List[CommandInvokeStorage]]
+
+  def pushInvokeStorage(cs: List[CommandInvokeStorage]): IO[Unit]
 }
 
 object CommandsRepository {
+
   def live(xa: Transactor[IO]): CommandsRepository =
     new CommandsRepository {
 
-      def getCreateRec(n: Int = 0): IO[List[CommandCreateRecommendation]] = {
+      def popCreateRecommendation(n: Int = 0): IO[List[CommandCreateRecommendation]] = {
         val select = sql"""
-          select id, did, date, data
+          select id, did, date, data, retries
           from commands_create_recommendation
+          where retries < 5
           order by date asc
           limit $n
         """.query[CommandCreateRecommendation].to[List]
@@ -46,27 +52,28 @@ object CommandsRepository {
         """ ++ Fragments.in(fr"id", ids)).update.run
 
         val p = for {
-          ccrs <- select
-          _    <- NonEmptyList.fromList(ccrs.map(_.id)) match {
+          cs <- select
+          _  <- NonEmptyList.fromList(cs.map(_.id)) match {
             case Some(ids) => delete(ids)
             case None      => connection.unit
           }
-        } yield ccrs
+        } yield cs
 
         p.transact(xa)
       }
 
-      def addCreateRec(cs: List[CommandCreateRecommendation]): IO[Unit] =
+      def pushCreateRecommendation(cs: List[CommandCreateRecommendation]): IO[Unit] =
         val sql = """
             insert into commands_create_recommendation
-            values (?, ?, ?, ?)
+            values (?, ?, ?, ?, ?)
           """
         Update[CommandCreateRecommendation](sql).updateMany(cs).transact(xa).void
 
-      def getCreateResp(n: Int = 0): IO[List[CommandCreateResponse]] = {
+      def popCreateResponse(n: Int = 0): IO[List[CommandCreateResponse]] = {
         val select = sql"""
-          select id, did, date, data
+          select id, did, date, data, retries
           from commands_create_response
+          where retries < 5
           order by date asc
           limit $n
         """.query[CommandCreateResponse].to[List]
@@ -77,22 +84,54 @@ object CommandsRepository {
         """ ++ Fragments.in(fr"id", ids)).update.run
 
         val p = for {
-          ccrs <- select
-          _    <- NonEmptyList.fromList(ccrs.map(_.id)) match {
+          cs <- select
+          _  <- NonEmptyList.fromList(cs.map(_.id)) match {
             case Some(ids) => delete(ids)
             case None      => connection.unit
           }
-        } yield ccrs
+        } yield cs
 
         p.transact(xa)
       }
 
-      def addCreateResp(cs: List[CommandCreateResponse]): IO[Unit] =
+      def pushCreateResponse(cs: List[CommandCreateResponse]): IO[Unit] =
         val sql = """
             insert into commands_create_response
-            values (?, ?, ?, ?)
+            values (?, ?, ?, ?, ?)
           """
         Update[CommandCreateResponse](sql).updateMany(cs).transact(xa).void
+
+      def popInvokeStorage(n: Int = 0): IO[List[CommandInvokeStorage]] = {
+        val select = sql"""
+          select id, did, preid, action, date, retries
+          from commands_invoke_storage
+          where retries < 5
+          order by date asc
+          limit $n
+        """.query[CommandInvokeStorage].to[List]
+
+        val delete = (ids: NonEmptyList[UUID]) => (fr"""
+          delete from commands_invoke_storage
+          where
+        """ ++ Fragments.in(fr"id", ids)).update.run
+
+        val p = for {
+          cs <- select
+          _  <- NonEmptyList.fromList(cs.map(_.id)) match {
+            case Some(ids) => delete(ids)
+            case None      => connection.unit
+          }
+        } yield cs
+
+        p.transact(xa)
+      }
+
+      def pushInvokeStorage(cs: List[CommandInvokeStorage]): IO[Unit] =
+        val sql = """
+            insert into commands_invoke_storage
+            values (?, ?, ?, ?::storage_action, ?, ?)
+          """
+        Update[CommandInvokeStorage](sql).updateMany(cs).transact(xa).void
 
     }
 

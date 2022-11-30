@@ -76,7 +76,7 @@ class DataConsumerInterfaceService(
         }"""
       )
       _ <- repos.demandsToReview.remove(NonEmptyList.of(req.id))
-      _ <- repos.commands.addCreateResp(List(d))
+      _ <- repos.commands.pushCreateResponse(List(d))
     } yield ()
 
   def denyDemand(jwt: AppJwt)(req: DenyDemandPayload) =
@@ -95,7 +95,7 @@ class DataConsumerInterfaceService(
         }"""
       )
       _ <- repos.demandsToReview.remove(NonEmptyList.of(req.id))
-      _ <- repos.commands.addCreateResp(List(d))
+      _ <- repos.commands.pushCreateResponse(List(d))
     } yield ()
 
   def changeRecommendation(jwt: AppJwt)(req: ChangeRecommendationPayload) =

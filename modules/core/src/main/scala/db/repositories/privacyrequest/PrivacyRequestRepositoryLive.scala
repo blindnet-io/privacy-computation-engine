@@ -171,6 +171,9 @@ class PrivacyRequestRepositoryLive(xa: Transactor[IO]) extends PrivacyRequestRep
   def getDemands(dIds: NonEmptyList[UUID]): IO[List[Demand]] =
     queries.getDemands(dIds).transact(xa)
 
+  def getDemandFromResponseEvent(preId: ResponseEventId): IO[Option[Demand]] =
+    queries.getDemandFromResponseEvent(preId).transact(xa)
+
   def getCompletedDemands(appId: UUID): IO[List[CompletedDemand]] =
     queries.getCompletedDemands(appId).transact(xa)
 

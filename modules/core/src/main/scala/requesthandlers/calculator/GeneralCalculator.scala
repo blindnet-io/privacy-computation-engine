@@ -9,7 +9,6 @@ import cats.effect.*
 import cats.effect.std.UUIDGen
 import cats.implicits.*
 import io.blindnet.pce.model.*
-import io.blindnet.pce.services.external.StorageInterface
 import io.blindnet.pce.util.extension.*
 import io.circe.generic.auto.*
 import io.circe.syntax.*
@@ -21,8 +20,7 @@ import priv.terms.*
 import model.error.*
 
 class GeneralCalculator(
-    repos: Repositories,
-    storage: StorageInterface
+    repos: Repositories
 ) {
 
   import Action.*
