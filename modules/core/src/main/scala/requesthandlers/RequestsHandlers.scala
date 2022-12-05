@@ -16,7 +16,7 @@ object RequestHandlers {
   ): IO[Unit] = {
 
     for {
-      _ <- RequestRecommender.run(repos).start
+      _ <- Recommender.run(repos).start
       _ <- ResponseCalculator.run(repos).start
       _ <- StorageCommandsHandler.run(repos, storage).start
     } yield ()

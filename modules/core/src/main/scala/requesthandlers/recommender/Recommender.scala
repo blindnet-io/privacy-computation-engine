@@ -21,8 +21,70 @@ import priv.privacyrequest.*
 import priv.terms.*
 import db.repositories.Repositories
 import fs2.Stream
+import doobie.enumerated.JdbcType.Timestamp
+import java.time.Instant
 
-class RequestRecommender(
+object Recommendations {
+  def createAccess(d: Demand, ctx: PSContext)(id: UUID) = {
+    val scopeRestriction = d.getPSR.orEmpty
+    val dataCategories   =
+      if scopeRestriction.isEmpty then DataCategory.granularize(DataCategory.All, ctx.selectors)
+      else
+        scopeRestriction.triples
+          .map(_.dataCategory)
+          .flatMap(DataCategory.granularize(_, ctx.selectors))
+
+    val (from, to) = d.getDateRangeR.getOrElse((None, None))
+    val pRec       = d.getProvenanceR.map(_._1).filter(_ != ProvenanceTerms.All)
+    val tRec       = d.getProvenanceR.flatMap(_._2)
+    // TODO: data reference restriction
+
+    Recommendation(id, d.id, Some(Status.Granted), None, dataCategories, from, to, pRec, tRec)
+  }
+
+  def createDelete(
+      d: Demand,
+      t: Instant,
+      ctx: PSContext,
+      timeline: Timeline,
+      regulations: List[Regulation]
+  ) = {
+    val events = timeline.compiledEvents(Some(t), regulations)
+    val eps    = Timeline.eligiblePrivacyScope(events)
+
+    val rdcs           = d.getPSR.orEmpty.zoomIn(ctx).dataCategories
+    val restrictionDCs =
+      if rdcs.isEmpty then DataCategory.granularize(DataCategory.All, ctx.selectors)
+      else rdcs
+
+    val filteredDCs = events.foldLeft(restrictionDCs)(
+      (acc, ev) =>
+        ev match {
+          case lb: TimelineEvent.LegalBase if lb.eType != LegalBaseTerms.LegitimateInterest =>
+            acc diff lb.scope.dataCategories
+          case lb: TimelineEvent.ConsentGiven => acc diff lb.scope.dataCategories
+          case _                              => acc
+        }
+    )
+
+    val (from, to) = d.getDateRangeR.getOrElse((None, None))
+    val pRec       = d.getProvenanceR.map(_._1).filter(_ != ProvenanceTerms.All)
+    val tRec       = d.getProvenanceR.flatMap(_._2)
+    // TODO: data reference restriction
+
+    // format: off
+    if filteredDCs.size == 0 then
+      Recommendation(_, d.id, Some(Status.Denied), Some(Motive.ValidReasons), filteredDCs, from, to, pRec, tRec)
+    else if rdcs.size == 0 || rdcs.size == filteredDCs.size then
+      Recommendation(_, d.id, Some(Status.Granted), None, filteredDCs, from, to, pRec, tRec)
+    else 
+      Recommendation(_, d.id, Some(Status.PartiallyGranted), Some(Motive.ValidReasons), filteredDCs, from, to, pRec, tRec)
+    // format: on
+  }
+
+}
+
+class Recommender(
     repos: Repositories
 ) {
   import priv.terms.Action.*
@@ -40,7 +102,6 @@ class RequestRecommender(
       _         <- complete(app, d)
     } yield ()
 
-  // TODO .get
   private def processResponse(
       app: PCEApp,
       pr: PrivacyRequest,
@@ -83,70 +144,27 @@ class RequestRecommender(
   private def getRecommendation(pr: PrivacyRequest, d: Demand) =
     d.action match {
       case a if a == Transparency || a.isChildOf(Transparency) => IO(Recommendation.grant(_, d.id))
-      case Access                                              => getRecAccess(pr, d)
-      case Delete                                              => getRecDelete(pr, d)
-      case RevokeConsent                                       => getRecRevoke(pr, d)
-      case Object | Restrict                                   => IO(Recommendation.grant(_, d.id))
-      case Portability                                         => IO(Recommendation.grant(_, d.id))
-      case Other                                               => IO(Recommendation.grant(_, d.id))
-      case _ => IO.raiseError(new NotImplementedError)
+
+      case Access =>
+        for {
+          ctx <- repos.privacyScope.getContext(pr.appId)
+          res = Recommendations.createAccess(d, ctx)
+        } yield res
+
+      case Delete =>
+        for {
+          ctx         <- repos.privacyScope.getContext(pr.appId)
+          timeline    <- repos.events.getTimeline(pr.dataSubject.get, ctx)
+          regulations <- repos.regulations.get(pr.appId, ctx)
+          res = Recommendations.createDelete(d, pr.timestamp, ctx, timeline, regulations)
+        } yield res
+
+      case RevokeConsent     => getRecRevoke(pr, d)
+      case Object | Restrict => IO(Recommendation.grant(_, d.id))
+      case Portability       => IO(Recommendation.grant(_, d.id))
+      case Other             => IO(Recommendation.grant(_, d.id))
+      case _                 => IO.raiseError(new NotImplementedError)
     }
-
-  private def getRecAccess(pr: PrivacyRequest, d: Demand) =
-    for {
-      ctx <- repos.privacyScope.getContext(pr.appId)
-      scope = PrivacyScope.full(ctx)
-
-      psr   = d.getPSR.orEmpty.zoomIn(ctx)
-      psRec =
-        if psr.isEmpty then scope
-        else psr intersection scope
-
-      (from, to) = d.getDateRangeR.getOrElse((None, None))
-      pRec       = d.getProvenanceR.map(_._1).filter(_ != ProvenanceTerms.All)
-      tRec       = d.getProvenanceR.flatMap(_._2)
-      // TODO: data reference restriction
-
-      dcs = psRec.triples.map(_.dataCategory)
-      r   = Recommendation(_, d.id, Some(Status.Granted), None, dcs, from, to, pRec, tRec)
-    } yield r
-
-  private def getRecDelete(pr: PrivacyRequest, d: Demand) =
-    for {
-      ctx         <- repos.privacyScope.getContext(pr.appId)
-      timeline    <- repos.events.getTimeline(pr.dataSubject.get, ctx)
-      regulations <- repos.regulations.get(pr.appId, ctx)
-      events = timeline.compiledEvents(Some(pr.timestamp), regulations)
-      eps    = Timeline.eligiblePrivacyScope(events)
-
-      rdcs        = d.getPSR.orEmpty.zoomIn(ctx).dataCategories
-      restDCs     =
-        if rdcs.isEmpty then DataCategory.granularize(DataCategory.All, ctx.selectors)
-        else rdcs
-      epsDCs      = eps.triples.map(_.dataCategory)
-      filteredDCs = events.foldLeft(epsDCs intersect restDCs)(
-        (acc, ev) =>
-          ev match {
-            case lb: TimelineEvent.LegalBase if lb.eType != LegalBaseTerms.LegitimateInterest =>
-              acc diff lb.scope.dataCategories
-            case lb: TimelineEvent.ConsentGiven => acc diff lb.scope.dataCategories
-            case _                              => acc
-          }
-      )
-      (from, to)  = d.getDateRangeR.getOrElse((None, None))
-      pRec        = d.getProvenanceR.map(_._1).filter(_ != ProvenanceTerms.All)
-      tRec        = d.getProvenanceR.flatMap(_._2)
-      // TODO: data reference restriction
-      r           =
-        if filteredDCs.size == 0 then
-          // format: off
-          Recommendation(_, d.id, Some(Status.Denied), Some(Motive.ValidReasons), filteredDCs, from, to, pRec, tRec)
-        else if epsDCs.size == filteredDCs.size then
-          Recommendation(_, d.id, Some(Status.Granted), None, filteredDCs, from, to, pRec, tRec)
-        else 
-          Recommendation(_, d.id, Some(Status.PartiallyGranted), Some(Motive.ValidReasons), filteredDCs, from, to, pRec, tRec)
-          // format: on
-    } yield r
 
   private def getRecRevoke(pr: PrivacyRequest, d: Demand) =
     IO(d.restrictions.head.asInstanceOf[Restriction.Consent].consentId)
@@ -181,11 +199,11 @@ class RequestRecommender(
 
 }
 
-object RequestRecommender {
+object Recommender {
   val logger: Logger[IO] = Slf4jLogger.getLogger[IO]
 
   def run(repos: Repositories): IO[Unit] = {
-    val reqProc = new RequestRecommender(repos)
+    val reqProc = new Recommender(repos)
 
     def process(c: CommandCreateRecommendation) =
       (for {
