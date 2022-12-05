@@ -20,6 +20,7 @@ import priv.Recommendation
 import priv.privacyrequest.*
 import priv.terms.*
 import db.repositories.Repositories
+import fs2.Stream
 
 class RequestRecommender(
     repos: Repositories
@@ -186,32 +187,26 @@ object RequestRecommender {
   def run(repos: Repositories): IO[Unit] = {
     val reqProc = new RequestRecommender(repos)
 
-    def loop(): IO[Unit] =
-      for {
-        cs <- repos.commands.popCreateRecommendation(10)
-        _  <- cs.parTraverse_(
-          c => {
-            val dId = c.dId
-            val p   = for {
-              _ <- logger.info(s"Creating recommendation for demand $dId")
-              _ <- reqProc.processDemand(c)
-              _ <- logger.info(s"Recommendation for demand $dId created")
-            } yield ()
+    def process(c: CommandCreateRecommendation) =
+      (for {
+        _ <- logger.info(s"Creating recommendation for demand ${c.dId}")
+        _ <- reqProc.processDemand(c)
+        _ <- logger.info(s"Recommendation for demand ${c.dId} created")
+      } yield ()).handleErrorWith(
+        e =>
+          logger
+            .error(e)(s"Error creating recommendation for demand ${c.dId}\n${e.getMessage}")
+            .flatMap(_ => repos.commands.pushCreateRecommendation(List(c.addRetry)))
+      )
 
-            p.handleErrorWith(
-              e =>
-                logger
-                  .error(e)(s"Error creating recommendation for demand $dId\n${e.getMessage}")
-                  .flatMap(_ => repos.commands.pushCreateRecommendation(List(c.addRetry)))
-            )
-          }
-        )
-
-        _ <- IO.sleep(5.second)
-        _ <- loop()
-      } yield ()
-
-    loop()
+    Stream
+      .eval(repos.commands.popCreateRecommendation(10))
+      .map(cs => Stream.emits(cs).evalMap(c => process(c)))
+      .parJoin(10)
+      .delayBy(5.second)
+      .repeat
+      .compile
+      .drain
   }
 
 }

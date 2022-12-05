@@ -21,6 +21,7 @@ import priv.privacyrequest.*
 import priv.terms.*
 import db.repositories.Repositories
 import io.blindnet.pce.db.repositories.CBData
+import fs2.Stream
 
 class StorageCommandsHandler(
     repos: Repositories,
@@ -73,31 +74,25 @@ object StorageCommandsHandler {
   def run(repos: Repositories, storage: StorageInterface): IO[Unit] = {
     val storageHandler = new StorageCommandsHandler(repos, storage)
 
-    def loop(): IO[Unit] =
-      for {
-        cs <- repos.commands.popInvokeStorage(5)
-        _  <- cs.parTraverse_(
-          c => {
-            val preId = c.preId
-            val p     = for {
-              _ <- logger.info(s"Calling storage for response event $preId")
-              _ <- storageHandler.handle(c)
-            } yield ()
+    def process(c: CommandInvokeStorage) =
+      (for {
+        _ <- logger.info(s"Calling storage for response event ${c.preId}")
+        _ <- storageHandler.handle(c)
+      } yield ()).handleErrorWith(
+        e =>
+          logger
+            .error(e)(s"Error calling storage for response event ${c.preId}\n${e.getMessage}")
+            .flatMap(_ => repos.commands.pushInvokeStorage(List(c.addRetry)))
+      )
 
-            p.handleErrorWith(
-              e =>
-                logger
-                  .error(e)(s"Error calling storage for response event $preId\n${e.getMessage}")
-                  .flatMap(_ => repos.commands.pushInvokeStorage(List(c.addRetry)))
-            )
-          }
-        )
-
-        _ <- IO.sleep(5.second)
-        _ <- loop()
-      } yield ()
-
-    loop()
+    Stream
+      .eval(repos.commands.popInvokeStorage(10))
+      .map(cs => Stream.emits(cs).evalMap(c => process(c)))
+      .parJoin(10)
+      .delayBy(5.second)
+      .repeat
+      .compile
+      .drain
   }
 
 }

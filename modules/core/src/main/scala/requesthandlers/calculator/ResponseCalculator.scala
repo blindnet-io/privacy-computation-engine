@@ -21,6 +21,7 @@ import priv.privacyrequest.*
 import priv.terms.*
 import db.repositories.Repositories
 import io.blindnet.pce.db.repositories.CBData
+import fs2.Stream
 
 // TODO: refactor
 class ResponseCalculator(
@@ -151,32 +152,26 @@ object ResponseCalculator {
   def run(repos: Repositories): IO[Unit] = {
     val reqProc = new ResponseCalculator(repos)
 
-    def loop(): IO[Unit] =
-      for {
-        cs <- repos.commands.popCreateResponse(5)
-        _  <- cs.parTraverse_(
-          c => {
-            val dId = c.dId
-            val p   = for {
-              _ <- logger.info(s"Creating response for demand $dId")
-              _ <- reqProc.createResponse(c)
-              _ <- logger.info(s"Response for demand $dId created")
-            } yield ()
+    def process(c: CommandCreateResponse) =
+      (for {
+        _ <- logger.info(s"Creating response for demand ${c.dId}")
+        _ <- reqProc.createResponse(c)
+        _ <- logger.info(s"Response for demand ${c.dId} created")
+      } yield ()).handleErrorWith(
+        e =>
+          logger
+            .error(e)(s"Error creating response for demand ${c.dId}\n${e.getMessage}")
+            .flatMap(_ => repos.commands.pushCreateResponse(List(c.addRetry)))
+      )
 
-            p.handleErrorWith(
-              e =>
-                logger
-                  .error(e)(s"Error creating response for demand $dId\n${e.getMessage}")
-                  .flatMap(_ => repos.commands.pushCreateResponse(List(c.addRetry)))
-            )
-          }
-        )
-
-        _ <- IO.sleep(5.second)
-        _ <- loop()
-      } yield ()
-
-    loop()
+    Stream
+      .eval(repos.commands.popCreateResponse(5))
+      .map(cs => Stream.emits(cs).evalMap(c => process(c)))
+      .parJoin(10)
+      .delayBy(5.second)
+      .repeat
+      .compile
+      .drain
   }
 
 }
