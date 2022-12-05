@@ -29,7 +29,7 @@ class CallbackHandler(repos: Repositories) {
   val logger: Logger[IO] = Slf4jLogger.getLogger[IO]
 
   // TODO: error handling
-  def handleAccessResponse(cbId: UUID, req: DataCallbackPayload): IO[Unit] =
+  def handle(cbId: UUID, req: DataCallbackPayload): IO[Unit] =
     for {
       _      <- logger.info(s"Received callback for id $cbId. req:\n${req.asJson}")
       cbData <- repos.callbacks.get(cbId).orFail(s"Wrong callback id ${cbId}")
