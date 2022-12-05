@@ -129,13 +129,13 @@ class ResponseCalculator(
       preId: ResponseEventId
   ) =
     (status, action) match {
-      case (Status.Granted, Action.Access) =>
+      case (Status.Granted | Status.PartiallyGranted, Action.Access) =>
         for {
           c <- CommandInvokeStorage.createGet(dId, preId.value)
           _ <- repos.commands.pushInvokeStorage(List(c))
         } yield ()
 
-      case (Status.Granted, Action.Delete) =>
+      case (Status.Granted | Status.PartiallyGranted, Action.Delete) =>
         for {
           c <- CommandInvokeStorage.createDelete(dId, preId.value)
           _ <- repos.commands.pushInvokeStorage(List(c))
