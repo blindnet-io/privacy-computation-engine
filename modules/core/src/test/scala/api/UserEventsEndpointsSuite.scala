@@ -14,7 +14,7 @@ import doobie.*
 import doobie.implicits.*
 import doobie.postgres.*
 import doobie.postgres.implicits.*
-import io.blindnet.pce.api.endpoints.messages.consumerinterface.*
+import io.blindnet.pce.api.endpoints.messages.bridge.*
 import io.blindnet.pce.priv.*
 import io.blindnet.pce.services.*
 import io.blindnet.pce.util.*

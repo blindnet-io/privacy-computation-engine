@@ -13,7 +13,7 @@ import cats.effect.std.*
 import cats.implicits.*
 import io.blindnet.identityclient.auth.*
 import io.blindnet.pce.api.endpoints.messages.configuration.*
-import io.blindnet.pce.api.endpoints.messages.consumerinterface.*
+import io.blindnet.pce.api.endpoints.messages.bridge.*
 import io.blindnet.pce.model.error.given
 import io.blindnet.pce.util.extension.*
 import io.circe.Json

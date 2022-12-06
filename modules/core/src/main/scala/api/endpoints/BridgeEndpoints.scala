@@ -16,16 +16,16 @@ import sttp.tapir.server.*
 import sttp.tapir.server.http4s.*
 import services.*
 import api.endpoints.messages.privacyrequest.*
-import api.endpoints.messages.consumerinterface.*
+import api.endpoints.messages.bridge.*
 
-class DataConsumerEndpoints(
+class BridgeEndpoints(
     authenticator: JwtAuthenticator[Jwt],
-    consumerInterfaceService: DataConsumerInterfaceService
+    bridgeService: BridgeService
 ) extends Endpoints(authenticator) {
   given Configuration = Configuration.default.withSnakeCaseMemberNames
 
   override def mapEndpoint(endpoint: EndpointT): EndpointT =
-    endpoint.in("consumer-interface").tag("Data consumer interface")
+    endpoint.in("bridge").tag("Bridge")
 
   // TODO: add filtering
   val getPendingDemands =
@@ -34,7 +34,7 @@ class DataConsumerEndpoints(
       .get
       .in("pending-requests")
       .out(jsonBody[List[PendingDemandPayload]])
-      .serverLogic(runLogicSuccess(consumerInterfaceService.getPendingDemands))
+      .serverLogic(runLogicSuccess(bridgeService.getPendingDemands))
 
   val getPendingDemandDetails =
     appAuthEndpoint
@@ -44,7 +44,7 @@ class DataConsumerEndpoints(
       .in(path[UUID]("demandId"))
       .out(jsonBody[PendingDemandDetailsPayload])
       .errorOutVariants(notFound)
-      .serverLogic(runLogic(consumerInterfaceService.getPendingDemandDetails))
+      .serverLogic(runLogic(bridgeService.getPendingDemandDetails))
 
   val approveDemand =
     appAuthEndpoint
@@ -54,7 +54,7 @@ class DataConsumerEndpoints(
       .in("approve")
       .in(jsonBody[ApproveDemandPayload])
       .errorOutVariants(unprocessable)
-      .serverLogic(runLogic(consumerInterfaceService.approveDemand))
+      .serverLogic(runLogic(bridgeService.approveDemand))
 
   val denyDemand =
     appAuthEndpoint
@@ -64,7 +64,7 @@ class DataConsumerEndpoints(
       .in("deny")
       .in(jsonBody[DenyDemandPayload])
       .errorOutVariants(unprocessable)
-      .serverLogic(runLogic(consumerInterfaceService.denyDemand))
+      .serverLogic(runLogic(bridgeService.denyDemand))
 
   val changeRecommendation =
     appAuthEndpoint
@@ -74,7 +74,7 @@ class DataConsumerEndpoints(
       .in("recommendation")
       .in(jsonBody[ChangeRecommendationPayload])
       .errorOutVariants(unprocessable)
-      .serverLogic(runLogic(consumerInterfaceService.changeRecommendation))
+      .serverLogic(runLogic(bridgeService.changeRecommendation))
 
   val getCompletedDemands =
     appAuthEndpoint
@@ -82,7 +82,7 @@ class DataConsumerEndpoints(
       .get
       .in("completed-requests")
       .out(jsonBody[List[CompletedDemandPayload]])
-      .serverLogic(runLogicSuccess(consumerInterfaceService.getCompletedDemands))
+      .serverLogic(runLogicSuccess(bridgeService.getCompletedDemands))
 
   val getCompletedDemandDetails =
     appAuthEndpoint
@@ -92,7 +92,7 @@ class DataConsumerEndpoints(
       .in(path[UUID]("requestId"))
       .out(jsonBody[List[CompletedDemandInfoPayload]])
       .errorOutVariants(notFound)
-      .serverLogic(runLogic(consumerInterfaceService.getCompletedDemandInfo))
+      .serverLogic(runLogic(bridgeService.getCompletedDemandInfo))
 
   val getTimeline =
     appAuthEndpoint
@@ -101,7 +101,7 @@ class DataConsumerEndpoints(
       .in("timeline")
       .in(path[String]("userId"))
       .out(jsonBody[TimelineEventsPayload])
-      .serverLogic(runLogicSuccess(consumerInterfaceService.getTimeline))
+      .serverLogic(runLogicSuccess(bridgeService.getTimeline))
 
   val endpoints =
     List(

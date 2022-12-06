@@ -50,8 +50,8 @@ class AppRouter(
 
   val healthCheckEndpoints    = new HealthCheckEndpoints()
   val privacyRequestEndpoints = new PrivacyRequestEndpoints(authenticator, services.privacyRequest)
-  val consumerInterfaceEndpoints =
-    new DataConsumerEndpoints(authenticator, services.consumerInterface)
+  val bridgeEndpoints         =
+    new BridgeEndpoints(authenticator, services.bridge)
 
   val configurationEndpoints =
     new ConfigurationEndpoints(authenticator, dashboardAuthenticator, services.configuration)
@@ -59,14 +59,14 @@ class AppRouter(
   val administrationEndpoints =
     new AdministrationEndpoints(identityAuthenticator, services.administration)
 
-  val userEventsEndpoints     = new UserEventsEndpoints(authenticator, services.userEvents)
-  val userEndpoints           = new UserEndpoints(authenticator, services.user)
-  val callbackEndpoints       = new CallbackEndpoints(services.callbacks)
+  val userEventsEndpoints = new UserEventsEndpoints(authenticator, services.userEvents)
+  val userEndpoints       = new UserEndpoints(authenticator, services.user)
+  val callbackEndpoints   = new CallbackEndpoints(services.callbacks)
 
   val allEndpoints =
     healthCheckEndpoints.endpoints ++
       privacyRequestEndpoints.endpoints ++
-      consumerInterfaceEndpoints.endpoints ++
+      bridgeEndpoints.endpoints ++
       configurationEndpoints.endpoints ++
       administrationEndpoints.endpoints ++
       userEventsEndpoints.endpoints ++

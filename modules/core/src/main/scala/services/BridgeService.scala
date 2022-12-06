@@ -10,7 +10,7 @@ import cats.effect.kernel.Clock
 import cats.effect.std.*
 import cats.implicits.*
 import io.blindnet.identityclient.auth.*
-import io.blindnet.pce.api.endpoints.messages.consumerinterface.*
+import io.blindnet.pce.api.endpoints.messages.bridge.*
 import io.blindnet.pce.model.*
 import io.blindnet.pce.model.error.given
 import io.blindnet.pce.priv.Recommendation
@@ -26,7 +26,7 @@ import priv.terms.*
 import io.blindnet.pce.priv.Timeline
 import io.blindnet.pce.priv.PSContext
 
-class DataConsumerInterfaceService(
+class BridgeService(
     repos: Repositories
 ) {
 

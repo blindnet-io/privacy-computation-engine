@@ -43,10 +43,10 @@ import scala.concurrent.duration.*
 import io.blindnet.pce.priv.terms.{ Status as PrivStatus, * }
 import io.blindnet.pce.priv.terms.Action.*
 import io.blindnet.pce.api.endpoints.messages.*
-import io.blindnet.pce.api.endpoints.messages.consumerinterface.*
+import io.blindnet.pce.api.endpoints.messages.bridge.*
 import com.github.dockerjava.api.model.EventType
 
-class DataConsumerInterface(global: GlobalRead) extends IOSuite {
+class BridgeSuite(global: GlobalRead) extends IOSuite {
 
   val appId = uuid
   val dsId1 = uuid.toString
@@ -291,7 +291,7 @@ class DataConsumerInterface(global: GlobalRead) extends IOSuite {
   test("get pending demands") {
     res =>
       for {
-        resp    <- res.server.run(get("consumer-interface/pending-requests", appToken(appId)))
+        resp    <- res.server.run(get("bridge/pending-requests", appToken(appId)))
         pending <- resp.to[List[PendingDemandPayload]]
         _       <- expect
           .all(
@@ -310,7 +310,7 @@ class DataConsumerInterface(global: GlobalRead) extends IOSuite {
     res =>
       for {
         resp <- res.server.run(
-          get(s"consumer-interface/pending-requests/$uuid", appToken(appId))
+          get(s"bridge/pending-requests/$uuid", appToken(appId))
         )
         _    <- expect(resp.status == Status.NotFound).failFast
       } yield success
@@ -320,7 +320,7 @@ class DataConsumerInterface(global: GlobalRead) extends IOSuite {
     res =>
       for {
         resp <- res.server.run(
-          get(s"consumer-interface/pending-requests/${d11}", appToken(appId))
+          get(s"bridge/pending-requests/${d11}", appToken(appId))
         )
         d    <- resp.to[PendingDemandDetailsPayload]
         r = d.recommendation.get
@@ -349,7 +349,7 @@ class DataConsumerInterface(global: GlobalRead) extends IOSuite {
       val req = json"""{ "id": $d23 }"""
       for {
         resp <- res.server.run(
-          post(s"consumer-interface/pending-requests/approve", req, appToken(appId))
+          post(s"bridge/pending-requests/approve", req, appToken(appId))
         )
         _    <- expect(resp.status == Status.UnprocessableEntity).failFast
       } yield success
@@ -360,7 +360,7 @@ class DataConsumerInterface(global: GlobalRead) extends IOSuite {
       val req = json"""{ "id": $d31 }"""
       for {
         resp <- res.server.run(
-          post(s"consumer-interface/pending-requests/approve", req, appToken(appId))
+          post(s"bridge/pending-requests/approve", req, appToken(appId))
         )
         _    <- expect(resp.status == Status.UnprocessableEntity).failFast
       } yield success
@@ -377,7 +377,7 @@ class DataConsumerInterface(global: GlobalRead) extends IOSuite {
       """
       for {
         resp   <- res.server.run(
-          post(s"consumer-interface/pending-requests/approve", req, appToken(appId))
+          post(s"bridge/pending-requests/approve", req, appToken(appId))
         )
         status <- sql"""select status from demand_recommendations where did=$d11"""
           .query[PrivStatus]
@@ -404,7 +404,7 @@ class DataConsumerInterface(global: GlobalRead) extends IOSuite {
       val req = json"""{ "id": $d23, "motive": ${Motive.ValidReasons.encode} }"""
       for {
         resp <- res.server.run(
-          post(s"consumer-interface/pending-requests/deny", req, appToken(appId))
+          post(s"bridge/pending-requests/deny", req, appToken(appId))
         )
         _    <- expect(resp.status == Status.UnprocessableEntity).failFast
       } yield success
@@ -415,7 +415,7 @@ class DataConsumerInterface(global: GlobalRead) extends IOSuite {
       val req = json"""{ "id": $d31, "motive": ${Motive.ValidReasons.encode} }"""
       for {
         resp <- res.server.run(
-          post(s"consumer-interface/pending-requests/deny", req, appToken(appId))
+          post(s"bridge/pending-requests/deny", req, appToken(appId))
         )
         _    <- expect(resp.status == Status.UnprocessableEntity).failFast
       } yield success
@@ -433,7 +433,7 @@ class DataConsumerInterface(global: GlobalRead) extends IOSuite {
       """
       for {
         resp   <- res.server.run(
-          post(s"consumer-interface/pending-requests/deny", req, appToken(appId))
+          post(s"bridge/pending-requests/deny", req, appToken(appId))
         )
         status <- sql"""select status from demand_recommendations where did=$d12"""
           .query[PrivStatus]
@@ -468,7 +468,7 @@ class DataConsumerInterface(global: GlobalRead) extends IOSuite {
       """
       for {
         resp <- res.server.run(
-          post(s"consumer-interface/pending-requests/recommendation", req, appToken(appId))
+          post(s"bridge/pending-requests/recommendation", req, appToken(appId))
         )
         _    <- expect(resp.status == Status.UnprocessableEntity).failFast
       } yield success
@@ -486,7 +486,7 @@ class DataConsumerInterface(global: GlobalRead) extends IOSuite {
       """
       for {
         resp <- res.server.run(
-          post(s"consumer-interface/pending-requests/recommendation", req, appToken(appId))
+          post(s"bridge/pending-requests/recommendation", req, appToken(appId))
         )
         _    <- expect(resp.status == Status.UnprocessableEntity).failFast
       } yield success
@@ -508,7 +508,7 @@ class DataConsumerInterface(global: GlobalRead) extends IOSuite {
       """
       for {
         resp <- res.server.run(
-          post(s"consumer-interface/pending-requests/recommendation", req, appToken(appId))
+          post(s"bridge/pending-requests/recommendation", req, appToken(appId))
         )
         r    <- res.repos.privacyRequest.getRecommendation(d21).map(_.get)
 
@@ -527,7 +527,7 @@ class DataConsumerInterface(global: GlobalRead) extends IOSuite {
   test("get completed demands") {
     res =>
       for {
-        resp      <- res.server.run(get("consumer-interface/completed-requests", appToken(appId)))
+        resp      <- res.server.run(get("bridge/completed-requests", appToken(appId)))
         completed <- resp.to[List[CompletedDemandPayload]]
         _         <- expect
           .all(
@@ -550,7 +550,7 @@ class DataConsumerInterface(global: GlobalRead) extends IOSuite {
     res =>
       for {
         resp <- res.server.run(
-          get(s"consumer-interface/completed-requests/$uuid", appToken(appId))
+          get(s"bridge/completed-requests/$uuid", appToken(appId))
         )
         _    <- expect(resp.status == Status.NotFound).failFast
       } yield success
@@ -560,7 +560,7 @@ class DataConsumerInterface(global: GlobalRead) extends IOSuite {
     res =>
       for {
         resp <- res.server.run(
-          get(s"consumer-interface/completed-requests/$d11", appToken(appId))
+          get(s"bridge/completed-requests/$d11", appToken(appId))
         )
         c    <- resp.to[List[CompletedDemandInfoPayload]]
         _    <- expect(c.isEmpty).failFast
@@ -571,7 +571,7 @@ class DataConsumerInterface(global: GlobalRead) extends IOSuite {
     res =>
       for {
         resp <- res.server.run(
-          get(s"consumer-interface/completed-requests/$d32", appToken(appId))
+          get(s"bridge/completed-requests/$d32", appToken(appId))
         )
         c    <- resp.to[List[CompletedDemandInfoPayload]].map(_.head)
         _    <- expect
@@ -594,7 +594,7 @@ class DataConsumerInterface(global: GlobalRead) extends IOSuite {
     res =>
       for {
         resp <- res.server.run(
-          get(s"consumer-interface/completed-requests/$d51", appToken(appId))
+          get(s"bridge/completed-requests/$d51", appToken(appId))
         )
         c    <- resp.to[List[CompletedDemandInfoPayload]].map(_.head)
         _    <- expect
@@ -616,7 +616,7 @@ class DataConsumerInterface(global: GlobalRead) extends IOSuite {
   test("get timeline") {
     res =>
       for {
-        resp <- res.server.run(get(s"consumer-interface/timeline/$dsId1", appToken(appId)))
+        resp <- res.server.run(get(s"bridge/timeline/$dsId1", appToken(appId)))
         t    <- resp.to[TimelineEventsPayload]
         _    <- expect
           .all(
