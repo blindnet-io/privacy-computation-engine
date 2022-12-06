@@ -16,6 +16,7 @@ case class Config(
     db: DbConfig,
     redis: RedisConfig,
     api: ApiConfig,
+    tokens: TokensConfig,
     components: ComponentsConfig
 )
 
@@ -37,6 +38,9 @@ given Show[Config] =
           |api
           |${show"${c.api}"}
           |
+          |tokens
+          |${show"${c.tokens}"}
+          |
           |components
           |${show"${c.components}"}
           |----------------------""".stripMargin('|'))
@@ -50,6 +54,7 @@ object Config {
       DbConfig.load,
       RedisConfig.load,
       ApiConfig.load,
+      TokensConfig.load,
       ComponentsConfig.load
     )
       .parMapN(Config.apply)

@@ -25,24 +25,28 @@ import sttp.apispec.Tag
 import sttp.apispec.ExternalDocumentation
 import io.blindnet.pce.db.repositories.DashboardToken
 import io.blindnet.pce.db.repositories.Repositories
+import io.blindnet.pce.config.Config
 
 object AppRouter {
   def make(
       services: Services,
       repositories: Repositories,
-      authenticator: JwtAuthenticator[Jwt]
+      authenticator: JwtAuthenticator[Jwt],
+      config: Config
   ) =
-    new AppRouter(services, repositories, authenticator)
+    new AppRouter(services, repositories, authenticator, config)
 
 }
 
 class AppRouter(
     services: Services,
     repositories: Repositories,
-    authenticator: JwtAuthenticator[Jwt]
+    authenticator: JwtAuthenticator[Jwt],
+    config: Config
 ) {
 
   val dashboardAuthenticator = StAuthenticator(repositories.dashboardTokens)
+  val identityAuthenticator  = ConstAuthenticator(config.tokens.identity.value, IO.pure(()))
 
   val healthCheckEndpoints    = new HealthCheckEndpoints()
   val privacyRequestEndpoints = new PrivacyRequestEndpoints(authenticator, services.privacyRequest)
@@ -52,15 +56,19 @@ class AppRouter(
   val configurationEndpoints =
     new ConfigurationEndpoints(authenticator, dashboardAuthenticator, services.configuration)
 
-  val userEventsEndpoints = new UserEventsEndpoints(authenticator, services.userEvents)
-  val userEndpoints       = new UserEndpoints(authenticator, services.user)
-  val callbackEndpoints   = new CallbackEndpoints(services.callbacks)
+  val administrationEndpoints =
+    new AdministrationEndpoints(identityAuthenticator, services.administration)
+
+  val userEventsEndpoints     = new UserEventsEndpoints(authenticator, services.userEvents)
+  val userEndpoints           = new UserEndpoints(authenticator, services.user)
+  val callbackEndpoints       = new CallbackEndpoints(services.callbacks)
 
   val allEndpoints =
     healthCheckEndpoints.endpoints ++
       privacyRequestEndpoints.endpoints ++
       consumerInterfaceEndpoints.endpoints ++
       configurationEndpoints.endpoints ++
+      administrationEndpoints.endpoints ++
       userEventsEndpoints.endpoints ++
       userEndpoints.endpoints ++
       callbackEndpoints.endpoints

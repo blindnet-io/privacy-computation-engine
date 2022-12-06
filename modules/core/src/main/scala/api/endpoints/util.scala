@@ -31,6 +31,10 @@ trait EndpointsUtil {
     statusCode(StatusCode.NotFound).and(stringBody.mapTo[NotFoundException])
   )
 
+  val unauthorized = oneOfVariant(
+    statusCode(StatusCode.Unauthorized).and(stringBody.mapTo[AuthException])
+  )
+
   def runLogicNoPrincipal[Req, Resp](f: Req => IO[Resp])(r: Req) =
     f(r).map(Right(_)).handleError {
       case e: Exception => Left(e)

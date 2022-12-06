@@ -15,6 +15,8 @@ import io.blindnet.pce.model.DemandResolutionStrategy
 trait AppRepository {
   def get(id: UUID): IO[Option[PCEApp]]
 
+  def create(id: UUID): IO[Unit]
+
   def updateReslutionStrategy(id: UUID, rs: DemandResolutionStrategy): IO[Unit]
 }
 
@@ -34,6 +36,24 @@ object AppRepository {
           .query[PCEApp]
           .option
           .transact(xa)
+
+      def create(id: UUID): IO[Unit] = {
+        val insertApp         = sql"""insert into apps values ($id, true)""".update.run
+        val insertAutoResp    =
+          sql"""insert into automatic_responses_config values ($id, true, true, true, true, true, true)""".update.run
+        val insertDac         = sql"""insert into dac values ($id, false, null, null)""".update.run
+        val insertGeneralInfo =
+          sql"""insert into general_information values (gen_random_uuid(), $id, '', '', '{}', '{}', '{}', null, null)""".update.run
+
+        val p = for {
+          _ <- insertApp
+          _ <- insertAutoResp
+          _ <- insertDac
+          _ <- insertGeneralInfo
+        } yield ()
+
+        p.transact(xa)
+      }
 
       def updateReslutionStrategy(id: UUID, rs: DemandResolutionStrategy): IO[Unit] =
         sql"""
