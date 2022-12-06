@@ -48,6 +48,8 @@ object testutil {
   def tb(appId: UUID)                        = TokenBuilder(appId, secretKey)
   def appToken(appId: UUID)                  = tb(appId).app()
   def userToken(appId: UUID, userId: String) = tb(appId).user(userId)
+
+  val identityToken = "identity_token"
 }
 
 object httputil {

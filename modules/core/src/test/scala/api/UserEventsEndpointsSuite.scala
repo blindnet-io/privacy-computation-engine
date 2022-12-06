@@ -55,7 +55,7 @@ class UserEventsEndpointsSuite(global: GlobalRead) extends IOSuite {
   type Res = Resources
   def sharedResource: Resource[IO, Resources] =
     for {
-      res <- global.getOrFailR[Resources]()
+      res <- sharedResourceOrFallback(global)
 
       _ <- Resource.eval {
         for {
