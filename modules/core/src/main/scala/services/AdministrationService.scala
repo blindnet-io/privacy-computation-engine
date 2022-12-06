@@ -12,6 +12,12 @@ class AdministrationService(
 ) {
 
   def createApp(x: Unit)(req: CreateApplication) =
-    repos.app.create(req.appId)
+    for {
+      app <- repos.app.get(req.appId)
+      _   <- app match {
+        case None => repos.app.create(req.appId)
+        case _    => s"Application ${req.appId} exists".failBadRequest
+      }
+    } yield ()
 
 }

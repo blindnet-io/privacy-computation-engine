@@ -35,7 +35,8 @@ class AdministrationEndpoints(
       .put
       .in("applications")
       .in(jsonBody[CreateApplication])
-      .serverLogic(runLogicSuccess(administrationService.createApp))
+      .errorOutVariant(unprocessable)
+      .serverLogic(runLogic(administrationService.createApp))
 
   val endpoints = List(
     createApp
