@@ -101,18 +101,6 @@ class AdministrationEndpointsSuite(global: GlobalRead) extends IOSuite {
           .transact(res.xa)
         _         <- expect(dacConfig == (id, false, None, None)).failFast
 
-        ge <- sql"""
-          select countries, organization, dpo, data_consumer_categories, privacy_policy_link, data_security_information
-          from general_information
-          where appid = $id
-        """
-          .query[GeneralInformation]
-          .unique
-          .transact(res.xa)
-        _  <- expect(
-          ge == GeneralInformation(List.empty, "", "", List.empty, None, None)
-        ).failFast
-
       } yield success
   }
 
