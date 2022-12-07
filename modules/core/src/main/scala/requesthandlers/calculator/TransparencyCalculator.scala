@@ -31,9 +31,6 @@ class TransparencyCalculator(
   val prRepo = repos.provenance
   val dsRepo = repos.dataSubject
 
-  extension [T](io: IO[Option[T]])
-    def failIfNotFound = io.orNotFound("Requested app could not be found")
-
   extension [T: Encoder](io: IO[T])
     def json =
       io.map(_.asJson)
@@ -274,23 +271,20 @@ class TransparencyCalculator(
     }
   }
 
-  private def getDpo(appId: UUID): IO[String] =
+  private def getDpo(appId: UUID): IO[Option[String]] =
     giRepo
       .get(appId)
-      .failIfNotFound
-      .map(_.dpo)
+      .map(_.map(_.dpo))
 
-  private def getOrganization(appId: UUID): IO[String] =
+  private def getOrganization(appId: UUID): IO[Option[String]] =
     giRepo
       .get(appId)
-      .failIfNotFound
-      .map(_.organization)
+      .map(_.map(_.organization))
 
   private def getPrivacyPolicy(appId: UUID): IO[Option[String]] =
     giRepo
       .get(appId)
-      .failIfNotFound
-      .map(_.privacyPolicyLink)
+      .map(_.flatMap(_.privacyPolicyLink))
 
   private def getUserKnown(appId: UUID, ds: Option[DataSubject]): IO[BooleanTerms] =
     ds match {
@@ -302,13 +296,11 @@ class TransparencyCalculator(
   private def getWhere(appId: UUID): IO[List[String]] =
     giRepo
       .get(appId)
-      .failIfNotFound
-      .map(_.countries)
+      .map(_.map(_.countries).getOrElse(List.empty))
 
   private def getWho(appId: UUID): IO[List[String]] =
     giRepo
       .get(appId)
-      .failIfNotFound
-      .map(_.dataConsumerCategories)
+      .map(_.map(_.dataConsumerCategories).getOrElse(List.empty))
 
 }
