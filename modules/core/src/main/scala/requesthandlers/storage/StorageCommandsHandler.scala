@@ -85,7 +85,7 @@ object StorageCommandsHandler {
             .flatMap(_ => repos.commands.pushInvokeStorage(List(c.addRetry)))
       )
 
-    Stream
+    val s = Stream
       .eval(repos.commands.popInvokeStorage(10))
       .map(cs => Stream.emits(cs).evalMap(c => process(c)))
       .parJoin(10)
@@ -93,6 +93,8 @@ object StorageCommandsHandler {
       .repeat
       .compile
       .drain
+
+    s.handleErrorWith(e => logger.error(e)(s"Error in storage handling loop\n${e.getMessage}") >> s)
   }
 
 }

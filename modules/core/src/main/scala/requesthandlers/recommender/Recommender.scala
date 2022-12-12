@@ -98,8 +98,9 @@ class Recommender(
       pr        <- repos.privacyRequest.getRequestFromDemand(d.id).map(_.get)
       app       <- repos.app.get(pr.appId).map(_.get)
       responses <- repos.privacyRequest.getDemandResponses(c.dId)
-      _         <- responses.traverse(r => processResponse(app, pr, d, c, r))
-      _         <- complete(app, d)
+      denied    <- Ref[IO].of(false)
+      _         <- responses.traverse(r => processResponse(app, pr, d, c, r, denied))
+      _         <- complete(app, d, denied)
     } yield ()
 
   private def processResponse(
@@ -107,17 +108,23 @@ class Recommender(
       pr: PrivacyRequest,
       d: Demand,
       c: CommandCreateRecommendation,
-      resp: PrivacyResponse
+      resp: PrivacyResponse,
+      denied: Ref[IO, Boolean]
   ): IO[Unit] =
     resp.status match {
-      case UnderReview => validateDemand(app, pr, d)
+      case UnderReview => validateDemand(app, pr, d, denied)
       case _           => logger.info(s"Response ${resp.id} not UNDER-REVIEW")
     }
 
   def storeRecommendation(f: UUID => Recommendation) =
     UUIDGen[IO].randomUUID map f >>= repos.privacyRequest.storeRecommendation
 
-  private def validateDemand(app: PCEApp, pr: PrivacyRequest, d: Demand): IO[Unit] =
+  private def validateDemand(
+      app: PCEApp,
+      pr: PrivacyRequest,
+      d: Demand,
+      denied: Ref[IO, Boolean]
+  ): IO[Unit] =
     Validations
       .validate(pr, d)
       .fold(
@@ -127,6 +134,7 @@ class Recommender(
             _ <- storeRecommendation(rf)
             c <- CommandCreateResponse.create(d.id)
             _ <- repos.commands.pushCreateResponse(List(c))
+            _ <- denied.set(true)
           } yield (),
         _ => handleRecommendation(app, pr, d)
       )
@@ -180,7 +188,7 @@ class Recommender(
       )
       .handleError(_ => Recommendation.rejectReqUnsupported(_, d.id))
 
-  private def complete(app: PCEApp, d: Demand) =
+  private def complete(app: PCEApp, d: Demand, denied: Ref[IO, Boolean]) =
     val auto: Boolean =
       d.action match {
         case a if a == Transparency || a.isChildOf(Transparency) =>
@@ -193,9 +201,17 @@ class Recommender(
         case _             => false
       }
 
-    if auto then
-      CommandCreateResponse.create(d.id) map (c => List(c)) >>= repos.commands.pushCreateResponse
-    else repos.demandsToReview.add(List(d.id))
+    denied.get.flatMap(
+      denied =>
+        if !denied then
+          if auto then {
+            CommandCreateResponse
+              .create(d.id)
+              .map(c => List(c))
+              .flatMap(repos.commands.pushCreateResponse)
+          } else repos.demandsToReview.add(List(d.id))
+        else IO.unit
+    )
 
 }
 
@@ -217,7 +233,7 @@ object Recommender {
             .flatMap(_ => repos.commands.pushCreateRecommendation(List(c.addRetry)))
       )
 
-    Stream
+    val s = Stream
       .eval(repos.commands.popCreateRecommendation(10))
       .map(cs => Stream.emits(cs).evalMap(c => process(c)))
       .parJoin(10)
@@ -225,6 +241,10 @@ object Recommender {
       .repeat
       .compile
       .drain
+
+    s.handleErrorWith(
+      e => logger.error(e)(s"Error in recommendation handling loop\n${e.getMessage}") >> s
+    )
   }
 
 }

@@ -164,7 +164,7 @@ object ResponseCalculator {
             .flatMap(_ => repos.commands.pushCreateResponse(List(c.addRetry)))
       )
 
-    Stream
+    val s = Stream
       .eval(repos.commands.popCreateResponse(5))
       .map(cs => Stream.emits(cs).evalMap(c => process(c)))
       .parJoin(10)
@@ -172,6 +172,10 @@ object ResponseCalculator {
       .repeat
       .compile
       .drain
+
+    s.handleErrorWith(
+      e => logger.error(e)(s"Error in response calculation loop\n${e.getMessage}") >> s
+    )
   }
 
 }
