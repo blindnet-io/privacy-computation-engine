@@ -109,7 +109,7 @@ object SharedResources extends GlobalResource {
         redis = null,
         api = ApiConfig(ipv4"0.0.0.0", port"9009"),
         tokens = TokensConfig(ciris.Secret(identityToken)),
-        components = ComponentsConfig()
+        components = ComponentsConfig(null)
       )
       services = Services.make(repos, conf)
 

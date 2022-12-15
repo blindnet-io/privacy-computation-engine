@@ -12,3 +12,4 @@ export APP_CALLBACK_URI="localhost:9000/v0"
 export REDIS_URI="redis://localhost"
 # identity
 export TOKEN_IDENTITY="token"
+export BN_IDENTITY_URL="https://identity.devkit.blindnet.io"

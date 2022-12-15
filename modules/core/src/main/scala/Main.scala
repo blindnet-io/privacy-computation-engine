@@ -46,7 +46,10 @@ object Main extends IOApp {
 
       _ <- Resource.eval(RequestHandlers.run(repositories, storage)).start
 
-      identityClient <- IdentityClientBuilder().withClient(httpClient).resource
+      identityClient <- IdentityClientBuilder()
+        .withBaseUri(conf.components.identityUrl)
+        .withClient(httpClient)
+        .resource
 
       app = AppRouter.make(services, repositories, JwtAuthenticator(identityClient), conf)
       server <- Server.make(app.httpApp, conf.api)
