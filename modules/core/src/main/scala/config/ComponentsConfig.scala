@@ -18,7 +18,6 @@ object ComponentsConfig {
     env("BN_IDENTITY_URL").as[Uri].map(ComponentsConfig.apply)
 
   given Show[ComponentsConfig] =
-    Show.show(c => s"""|identity_url: ${c.identityUrl}
-                       |""".stripMargin('|'))
+    Show.show(c => s"""|identity_url: ${c.identityUrl}""".stripMargin('|'))
 
 }

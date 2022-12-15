@@ -43,6 +43,7 @@ given Show[Config] =
           |
           |components
           |${show"${c.components}"}
+          |
           |----------------------""".stripMargin('|'))
 
 object Config {

@@ -15,7 +15,6 @@ object TokensConfig {
     env("TOKEN_IDENTITY").as[String].secret.map(TokensConfig.apply)
 
   given Show[TokensConfig] =
-    Show.show(c => s"""|identity: ${c.identity.valueHash}
-                       """.stripMargin('|'))
+    Show.show(c => s"""|identity: ${c.identity.valueHash}""".stripMargin('|'))
 
 }
