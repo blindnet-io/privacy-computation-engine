@@ -16,8 +16,8 @@ object ApiConfig {
 
   val load =
     (
-      env("API_HOST").as[Ipv4Address].default(ipv4"0.0.0.0"),
-      env("API_PORT").as[Port].default(port"9000")
+      env("BN_API_HOST").as[Ipv4Address].default(ipv4"0.0.0.0"),
+      env("BN_API_PORT").as[Port].default(port"9000")
     ).parMapN(ApiConfig.apply)
 
   given Show[ApiConfig] =

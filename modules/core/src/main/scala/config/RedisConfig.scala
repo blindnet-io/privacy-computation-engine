@@ -12,7 +12,7 @@ case class RedisConfig(
 object RedisConfig {
 
   val load =
-    env("REDIS_URI").as[String].secret.map(RedisConfig.apply)
+    env("BN_REDIS_URI").as[String].secret.map(RedisConfig.apply)
 
   given Show[RedisConfig] =
     Show.show(c => s"""|uri: ${c.uri.valueHash}""".stripMargin('|'))

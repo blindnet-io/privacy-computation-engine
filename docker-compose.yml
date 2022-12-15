@@ -57,13 +57,14 @@ services:
     ports:
       - ${pce_api_port}:${pce_api_port}
     environment:
-      - API_HOST=${pce_api_host}
-      - API_PORT=${pce_api_port}
-      - DB_URI=jdbc:postgresql://db:5432/${pg_db_name}
-      - DB_USER=${pg_user}
-      - DB_PASS=${pg_pass}
-      - APP_CALLBACK_URI=${pce_callback_uri}
-      - TOKEN_IDENTITY=${token_identity}
+      - BN_API_HOST=${pce_api_host}
+      - BN_API_PORT=${pce_api_port}
+      - BN_DB_URI=jdbc:postgresql://db:5432/${pg_db_name}
+      - BN_DB_USER=${pg_user}
+      - BN_DB_PASS=${pg_pass}
+      - BN_APP_CALLBACK_URI=${pce_callback_uri}
+      - BN_TOKEN_IDENTITY=${token_identity}
+      - BN_IDENTITY_URL=${identity_url}
     depends_on:
       insert_initial_data:
         condition: service_completed_successfully
