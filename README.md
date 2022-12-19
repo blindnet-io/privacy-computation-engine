@@ -89,7 +89,7 @@ When you're done, make sure to stop and clean up all associated docker container
 
 > **Note**
 >
-> Environment variables are defined in the `.env` file.
+> Environment variables for the containerized instance are defined in the `.env` file.
 
 ### Configuration
 
@@ -136,14 +136,18 @@ When you're done, make sure to stop and clean up the database docker container w
 
 ### Environment Variables
 
-| Name             | Description              | Example                              | Default |
-| ---------------- | ------------------------ | ------------------------------------ | :------ |
-| API_HOST         | HTTP host                | localhost                            | 0.0.0.0 |
-| API_PORT         | HTTP port                | 80                                   | 9000    |
-| DB_URI           | jdbc connection string   | jdbc:postgresql://localhost:5432/pce |         |
-| DB_USER          | database user            | postgres                             |         |
-| DB_PASS          | database user's password | mysecretpassword                     |         |
-| APP_CALLBACK_URI | callback api prefix      | localhost:9000/v0                    |         |
+| Name                | Description              | Example                                   | Default     |
+| ------------------- | ------------------------ | ----------------------------------------- | :---------- |
+| BN_APP_ENV          | App environment          | {development, staging, production}        | development |
+| BN_API_HOST         | HTTP host                | localhost                                 | 0.0.0.0     |
+| BN_API_PORT         | HTTP port                | 80                                        | 9000        |
+| BN_DB_URI           | jdbc connection string   | jdbc:postgresql://localhost:5432/pce      |             |
+| BN_DB_USER          | database user            | postgres                                  |             |
+| BN_DB_PASS          | database user's password | mysecretpassword                          |             |
+| BN_REDIS_URI        | redis connection string  | redis://localhost                         |             |
+| BN_APP_CALLBACK_URI | callback api prefix      | localhost:9000/v0                         |             |
+| BN_TOKEN_IDENTITY   | identity api token       | token                                     |             |
+| BN_IDENTITY_URL     | identity api url         | https://stage.identity.devkit.blindnet.io |             |
 
 ## Contributing
 
