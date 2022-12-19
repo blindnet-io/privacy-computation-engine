@@ -12,6 +12,7 @@ import io.circe.generic.semiauto.*
 import io.circe.syntax.*
 import sttp.tapir.*
 import sttp.tapir.generic.auto.*
+import sttp.tapir.generic.Configuration
 
 enum DemandResolution {
   case Automatic
@@ -70,15 +71,32 @@ object DemandResolutionStrategy {
     )
 
   given Decoder[DemandResolutionStrategy] =
-    Decoder.forProduct6("transparency", "access", "delete", "revoke_consent", "object", "restrict")(
-      DemandResolutionStrategy.apply
+    unSnakeCaseIfy(
+      Decoder.forProduct6(
+        "transparency",
+        "access",
+        "delete",
+        "revoke_consent",
+        "object",
+        "restrict"
+      )(
+        DemandResolutionStrategy.apply
+      )
     )
 
   given Encoder[DemandResolutionStrategy] =
-    Encoder.forProduct6("transparency", "access", "delete", "revoke_consent", "object", "restrict")(
-      s => (s.transparency, s.access, s.delete, s.revokeConsent, s.objectScope, s.restrictScope)
+    snakeCaseIfy(
+      Encoder.forProduct6(
+        "transparency",
+        "access",
+        "delete",
+        "revoke_consent",
+        "object",
+        "restrict"
+      )(s => (s.transparency, s.access, s.delete, s.revokeConsent, s.objectScope, s.restrictScope))
     )
 
-  given Schema[DemandResolutionStrategy] = Schema.derived[DemandResolutionStrategy]
+  given Schema[DemandResolutionStrategy] =
+    Schema.derived[DemandResolutionStrategy](using Configuration.default.withSnakeCaseMemberNames)
 
 }
