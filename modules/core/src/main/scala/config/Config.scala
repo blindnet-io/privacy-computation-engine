@@ -51,7 +51,7 @@ object Config {
   val load =
     (
       env("BN_APP_ENV").as[AppEnvironment].default(AppEnvironment.Development),
-      env("BN_APP_CALLBACK_URI").as[Uri].default(uri"localhost"),
+      env("BN_APP_CALLBACK_URI").as[Uri].default(uri"localhost:9000/v0"),
       DbConfig.load,
       RedisConfig.load,
       ApiConfig.load,
