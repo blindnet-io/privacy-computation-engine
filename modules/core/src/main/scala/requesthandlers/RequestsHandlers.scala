@@ -6,13 +6,13 @@ import cats.effect.std.*
 import requesthandlers.recommender.*
 import requesthandlers.calculator.*
 import db.repositories.Repositories
-import services.external.StorageInterface
+import io.blindnet.pce.clients.StorageClient
 
 object RequestHandlers {
   // TODO: resource
   def run(
       repos: Repositories,
-      storage: StorageInterface
+      storage: StorageClient
   ): IO[Unit] = {
 
     for {

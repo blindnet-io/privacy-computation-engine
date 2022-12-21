@@ -1,5 +1,5 @@
 package io.blindnet.pce
-package services.external
+package clients
 
 import java.time.Instant
 

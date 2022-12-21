@@ -15,7 +15,7 @@ import services.*
 import config.{ *, given }
 import io.blindnet.identityclient.IdentityClientBuilder
 import io.blindnet.identityclient.auth.JwtAuthenticator
-import services.external.StorageInterface
+import clients.StorageClient
 import dev.profunktor.redis4cats.*
 import dev.profunktor.redis4cats.effect.Log.Stdout.*
 import io.blindnet.identityclient.auth.*
@@ -40,7 +40,7 @@ object Main extends IOApp {
       repositories = Repositories.live(xa, redis, pools)
 
       httpClient <- EmberClientBuilder.default[IO].build
-      storage = StorageInterface.live(httpClient, repositories, conf)
+      storage = StorageClient.live(httpClient, repositories, conf)
 
       services = Services.make(repositories, conf)
 

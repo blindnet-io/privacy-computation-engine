@@ -12,7 +12,7 @@ import cats.implicits.*
 import io.blindnet.pce.model.*
 import io.blindnet.pce.model.error.*
 import io.blindnet.pce.priv.DataSubject
-import io.blindnet.pce.services.external.StorageInterface
+import io.blindnet.pce.clients.StorageClient
 import io.blindnet.pce.util.extension.*
 import org.typelevel.log4cats.*
 import org.typelevel.log4cats.slf4j.*
@@ -25,7 +25,7 @@ import fs2.Stream
 
 class StorageCommandsHandler(
     repos: Repositories,
-    storage: StorageInterface
+    storage: StorageClient
 ) {
 
   import priv.terms.Action.*
@@ -71,7 +71,7 @@ class StorageCommandsHandler(
 object StorageCommandsHandler {
   val logger: Logger[IO] = Slf4jLogger.getLogger[IO]
 
-  def run(repos: Repositories, storage: StorageInterface): IO[Unit] = {
+  def run(repos: Repositories, storage: StorageClient): IO[Unit] = {
     val storageHandler = new StorageCommandsHandler(repos, storage)
 
     def process(c: CommandInvokeStorage) =

@@ -1,5 +1,5 @@
 package io.blindnet.pce
-package services.external
+package clients
 
 import java.util.UUID
 
@@ -19,9 +19,10 @@ import org.typelevel.log4cats.slf4j.*
 import priv.*
 import config.Config
 import model.error.InternalException
+import io.blindnet.pce.clients.*
 
 // TODO: refactor
-trait StorageInterface {
+trait StorageClient {
   def get(
       app: PCEApp,
       callbackId: UUID,
@@ -40,11 +41,11 @@ trait StorageInterface {
 
 }
 
-object StorageInterface {
+object StorageClient {
   val logger: Logger[IO] = Slf4jLogger.getLogger[IO]
 
   def live(c: Client[IO], repos: Repositories, conf: Config) =
-    new StorageInterface {
+    new StorageClient {
       def get(
           app: PCEApp,
           callbackId: UUID,

@@ -12,7 +12,7 @@ import cats.implicits.*
 import io.blindnet.pce.model.*
 import io.blindnet.pce.model.error.*
 import io.blindnet.pce.priv.DataSubject
-import io.blindnet.pce.services.external.StorageInterface
+import io.blindnet.pce.clients.StorageClient
 import io.blindnet.pce.util.extension.*
 import org.typelevel.log4cats.*
 import org.typelevel.log4cats.slf4j.*
