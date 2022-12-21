@@ -11,7 +11,7 @@ class AdministrationService(
     repos: Repositories
 ) {
 
-  def createApp(x: Unit)(req: CreateApplication) =
+  def createApp(x: Unit)(req: CreateApplicationPayload) =
     for {
       app <- repos.app.get(req.appId)
       _   <- app match {

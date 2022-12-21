@@ -34,7 +34,7 @@ class AdministrationEndpoints(
       .description("Create a new application")
       .put
       .in("applications")
-      .in(jsonBody[CreateApplication])
+      .in(jsonBody[CreateApplicationPayload])
       .errorOutVariant(unprocessable)
       .serverLogic(runLogic(administrationService.createApp))
 
