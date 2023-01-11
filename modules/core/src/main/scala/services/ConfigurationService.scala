@@ -51,7 +51,7 @@ class ConfigurationService(
   def updateDemandResolutionStrategy(appId: UUID)(drs: DemandResolutionStrategy) =
     repos.app
       .updateReslutionStrategy(appId, drs)
-      .handleErrorWith(_ => s"General info for app ${appId} not found".failNotFound)
+      .handleErrorWith(_ => s"Resolution strategy for app ${appId} not found".failNotFound)
 
   def getPrivacyScopeDimensions(appId: UUID)(x: Unit) =
     val dcs = DataCategory.getAllDataCategories

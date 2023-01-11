@@ -17,17 +17,16 @@ import io.blindnet.identityclient.auth.*
 class AdministrationEndpoints(
     identityAuthenticator: ConstAuthenticator[Unit],
     administrationService: AdministrationService
-) extends EndpointsUtil {
+) {
+  import util.*
+
   given Configuration = Configuration.default.withSnakeCaseMemberNames
 
   lazy val Tag = "Administration"
 
-  val authEndpoint = identityAuthenticator
-    .withBaseEndpoint(
-      util.baseEndpoint.in("admin").tag(Tag)
-    )
-    .secureEndpoint
-    .mapErrorOut(x => AuthException(x._2))(e => (StatusCode.Unauthorized, e.message))
+  val base = baseEndpoint.in("admin").tag(Tag)
+
+  val authEndpoint = identityAuthenticator.secureEndpoint(base)
 
   val createApp =
     authEndpoint

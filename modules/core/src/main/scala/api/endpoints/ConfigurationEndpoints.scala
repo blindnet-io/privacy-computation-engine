@@ -24,34 +24,24 @@ class ConfigurationEndpoints(
     jwtAuthenticator: JwtAuthenticator[Jwt],
     stAuthenticator: StAuthenticator[DashboardToken, DashboardToken],
     configurationService: ConfigurationService
-) extends Endpoints(jwtAuthenticator) {
+) {
+  import util.*
+
   given Configuration = Configuration.default.withSnakeCaseMemberNames
 
   lazy val Tag = "Configuration"
   val DocsUri  = "https://blindnet.dev/docs/computation/configuration"
 
-  override def mapEndpoint(endpoint: EndpointT): EndpointT =
-    endpoint.in("configure").tag(Tag)
+  val base = baseEndpoint.in("configure").tag(Tag)
 
-  // TODO: create authenticator composer in identity-client lib
-  val authEndpoint =
-    mapEndpoint(baseEndpoint)
-      .securityIn(header[Option[String]]("Authorization"))
-      .errorOut(statusCode(StatusCode.Unauthorized).and(jsonBody[String].mapTo[AuthException]))
-      .serverSecurityLogic(
-        t =>
-          jwtAuthenticator
-            .mapJwt(_.appId)
-            .authenticateHeader(t)
-            .flatMap {
-              case Left(_)      => stAuthenticator.mapSt(_.appId).authenticateHeader(t)
-              case x @ Right(_) => IO.pure(x)
-            }
-            .map(_.left.map(_ => AuthException("Invalid token")))
-      )
+  val authenticatedEndpoint =
+    jwtAuthenticator
+      .mapJwt(_.appId)
+      .or(stAuthenticator.mapSt(_.appId))
+      .secureEndpoint(base)
 
   val getGeneralInfo =
-    authEndpoint
+    authenticatedEndpoint
       .description("Get general information about the app")
       .get
       .in("general-info")
@@ -60,7 +50,7 @@ class ConfigurationEndpoints(
       .serverLogic(runLogic(configurationService.getGeneralInfo))
 
   val updateGeneralInfo =
-    authEndpoint
+    authenticatedEndpoint
       .description("Update general information about the app")
       .put
       .in("general-info")
@@ -69,7 +59,7 @@ class ConfigurationEndpoints(
       .serverLogic(runLogic(configurationService.updateGeneralInfo))
 
   val getDemandResolutionStrategy =
-    authEndpoint
+    authenticatedEndpoint
       .description("Get information about demand resolution strategies")
       .get
       .in("demand-resolution-strategy")
@@ -78,7 +68,7 @@ class ConfigurationEndpoints(
       .serverLogic(runLogic(configurationService.getDemandResolutionStrategy))
 
   val updateAutomaticResolution =
-    authEndpoint
+    authenticatedEndpoint
       .description("Update demand resolution strategies")
       .put
       .in("demand-resolution-strategy")
@@ -87,7 +77,7 @@ class ConfigurationEndpoints(
       .serverLogic(runLogic(configurationService.updateDemandResolutionStrategy))
 
   val getPrivacyScopeDimensions =
-    authEndpoint
+    authenticatedEndpoint
       .description("Get data categories, processing categories and purposes")
       .get
       .in("privacy-scope-dimensions")
@@ -95,7 +85,7 @@ class ConfigurationEndpoints(
       .serverLogic(runLogicSuccess(configurationService.getPrivacyScopeDimensions))
 
   val addSelectors =
-    authEndpoint
+    authenticatedEndpoint
       .description("Add selectors")
       .put
       .in("selectors")
@@ -104,7 +94,7 @@ class ConfigurationEndpoints(
       .serverLogic(runLogic(configurationService.addSelectors))
 
   val getLegalBases =
-    authEndpoint
+    authenticatedEndpoint
       .description("Get the list of legal bases")
       .get
       .in("legal-bases")
@@ -112,7 +102,7 @@ class ConfigurationEndpoints(
       .serverLogic(runLogicSuccess(configurationService.getLegalBases))
 
   val getLegalBase =
-    authEndpoint
+    authenticatedEndpoint
       .description("Get a legal bases")
       .get
       .in("legal-bases")
@@ -122,7 +112,7 @@ class ConfigurationEndpoints(
       .serverLogic(runLogic(configurationService.getLegalBase))
 
   val createLegalBase =
-    authEndpoint
+    authenticatedEndpoint
       .description("Create new legal bases")
       .put
       .in("legal-bases")
@@ -132,7 +122,7 @@ class ConfigurationEndpoints(
       .serverLogic(runLogic(configurationService.createLegalBase))
 
   val addRetentionPolicies =
-    authEndpoint
+    authenticatedEndpoint
       .description("Create retention policies for data categories")
       .put
       .in("retention-policies")
@@ -141,7 +131,7 @@ class ConfigurationEndpoints(
       .serverLogic(runLogic(configurationService.addRetentionPolicies))
 
   val deleteRetentionPolicy =
-    authEndpoint
+    authenticatedEndpoint
       .description("Delete retention policy")
       .delete
       .in("retention-policies")
@@ -149,7 +139,7 @@ class ConfigurationEndpoints(
       .serverLogic(runLogicSuccess(configurationService.deleteRetentionPolicy))
 
   val addProvenances =
-    authEndpoint
+    authenticatedEndpoint
       .description("Create provenances for data categories")
       .put
       .in("provenances")
@@ -158,7 +148,7 @@ class ConfigurationEndpoints(
       .serverLogic(runLogic(configurationService.addProvenances))
 
   val deleteProvenance =
-    authEndpoint
+    authenticatedEndpoint
       .description("Delete provenance")
       .delete
       .in("provenances")
@@ -166,7 +156,7 @@ class ConfigurationEndpoints(
       .serverLogic(runLogicSuccess(configurationService.deleteProvenance))
 
   def getDataCategories =
-    authEndpoint
+    authenticatedEndpoint
       .description("Get data categories with retention policies and provenances")
       .get
       .in("data-categories")
@@ -174,7 +164,7 @@ class ConfigurationEndpoints(
       .serverLogic(runLogicSuccess(configurationService.getDataCategories))
 
   def getAllRegulations =
-    authEndpoint
+    authenticatedEndpoint
       .description("Get all regulations")
       .get
       .in("regulations")
@@ -182,7 +172,7 @@ class ConfigurationEndpoints(
       .serverLogic(runLogicSuccess(configurationService.getAllRegulations))
 
   def getAppRegulations =
-    authEndpoint
+    authenticatedEndpoint
       .description("Get regulations applied to the users of the app")
       .get
       .in("regulations")
@@ -191,7 +181,7 @@ class ConfigurationEndpoints(
       .serverLogic(runLogicSuccess(configurationService.getAppRegulations))
 
   val addRegulation =
-    authEndpoint
+    authenticatedEndpoint
       .description("Assign regulation to an app")
       .put
       .in("regulations")
@@ -200,7 +190,7 @@ class ConfigurationEndpoints(
       .serverLogic(runLogic(configurationService.addRegulations))
 
   val deleteRegulation =
-    authEndpoint
+    authenticatedEndpoint
       .description("Delete regulation assigned to an app")
       .delete
       .in("regulations")

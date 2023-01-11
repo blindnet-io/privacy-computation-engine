@@ -21,11 +21,14 @@ import priv.privacyrequest.{ RequestId as PrivReqId }
 class UserEndpoints(
     authenticator: JwtAuthenticator[Jwt],
     userService: UserService
-) extends Endpoints(authenticator) {
+) {
+  import util.*
+
   given Configuration = Configuration.default.withSnakeCaseMemberNames
 
-  override def mapEndpoint(endpoint: EndpointT): EndpointT =
-    endpoint.in("user").tag("User info")
+  val base = baseEndpoint.in("user").tag("User info")
+
+  val userAuthEndpoint = authenticator.requireUserJwt.secureEndpoint(base)
 
   val getGivenConsents =
     userAuthEndpoint

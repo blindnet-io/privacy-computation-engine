@@ -1,7 +1,6 @@
 package io.blindnet.pce
 package api.endpoints
 
-import api.endpoints.Endpoints
 import api.endpoints.messages.privacyrequest.*
 import priv.privacyrequest.{ RequestId as PrivReqId }
 import services.*
@@ -22,11 +21,15 @@ import java.util.UUID
 class PrivacyRequestEndpoints(
     authenticator: JwtAuthenticator[Jwt],
     reqService: PrivacyRequestService
-) extends Endpoints(authenticator) {
+) {
+  import util.*
+
   given Configuration = Configuration.default.withSnakeCaseMemberNames
 
-  override def mapEndpoint(endpoint: EndpointT): EndpointT =
-    endpoint.in("privacy-request").tag("Privacy requests")
+  val base = baseEndpoint.in("privacy-request").tag("Privacy requests")
+
+  val anyUserAuthEndpoint = authenticator.requireAnyUserJwt.secureEndpoint(base)
+  val userAuthEndpoint    = authenticator.requireUserJwt.secureEndpoint(base)
 
   val createPrivacyRequest =
     anyUserAuthEndpoint

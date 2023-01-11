@@ -22,14 +22,18 @@ import cats.implicits.*
 class UserEventsEndpoints(
     authenticator: JwtAuthenticator[Jwt],
     userEventsService: UserEventsService
-) extends Endpoints(authenticator) {
+) {
+  import util.*
+
   given Configuration = Configuration.default.withSnakeCaseMemberNames
 
-  override def mapEndpoint(endpoint: EndpointT): EndpointT =
-    endpoint.in("user-events").tag("User events")
+  val base = baseEndpoint.in("user-events").tag("User events")
+
+  val userAuthEndpoint = authenticator.requireUserJwt.secureEndpoint(base)
+  val appAuthEndpoint  = authenticator.requireAppJwt.secureEndpoint(base)
 
   val giveConsentUnsafe =
-    publicEndpoint
+    base
       .description("Give consent")
       .post
       .in("consent")

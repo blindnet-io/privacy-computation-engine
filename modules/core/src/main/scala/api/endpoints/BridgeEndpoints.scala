@@ -21,11 +21,14 @@ import api.endpoints.messages.bridge.*
 class BridgeEndpoints(
     authenticator: JwtAuthenticator[Jwt],
     bridgeService: BridgeService
-) extends Endpoints(authenticator) {
+) {
+  import util.*
+
   given Configuration = Configuration.default.withSnakeCaseMemberNames
 
-  override def mapEndpoint(endpoint: EndpointT): EndpointT =
-    endpoint.in("bridge").tag("Bridge")
+  val base = baseEndpoint.in("bridge").tag("Bridge")
+
+  val appAuthEndpoint = authenticator.requireAppJwt.secureEndpoint(base)
 
   // TODO: add filtering
   val getPendingDemands =

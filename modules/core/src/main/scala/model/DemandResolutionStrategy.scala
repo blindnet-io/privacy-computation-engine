@@ -71,30 +71,26 @@ object DemandResolutionStrategy {
     )
 
   given Decoder[DemandResolutionStrategy] =
-    unSnakeCaseIfy(
-      Decoder.forProduct6(
-        "transparency",
-        "access",
-        "delete",
-        "revoke_consent",
-        "object",
-        "restrict"
-      )(
-        DemandResolutionStrategy.apply
-      )
+    Decoder.forProduct6(
+      "transparency",
+      "access",
+      "delete",
+      "revoke_consent",
+      "object",
+      "restrict"
+    )(
+      DemandResolutionStrategy.apply
     )
 
   given Encoder[DemandResolutionStrategy] =
-    snakeCaseIfy(
-      Encoder.forProduct6(
-        "transparency",
-        "access",
-        "delete",
-        "revoke_consent",
-        "object",
-        "restrict"
-      )(s => (s.transparency, s.access, s.delete, s.revokeConsent, s.objectScope, s.restrictScope))
-    )
+    Encoder.forProduct6(
+      "transparency",
+      "access",
+      "delete",
+      "revoke_consent",
+      "object",
+      "restrict"
+    )(s => (s.transparency, s.access, s.delete, s.revokeConsent, s.objectScope, s.restrictScope))
 
   given Schema[DemandResolutionStrategy] =
     Schema.derived[DemandResolutionStrategy](using Configuration.default.withSnakeCaseMemberNames)

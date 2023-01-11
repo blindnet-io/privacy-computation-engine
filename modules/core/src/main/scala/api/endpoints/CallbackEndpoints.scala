@@ -20,9 +20,11 @@ import api.endpoints.messages.callback.*
 class CallbackEndpoints(
     callbacksService: CallbackHandler
 ) {
+  import util.*
+
   given Configuration = Configuration.default.withSnakeCaseMemberNames
 
-  val base = util.baseEndpoint.in("callback").tag("Callbacks")
+  val base = baseEndpoint.in("callback").tag("Callbacks")
 
   val cb =
     base
