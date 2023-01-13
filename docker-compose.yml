@@ -65,6 +65,7 @@ services:
       - BN_APP_CALLBACK_URI=${pce_callback_uri}
       - BN_TOKEN_IDENTITY=${token_identity}
       - BN_IDENTITY_URL=${identity_url}
+      - BN_IDENTITY_KEY=${identity_key}
     depends_on:
       insert_initial_data:
         condition: service_completed_successfully

@@ -13,3 +13,4 @@ export BN_REDIS_URI="redis://localhost"
 # identity
 export BN_TOKEN_IDENTITY="token"
 export BN_IDENTITY_URL="https://stage.identity.devkit.blindnet.io"
+export BN_IDENTITY_KEY="Ygmu8rfisYXdSqpLOklexj6Hmegt02MEZ9REPghfUpg="

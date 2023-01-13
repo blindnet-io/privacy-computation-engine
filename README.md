@@ -148,6 +148,7 @@ When you're done, make sure to stop and clean up the database docker container w
 | BN_APP_CALLBACK_URI | callback api prefix      | localhost:9000/v0                         |             |
 | BN_TOKEN_IDENTITY   | identity api token       | token                                     |             |
 | BN_IDENTITY_URL     | identity api url         | https://stage.identity.devkit.blindnet.io |             |
+| BN_IDENTITY_KEY     | identity api public url  | key                                       |             |
 
 ## Contributing
 
