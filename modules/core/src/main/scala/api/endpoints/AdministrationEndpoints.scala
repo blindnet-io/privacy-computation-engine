@@ -15,7 +15,7 @@ import api.endpoints.messages.administration.*
 import io.blindnet.identityclient.auth.*
 
 class AdministrationEndpoints(
-    identityAuthenticator: ConstAuthenticator[Unit],
+    authenticator: ConstAuthenticator[Unit],
     administrationService: AdministrationService
 ) {
   import util.*
@@ -26,7 +26,7 @@ class AdministrationEndpoints(
 
   val base = baseEndpoint.in("admin").tag(Tag)
 
-  val authEndpoint = identityAuthenticator.secureEndpoint(base)
+  val authEndpoint = authenticator.secureEndpoint(base)
 
   val createApp =
     authEndpoint

@@ -51,7 +51,7 @@ object Main extends IOApp {
         .withClient(httpClient)
         .resource
 
-      app = AppRouter.make(services, repositories, JwtAuthenticator(identityClient), conf)
+      app = AppRouter.make(services, repositories, identityClient, conf)
       server <- Server.make(app.httpApp, conf.api)
 
     } yield ()

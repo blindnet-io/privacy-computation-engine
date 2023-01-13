@@ -18,11 +18,10 @@ import services.*
 import api.endpoints.messages.configuration.*
 import io.blindnet.identityclient.auth.*
 import io.blindnet.pce.model.DemandResolutionStrategy
-import io.blindnet.pce.db.repositories.DashboardToken
 
 class ConfigurationEndpoints(
     jwtAuthenticator: JwtAuthenticator[Jwt],
-    stAuthenticator: StAuthenticator[DashboardToken, DashboardToken],
+    identityAuthenticator: JwtLocalAuthenticator[AppJwt],
     configurationService: ConfigurationService
 ) {
   import util.*
@@ -37,7 +36,7 @@ class ConfigurationEndpoints(
   val authenticatedEndpoint =
     jwtAuthenticator
       .mapJwt(_.appId)
-      .or(stAuthenticator.mapSt(_.appId))
+      .or(identityAuthenticator.mapJwt(_.appId))
       .secureEndpoint(base)
 
   val getGeneralInfo =

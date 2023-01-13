@@ -23,44 +23,47 @@ import io.blindnet.identityclient.auth.*
 import services.Services
 import sttp.apispec.Tag
 import sttp.apispec.ExternalDocumentation
-import io.blindnet.pce.db.repositories.DashboardToken
 import io.blindnet.pce.db.repositories.Repositories
 import io.blindnet.pce.config.Config
+import io.blindnet.identityclient.IdentityClient
 
 object AppRouter {
   def make(
       services: Services,
       repositories: Repositories,
-      authenticator: JwtAuthenticator[Jwt],
+      identityClient: IdentityClient,
       config: Config
   ) =
-    new AppRouter(services, repositories, authenticator, config)
+    new AppRouter(services, repositories, identityClient, config)
 
 }
 
 class AppRouter(
     services: Services,
     repositories: Repositories,
-    authenticator: JwtAuthenticator[Jwt],
+    identityClient: IdentityClient,
     config: Config
 ) {
 
-  val dashboardAuthenticator = StAuthenticator(repositories.dashboardTokens)
-  val identityAuthenticator  = ConstAuthenticator(config.tokens.identity.value, IO.pure(()))
+  val jwtAuthenticator           = JwtAuthenticator(identityClient)
+  val identityJwtAuthenticator   = JwtLocalAuthenticator(config.components.identityKey)
+  val identityConstAuthenticator = ConstAuthenticator(config.tokens.identity.value, IO.pure(()))
 
   val healthCheckEndpoints    = new HealthCheckEndpoints()
-  val privacyRequestEndpoints = new PrivacyRequestEndpoints(authenticator, services.privacyRequest)
-  val bridgeEndpoints         =
-    new BridgeEndpoints(authenticator, services.bridge)
+  val privacyRequestEndpoints =
+    new PrivacyRequestEndpoints(jwtAuthenticator, services.privacyRequest)
+
+  val bridgeEndpoints =
+    new BridgeEndpoints(jwtAuthenticator, services.bridge)
 
   val configurationEndpoints =
-    new ConfigurationEndpoints(authenticator, dashboardAuthenticator, services.configuration)
+    new ConfigurationEndpoints(jwtAuthenticator, identityJwtAuthenticator, services.configuration)
 
   val administrationEndpoints =
-    new AdministrationEndpoints(identityAuthenticator, services.administration)
+    new AdministrationEndpoints(identityConstAuthenticator, services.administration)
 
-  val userEventsEndpoints = new UserEventsEndpoints(authenticator, services.userEvents)
-  val userEndpoints       = new UserEndpoints(authenticator, services.user)
+  val userEventsEndpoints = new UserEventsEndpoints(jwtAuthenticator, services.userEvents)
+  val userEndpoints       = new UserEndpoints(jwtAuthenticator, services.user)
   val callbackEndpoints   = new CallbackEndpoints(services.callbacks)
 
   val allEndpoints =

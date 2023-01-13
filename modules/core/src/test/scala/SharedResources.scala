@@ -109,13 +109,13 @@ object SharedResources extends GlobalResource {
         redis = null,
         api = ApiConfig(ipv4"0.0.0.0", port"9009"),
         tokens = TokensConfig(ciris.Secret(identityToken)),
-        components = ComponentsConfig(null)
+        components = ComponentsConfig(null, "")
       )
       services = Services.make(repos, conf)
 
       identityClient <- IdentityClientBuilder().withClient(identityHttpClient).resource
 
-      server = AppRouter.make(services, repos, JwtAuthenticator(identityClient), conf).httpApp
+      server = AppRouter.make(services, repos, identityClient, conf).httpApp
 
       resources = Resources(xa, client, repos, services, server)
 
