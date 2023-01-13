@@ -40,7 +40,7 @@ class ConfigurationService(
   def updateGeneralInfo(appId: UUID)(gi: GeneralInformation) =
     repos.generalInfo
       .upsert(appId, gi)
-      .handleErrorWith(_ => s"General info for app ${appId} not found".failNotFound)
+      .handleErrorWith(_ => s"Error updating general info for ${appId}".failInternal)
 
   def getDemandResolutionStrategy(appId: UUID)(x: Unit) =
     repos.app
@@ -58,6 +58,9 @@ class ConfigurationService(
     val pcs = ProcessingCategory.getAllProcessingCategories
     val pps = Purpose.getAllPurposes
     IO(PrivacyScopeDimensionsPayload(dcs, pcs, pps))
+
+  def getSelectors(appId: UUID)(x: Unit) =
+    repos.privacyScope.getContext(appId).map(_.selectors.toList)
 
   def addSelectors(appId: UUID)(req: List[CreateSelectorPayload]) =
     for {

@@ -18,6 +18,7 @@ import services.*
 import api.endpoints.messages.configuration.*
 import io.blindnet.identityclient.auth.*
 import io.blindnet.pce.model.DemandResolutionStrategy
+import io.blindnet.pce.priv.terms.DataCategory
 
 class ConfigurationEndpoints(
     jwtAuthenticator: JwtAuthenticator[Jwt],
@@ -82,6 +83,14 @@ class ConfigurationEndpoints(
       .in("privacy-scope-dimensions")
       .out(jsonBody[PrivacyScopeDimensionsPayload])
       .serverLogic(runLogicSuccess(configurationService.getPrivacyScopeDimensions))
+
+  val getSelectors =
+    authenticatedEndpoint
+      .description("Get selectors")
+      .get
+      .in("selectors")
+      .out(jsonBody[List[DataCategory]])
+      .serverLogic(runLogicSuccess(configurationService.getSelectors))
 
   val addSelectors =
     authenticatedEndpoint
@@ -200,6 +209,7 @@ class ConfigurationEndpoints(
     getGeneralInfo,
     updateGeneralInfo,
     getPrivacyScopeDimensions,
+    getSelectors,
     addSelectors,
     getLegalBases,
     getLegalBase,

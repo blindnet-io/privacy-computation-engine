@@ -78,6 +78,7 @@ object extension {
   extension (s: String) {
     def failBadRequest = BadRequestException(s).raise
     def failNotFound   = NotFoundException(s).raise
+    def failInternal   = InternalException(s).raise
   }
 
 }
