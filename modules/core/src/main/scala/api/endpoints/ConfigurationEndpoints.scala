@@ -36,7 +36,7 @@ class ConfigurationEndpoints(
   val base = baseEndpoint.in("configure").tag(Tag)
 
   val authenticatedEndpoint =
-    jwtAuthenticator
+    jwtAuthenticator.requireAppJwt
       .mapJwt(_.appId)
       .or(identityAuthenticator.mapJwt(_.appId))
       .secureEndpoint(base)
