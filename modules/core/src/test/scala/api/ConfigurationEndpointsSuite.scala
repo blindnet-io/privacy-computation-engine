@@ -819,7 +819,7 @@ class ConfigurationEndpointsSuite(global: GlobalRead) extends IOSuite {
         _    <- expect
           .all(
             s.enabled == false,
-            s.uri == Some(""),
+            s.url == Some(""),
             s.token == None
           )
           .failFast

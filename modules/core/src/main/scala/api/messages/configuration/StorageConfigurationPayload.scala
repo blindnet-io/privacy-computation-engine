@@ -18,7 +18,7 @@ import io.blindnet.pce.model.DacConfig
 
 case class StorageConfigurationPayload(
     enabled: Boolean,
-    uri: Option[String],
+    url: Option[String],
     token: Option[String]
 )
 
