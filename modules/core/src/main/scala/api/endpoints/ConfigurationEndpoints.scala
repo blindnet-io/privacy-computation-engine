@@ -17,7 +17,7 @@ import sttp.tapir.server.http4s.*
 import services.*
 import api.endpoints.messages.configuration.*
 import io.blindnet.identityclient.auth.*
-import io.blindnet.pce.model.DemandResolutionStrategy
+import io.blindnet.pce.model.*
 import io.blindnet.pce.priv.terms.DataCategory
 import io.blindnet.pce.api.endpoints.messages.administration.CreateApplicationStoragePayload
 
@@ -206,6 +206,15 @@ class ConfigurationEndpoints(
       .in(path[UUID]("regulationId"))
       .serverLogic(runLogicSuccess(configurationService.deleteRegulation))
 
+  val getStorageConfiguration =
+    authenticatedEndpoint
+      .description("Create app storage")
+      .get
+      .in("storage")
+      .out(jsonBody[StorageConfigurationPayload])
+      .errorOutVariants(notFound)
+      .serverLogic(runLogic(configurationService.getStorageConfiguration))
+
   val createStorage =
     authenticatedEndpoint
       .description("Create app storage")
@@ -235,6 +244,7 @@ class ConfigurationEndpoints(
     deleteRegulation,
     getDemandResolutionStrategy,
     updateAutomaticResolution,
+    getStorageConfiguration,
     createStorage
   )
 

@@ -207,6 +207,12 @@ class ConfigurationService(
   def deleteRegulation(appId: UUID)(regId: UUID) =
     repos.regulations.delete(appId, regId)
 
+  def getStorageConfiguration(appId: UUID)(x: Unit) =
+    repos.app
+      .get(appId)
+      .orNotFound(s"App $appId not found")
+      .map(app => StorageConfigurationPayload.fromDacConfig(app.dac))
+
   def createStorage(appId: UUID)(req: CreateApplicationStoragePayload) =
     for {
       app <- repos.app.get(appId)

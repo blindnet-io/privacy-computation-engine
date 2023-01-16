@@ -803,6 +803,29 @@ class ConfigurationEndpointsSuite(global: GlobalRead) extends IOSuite {
       } yield success
   }
 
+  test("fail getting storage information for unknown app") {
+    res =>
+      for {
+        resp <- res._1.server.run(get("configure/storage", appToken(uuid)))
+        _    <- expect(resp.status === Status.NotFound).failFast
+      } yield success
+  }
+
+  test("get storage information") {
+    res =>
+      for {
+        resp <- res._1.server.run(get("configure/storage", appToken(appId)))
+        s    <- resp.to[StorageConfigurationPayload]
+        _    <- expect
+          .all(
+            s.enabled == false,
+            s.uri == Some(""),
+            s.token == None
+          )
+          .failFast
+      } yield success
+  }
+
   test("fail adding storage for non-existent app") {
     res =>
       val req = json"""{"url": "", "token": ""}"""
