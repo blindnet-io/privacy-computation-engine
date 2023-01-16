@@ -27,6 +27,7 @@ import priv.privacyrequest.{ Demand, PrivacyRequest, * }
 import priv.*
 import priv.terms.*
 import io.blindnet.pce.api.endpoints.messages.ScopePayload
+import io.blindnet.pce.api.endpoints.messages.administration.CreateApplicationStoragePayload
 
 class ConfigurationService(
     repos: Repositories
@@ -205,5 +206,14 @@ class ConfigurationService(
 
   def deleteRegulation(appId: UUID)(regId: UUID) =
     repos.regulations.delete(appId, regId)
+
+  def createStorage(appId: UUID)(req: CreateApplicationStoragePayload) =
+    for {
+      app <- repos.app.get(appId)
+      _   <- app match {
+        case None => s"Application $appId not found".failBadRequest
+        case _    => repos.app.createStorage(appId, req.url, req.token)
+      }
+    } yield ()
 
 }

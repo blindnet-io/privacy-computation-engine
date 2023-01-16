@@ -17,6 +17,8 @@ trait AppRepository {
 
   def create(id: UUID): IO[Unit]
 
+  def createStorage(id: UUID, url: String, token: String): IO[Unit]
+
   def updateReslutionStrategy(id: UUID, rs: DemandResolutionStrategy): IO[Unit]
 }
 
@@ -51,6 +53,15 @@ object AppRepository {
 
         p.transact(xa)
       }
+
+      def createStorage(appId: UUID, url: String, token: String) =
+        sql"""
+          update dac
+          set active = true,
+              uri = $url,
+              token = $token
+          where appid = $appId
+        """.update.run.transact(xa).void
 
       def updateReslutionStrategy(id: UUID, rs: DemandResolutionStrategy): IO[Unit] =
         sql"""

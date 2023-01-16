@@ -803,4 +803,29 @@ class ConfigurationEndpointsSuite(global: GlobalRead) extends IOSuite {
       } yield success
   }
 
+  test("fail adding storage for non-existent app") {
+    res =>
+      val req = json"""{"url": "", "token": ""}"""
+      for {
+        resp <- res._1.server.run(put("configure/storage", req, appToken(uuid)))
+        _    <- expect(resp.status == Status.UnprocessableEntity).failFast
+      } yield success
+  }
+
+  test("add storage to app") {
+    res =>
+      val req = json"""{"url": "https://url", "token": "token_123"}"""
+      for {
+        resp <- res._1.server.run(put("configure/storage", req, appToken(appId)))
+        _    <- expect(resp.status == Status.Ok).failFast
+
+        storageConf <- sql"""select uri, token from dac where appid=$appId"""
+          .query[(String, String)]
+          .unique
+          .transact(res._1.xa)
+
+        _ <- expect(storageConf == ("https://url", "token_123")).failFast
+      } yield success
+  }
+
 }

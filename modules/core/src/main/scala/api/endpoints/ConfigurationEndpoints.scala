@@ -19,6 +19,7 @@ import api.endpoints.messages.configuration.*
 import io.blindnet.identityclient.auth.*
 import io.blindnet.pce.model.DemandResolutionStrategy
 import io.blindnet.pce.priv.terms.DataCategory
+import io.blindnet.pce.api.endpoints.messages.administration.CreateApplicationStoragePayload
 
 class ConfigurationEndpoints(
     jwtAuthenticator: JwtAuthenticator[Jwt],
@@ -205,6 +206,15 @@ class ConfigurationEndpoints(
       .in(path[UUID]("regulationId"))
       .serverLogic(runLogicSuccess(configurationService.deleteRegulation))
 
+  val createStorage =
+    authenticatedEndpoint
+      .description("Create app storage")
+      .put
+      .in("storage")
+      .in(jsonBody[CreateApplicationStoragePayload])
+      .errorOutVariant(unprocessable)
+      .serverLogic(runLogic(configurationService.createStorage))
+
   val endpoints = List(
     getGeneralInfo,
     updateGeneralInfo,
@@ -224,7 +234,8 @@ class ConfigurationEndpoints(
     addRegulation,
     deleteRegulation,
     getDemandResolutionStrategy,
-    updateAutomaticResolution
+    updateAutomaticResolution,
+    createStorage
   )
 
 }
