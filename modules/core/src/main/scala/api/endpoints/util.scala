@@ -20,7 +20,7 @@ import io.blindnet.pce.model.error.*
 import cats.implicits.*
 
 trait EndpointsUtil {
-  val baseEndpoint = endpoint.in("v0")
+  val baseEndpoint = endpoint
 
   val unprocessable =
     oneOfVariant(

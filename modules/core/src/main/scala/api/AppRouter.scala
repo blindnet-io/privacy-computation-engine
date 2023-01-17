@@ -122,6 +122,6 @@ class AppRouter(
       .andThen { routes => ErrorHandlerMiddleware.apply(routes) }
   }
 
-  val httpApp = middleware(routes).orNotFound
+  val httpApp = Router("/v0" -> middleware(routes)).orNotFound
 
 }
