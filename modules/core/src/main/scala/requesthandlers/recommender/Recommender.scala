@@ -62,7 +62,7 @@ object Recommendations {
         ev match {
           case lb: TimelineEvent.LegalBase if lb.eType != LegalBaseTerms.LegitimateInterest =>
             acc diff lb.scope.dataCategories
-          case lb: TimelineEvent.ConsentGiven => acc diff lb.scope.dataCategories
+          case lb: TimelineEvent.ConsentGiven => acc intersect lb.scope.dataCategories
           case _                              => acc
         }
     )

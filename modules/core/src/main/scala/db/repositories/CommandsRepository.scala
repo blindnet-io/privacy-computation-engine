@@ -103,7 +103,7 @@ object CommandsRepository {
 
       def popInvokeStorage(n: Int = 0): IO[List[CommandInvokeStorage]] = {
         val select = sql"""
-          select id, did, preid, action, date, retries
+          select id, did, preid, action, data, date, retries
           from commands_invoke_storage
           where retries < 5
           order by date asc
@@ -128,8 +128,8 @@ object CommandsRepository {
 
       def pushInvokeStorage(cs: List[CommandInvokeStorage]): IO[Unit] =
         val sql = """
-            insert into commands_invoke_storage
-            values (?, ?, ?, ?::storage_action, ?, ?)
+            insert into commands_invoke_storage (id, did, preid, action, data, date, retries)
+            values (?, ?, ?, ?::storage_action, ?, ?, ?)
           """
         Update[CommandInvokeStorage](sql).updateMany(cs).transact(xa).void
 

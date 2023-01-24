@@ -39,29 +39,29 @@ class StorageCommandsHandler(
   private def handle(cis: CommandInvokeStorage): IO[Unit] =
     for {
       pr  <- repos.privacyRequest.getRequestFromDemand(cis.dId).map(_.get)
-      r   <- repos.privacyRequest.getRecommendation(cis.dId).map(_.get)
       app <- repos.app.get(pr.appId).map(_.get)
-      _   <- callStorage(app, cis, pr.dataSubject, r)
+      _   <- callStorage(app, cis, pr.dataSubject)
     } yield ()
 
   private def callStorage(
       app: PCEApp,
       cis: CommandInvokeStorage,
-      ds: Option[DataSubject],
-      r: Recommendation
+      ds: Option[DataSubject]
   ) =
     (cis.action, ds) match {
       case (StorageAction.Get, Some(ds))    =>
         for {
           cbId <- UUIDGen.randomUUID[IO]
-          _    <- repos.callbacks.set(cbId, CBData(app.id, cis.preId))
-          _    <- storage.get(app, cbId, cis.dId, ds, r)
+          r = cis.data.as[Recommendation].toOption.get
+          _ <- repos.callbacks.set(cbId, CBData(app.id, cis.preId))
+          _ <- storage.get(app, cbId, ds, r)
         } yield ()
       case (StorageAction.Delete, Some(ds)) =>
         for {
           cbId <- UUIDGen.randomUUID[IO]
-          _    <- repos.callbacks.set(cbId, CBData(app.id, cis.preId))
-          _    <- storage.delete(app, cbId, cis.dId, ds, r)
+          r = cis.data.as[Recommendation].toOption.get
+          _ <- repos.callbacks.set(cbId, CBData(app.id, cis.preId))
+          _ <- storage.delete(app, cbId, ds, r)
         } yield ()
       case _                                => IO.unit
     }

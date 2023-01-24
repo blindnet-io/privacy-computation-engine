@@ -14,19 +14,21 @@ import io.circe.Json
 import org.http4s.Uri
 import doobie.util.meta.Meta
 
-// TODO: duplicate with DataRequestAction
 enum StorageAction {
   case Get
   case Delete
+  case PrivacyScopeChange
 }
 
 object StorageAction {
   given Meta[StorageAction] = Meta[String].timap {
-    case "get"    => StorageAction.Get
-    case "delete" => StorageAction.Delete
+    case "get"           => StorageAction.Get
+    case "delete"        => StorageAction.Delete
+    case "privacy-scope" => StorageAction.PrivacyScopeChange
   } {
-    case StorageAction.Get    => "get"
-    case StorageAction.Delete => "delete"
+    case StorageAction.Get                => "get"
+    case StorageAction.Delete             => "delete"
+    case StorageAction.PrivacyScopeChange => "privacy-scope"
   }
 
 }
@@ -36,6 +38,7 @@ case class CommandInvokeStorage(
     dId: UUID,
     preId: UUID,
     action: StorageAction,
+    data: Json,
     timestamp: Instant,
     retries: Int
 ) {
@@ -43,13 +46,18 @@ case class CommandInvokeStorage(
 }
 
 object CommandInvokeStorage {
-  def create(dId: UUID, preId: UUID, action: StorageAction) =
+  def create(dId: UUID, preId: UUID, action: StorageAction, data: Json) =
     for {
       id        <- UUIDGen[IO].randomUUID
       timestamp <- Clock[IO].realTimeInstant
-      c = CommandInvokeStorage(id, dId, preId, action, timestamp, 0)
+      c = CommandInvokeStorage(id, dId, preId, action, data, timestamp, 0)
     } yield c
 
-  def createGet(dId: UUID, preId: UUID)    = create(dId, preId, StorageAction.Get)
-  def createDelete(dId: UUID, preId: UUID) = create(dId, preId, StorageAction.Delete)
+  def createGet(dId: UUID, preId: UUID, data: Json)    = create(dId, preId, StorageAction.Get, data)
+  def createDelete(dId: UUID, preId: UUID, data: Json) =
+    create(dId, preId, StorageAction.Delete, data)
+
+  def createPrivacyScope(dId: UUID, preId: UUID, data: Json) =
+    create(dId, preId, StorageAction.PrivacyScopeChange, data)
+
 }

@@ -14,6 +14,7 @@ import io.blindnet.pce.model.error.*
 import io.blindnet.pce.priv.DataSubject
 import io.blindnet.pce.clients.StorageClient
 import io.blindnet.pce.util.extension.*
+import io.circe.syntax.*
 import org.typelevel.log4cats.*
 import org.typelevel.log4cats.slf4j.*
 import priv.Recommendation
@@ -62,9 +63,7 @@ class ResponseCalculator(
           // TODO: 3 atomic inserts, rollback if this IO fails
           _       <- repos.privacyRequest.storeNewResponse(newResp)
           _       <- storeEvent(pr, d).whenA(newResp.status == Granted)
-          _       <-
-            createStorageCommand(d.id, d.action, newResp.status, newResp.eventId)
-              .whenA(app.dac.usingDac)
+          _       <- createStorageCommand(pr, d, newResp, r).whenA(app.dac.usingDac)
         } yield ()
       case _           => logger.info(s"Response ${resp.id} not UNDER-REVIEW")
     }
@@ -123,15 +122,15 @@ class ResponseCalculator(
     }
 
   private def createStorageCommand(
-      dId: UUID,
-      action: Action,
-      status: Status,
-      preId: ResponseEventId
+      pr: PrivacyRequest,
+      d: Demand,
+      resp: PrivacyResponse,
+      rec: Recommendation
   ) =
-    (status, action) match {
+    (resp.status, d.action) match {
       case (Status.Granted | Status.PartiallyGranted, Action.Access) =>
         for {
-          c <- CommandInvokeStorage.createGet(dId, preId.value)
+          c <- CommandInvokeStorage.createGet(d.id, resp.eventId.value, rec.asJson)
           _ <- repos.commands.pushInvokeStorage(List(c))
         } yield ()
 
