@@ -23,6 +23,7 @@ import priv.terms.*
 import db.repositories.Repositories
 import io.blindnet.pce.db.repositories.CBData
 import fs2.Stream
+import io.blindnet.pce.priv.PrivacyScope
 
 // TODO: refactor
 class ResponseCalculator(
@@ -121,6 +122,39 @@ class ResponseCalculator(
       case _ => IO.unit
     }
 
+  private def calculateLostPrivacyScope(
+      pr: PrivacyRequest,
+      d: Demand
+  ): IO[List[(UUID, PrivacyScope)]] =
+    for {
+      ctx         <- repos.privacyScope.getContext(pr.appId)
+      timeline    <- repos.events.getTimeline(pr.dataSubject.get, ctx)
+      regulations <- repos.regulations.get(pr.appId, ctx)
+      events = timeline.compiledEvents(pr.timestamp.some)
+
+      res = events
+        .flatMap(e => e.asConsentGiven)
+        .map(
+          e => {
+            val id          = e.getLbId.get
+            val restriction = d.restrictions
+              .flatMap(r => r.cast[Restriction.PrivacyScope])
+              .foldLeft(PrivacyScope.empty)(_ union _.scope)
+              .zoomIn(ctx)
+
+            val lostScope = d.action match {
+              case Action.Object   => e.getScope intersection restriction
+              case Action.Restrict => e.getScope difference restriction
+              case _               => PrivacyScope.empty
+            }
+
+            (id, lostScope)
+          }
+        )
+        .filterNot(_._2.isEmpty)
+
+    } yield res
+
   private def createStorageCommand(
       pr: PrivacyRequest,
       d: Demand,
@@ -136,7 +170,24 @@ class ResponseCalculator(
 
       case (Status.Granted | Status.PartiallyGranted, Action.Delete) =>
         for {
-          c <- CommandInvokeStorage.createDelete(dId, preId.value)
+          c <- CommandInvokeStorage.createDelete(d.id, resp.eventId.value, rec.asJson)
+          _ <- repos.commands.pushInvokeStorage(List(c))
+        } yield ()
+
+      case (Status.Granted, Action.RevokeConsent) =>
+        for {
+          _ <- IO.unit
+          lbId = d.restrictions.head.cast[Restriction.Consent].get.consentId
+          json = List((lbId, PrivacyScope.empty)).asJson
+          c <- CommandInvokeStorage.createPrivacyScope(d.id, resp.eventId.value, json)
+          _ <- repos.commands.pushInvokeStorage(List(c))
+        } yield ()
+
+      case (Status.Granted, Action.Object | Action.Restrict) =>
+        for {
+          lostScope <- calculateLostPrivacyScope(pr, d)
+          json = lostScope.asJson
+          c <- CommandInvokeStorage.createPrivacyScope(d.id, resp.eventId.value, json)
           _ <- repos.commands.pushInvokeStorage(List(c))
         } yield ()
 

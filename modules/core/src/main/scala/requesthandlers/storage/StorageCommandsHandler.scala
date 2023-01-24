@@ -22,6 +22,7 @@ import priv.terms.*
 import db.repositories.Repositories
 import io.blindnet.pce.db.repositories.CBData
 import fs2.Stream
+import io.blindnet.pce.priv.PrivacyScope
 
 class StorageCommandsHandler(
     repos: Repositories,
@@ -49,21 +50,29 @@ class StorageCommandsHandler(
       ds: Option[DataSubject]
   ) =
     (cis.action, ds) match {
-      case (StorageAction.Get, Some(ds))    =>
+      case (StorageAction.Get, Some(ds))                =>
         for {
           cbId <- UUIDGen.randomUUID[IO]
           r = cis.data.as[Recommendation].toOption.get
           _ <- repos.callbacks.set(cbId, CBData(app.id, cis.preId))
           _ <- storage.get(app, cbId, ds, r)
         } yield ()
-      case (StorageAction.Delete, Some(ds)) =>
+      case (StorageAction.Delete, Some(ds))             =>
         for {
           cbId <- UUIDGen.randomUUID[IO]
           r = cis.data.as[Recommendation].toOption.get
           _ <- repos.callbacks.set(cbId, CBData(app.id, cis.preId))
           _ <- storage.delete(app, cbId, ds, r)
         } yield ()
-      case _                                => IO.unit
+      case (StorageAction.PrivacyScopeChange, Some(ds)) =>
+        for {
+          cbId <- UUIDGen.randomUUID[IO]
+          lost = cis.data.as[List[(UUID, PrivacyScope)]].toOption.get
+          _ <- repos.callbacks.set(cbId, CBData(app.id, cis.preId))
+          _ <- storage.privacyScopeChange(app, cbId, ds, lost)
+        } yield ()
+
+      case _ => IO.unit
     }
 
 }

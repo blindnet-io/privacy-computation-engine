@@ -21,12 +21,10 @@ import config.Config
 import model.error.InternalException
 import io.blindnet.pce.clients.*
 
-// TODO: refactor
 trait StorageClient {
   def get(
       app: PCEApp,
       callbackId: UUID,
-      demandId: UUID,
       subject: DataSubject,
       rec: Recommendation
   ): IO[Unit]
@@ -34,9 +32,15 @@ trait StorageClient {
   def delete(
       app: PCEApp,
       callbackId: UUID,
-      demandId: UUID,
       subject: DataSubject,
       rec: Recommendation
+  ): IO[Unit]
+
+  def privacyScopeChange(
+      app: PCEApp,
+      callbackId: UUID,
+      subject: DataSubject,
+      lost: List[(UUID, PrivacyScope)]
   ): IO[Unit]
 
 }
@@ -49,13 +53,11 @@ object StorageClient {
       def get(
           app: PCEApp,
           callbackId: UUID,
-          demandId: UUID,
           subject: DataSubject,
           rec: Recommendation
       ): IO[Unit] = {
 
         val payload = DataRequestPayload(
-          request_id = demandId.toString(),
           DataQueryPayload(
             selectors = rec.dataCategories.map(_.term).toList,
             subjects = List(subject.id),
@@ -64,13 +66,12 @@ object StorageClient {
             after = rec.dateFrom,
             until = rec.dateTo
           ),
-          action = DataRequestAction.GET,
-          callback = (conf.callbackUri / "callback" / callbackId.toString).toString
+          callback = conf.callbackUri / "callback" / callbackId.toString
         )
 
         def req(uri: Uri, token: String) = Request[IO](
           method = Method.POST,
-          uri = uri / "v1" / "requests",
+          uri = uri / "v1" / "requests" / "get",
           headers = Headers("Authorization" -> s"Bearer $token")
         )
           .withEntity(payload)
@@ -79,7 +80,7 @@ object StorageClient {
           // TODO: exception
           uri   <- app.dac.uri.fold(IO.raiseError(new Exception("DAC uri not found")))(IO(_))
           token <- app.dac.token.fold(IO.raiseError(new Exception("DAC token not found")))(IO(_))
-          _     <- logger.info(s"Sending request to $uri \n ${payload.asJson}")
+          _     <- logger.info(s"Sending get request to $uri \n ${payload.asJson}")
           res   <- c.successful(req(uri, token))
           _ = if res then IO.unit else IO.raiseError(InternalException("Non 200 response from DAC"))
         } yield ()
@@ -88,12 +89,10 @@ object StorageClient {
       def delete(
           app: PCEApp,
           callbackId: UUID,
-          demandId: UUID,
           subject: DataSubject,
           rec: Recommendation
       ): IO[Unit] = {
         val payload = DataRequestPayload(
-          request_id = demandId.toString(),
           DataQueryPayload(
             selectors = rec.dataCategories.map(_.term).toList,
             subjects = List(subject.id),
@@ -102,13 +101,12 @@ object StorageClient {
             after = rec.dateFrom,
             until = rec.dateTo
           ),
-          action = DataRequestAction.DELETE,
-          callback = (conf.callbackUri / "callback" / callbackId.toString).toString
+          callback = conf.callbackUri / "callback" / callbackId.toString
         )
 
         def req(uri: Uri, token: String) = Request[IO](
           method = Method.POST,
-          uri = uri / "v1" / "requests",
+          uri = uri / "v1" / "requests" / "delete",
           headers = Headers("Authorization" -> s"Bearer $token")
         )
           .withEntity(payload)
@@ -117,7 +115,39 @@ object StorageClient {
           // TODO: exception
           uri   <- app.dac.uri.fold(IO.raiseError(new Exception("DAC uri not found")))(IO(_))
           token <- app.dac.token.fold(IO.raiseError(new Exception("DAC token not found")))(IO(_))
-          _     <- logger.info(s"Sending request to $uri \n ${payload.asJson}")
+          _     <- logger.info(s"Sending delete request to $uri \n ${payload.asJson}")
+          res   <- c.successful(req(uri, token))
+          _ = if res then IO.unit else IO.raiseError(InternalException("Non 200 response from DAC"))
+        } yield ()
+      }
+
+      def privacyScopeChange(
+          app: PCEApp,
+          callbackId: UUID,
+          subject: DataSubject,
+          lost: List[(UUID, PrivacyScope)]
+      ): IO[Unit] = {
+        val query = lost.map(l => PrivacyScopeItem(l._1, l._2))
+
+        val payload =
+          PrivacyScopePayload(
+            subjects = List(subject.id),
+            lost = query,
+            callback = conf.callbackUri / "callback" / callbackId.toString
+          )
+
+        def req(uri: Uri, token: String) = Request[IO](
+          method = Method.POST,
+          uri = uri / "v1" / "requests" / "privacy_scope",
+          headers = Headers("Authorization" -> s"Bearer $token")
+        )
+          .withEntity(payload)
+
+        for {
+          // TODO: exception
+          uri   <- app.dac.uri.fold(IO.raiseError(new Exception("DAC uri not found")))(IO(_))
+          token <- app.dac.token.fold(IO.raiseError(new Exception("DAC token not found")))(IO(_))
+          _     <- logger.info(s"Sending privacy scope request to $uri")
           res   <- c.successful(req(uri, token))
           _ = if res then IO.unit else IO.raiseError(InternalException("Non 200 response from DAC"))
         } yield ()

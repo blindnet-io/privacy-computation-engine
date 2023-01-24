@@ -7,33 +7,19 @@ import io.blindnet.pce.util.parsing.*
 import io.circe.*
 import io.circe.generic.semiauto.*
 import io.circe.syntax.*
-
-enum DataRequestAction {
-  case GET, DELETE
-}
-
-object DataRequestAction {
-  given Encoder[DataRequestAction] = Encoder.encodeString.contramap(_.toString.toLowerCase)
-}
+import org.http4s.Uri
+import org.http4s.circe.*
 
 case class DataQueryPayload(
-    selectors: List[String],
+    selectors: List[String], // empty = everything
     subjects: List[String],
     provenance: Option[String],
     target: Option[String],
     after: Option[Instant],
     until: Option[Instant]
-)
+) derives Encoder.AsObject
 
 case class DataRequestPayload(
-    //  app_id: String,
-    request_id: String,
     query: DataQueryPayload,
-    action: DataRequestAction,
-    callback: String
-)
-
-object DataRequestPayload {
-  given Decoder[DataRequestPayload] = deriveDecoder[DataRequestPayload]
-  given Encoder[DataRequestPayload] = deriveEncoder[DataRequestPayload]
-}
+    callback: Uri
+) derives Encoder.AsObject
